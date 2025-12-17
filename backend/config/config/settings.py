@@ -65,7 +65,7 @@ TEMPLATES = [
             ],
         },
     },
-]
+] 
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
@@ -75,8 +75,12 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'alcalde_escuchame_database',
+        'USER': 'alcalde_escuchame_user',
+        'PASSWORD': 'JOse4567',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
