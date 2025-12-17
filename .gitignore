@@ -1,13 +1,168 @@
-# Python cache
+
+############################
+# SISTEMA OPERATIVO
+############################
+# Archivos temporales de macOS y Windows
+.DS_Store
+Thumbs.db
+
+############################
+# EDITORES / IDEs
+############################
+# VS Code y JetBrains (PyCharm/WebStorm)
+.vscode/
+.idea/
+*.swp
+*.swo
+
+############################
+# PYTHON (cache y compilados)
+############################
+# Tu sección original + ampliada
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+# Compilados/artefactos
+*.so
+build/
+dist/
+eggs/
+*.egg-info/
+.installed.cfg
+*.manifest
+*.spec  # p. ej. PyInstaller
 
-# Django stuff
-*.sqlite3
-
-# Virtual environments
+############################
+# ENTORNOS VIRTUALES
+############################
+# Tu sección original + variantes
 .venv/
-env/
 venv/
+env/
+ENV/
+# Pipenv / Poetry
+Pipfile.lock
+poetry.lock
+
+############################
+# DJANGO
+############################
+# Bases de datos de desarrollo
+*.sqlite3
+# Archivos locales de configuración (no subir secretos)
+settings_local.py
+local_settings.py
+# Archivos de cron/cola si se generan localmente
+celerybeat-schedule
+# Archivos de medios subidos por usuarios (normalmente no versionarlos)
+media/
+# Archivos estáticos generados por collectstatic (se reconstruyen en CI/servidor)
+staticfiles/
+# Si usas WhiteNoise, los estáticos compilados también se regeneran
+static/
+# Migraciones: normalmente SÍ se comitean; si quieres ignorarlas en dev, descomenta
+# */migrations/*.pyc
+# */migrations/__pycache__/
+
+############################
+# PRUEBAS / COBERTURA
+############################
+# pytest y cobertura
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+# nose
+nosetests.xml
+# unittest
+test-results/
+# tox
+.tox/
+.tox/*
+# Hypothesis
+.hypothesis/
+
+############################
+# TIPADO / LINT
+############################
+.mypy_cache/
+.pyre/
+ruff_cache/
+
+############################
+# JUPYTER / DATOS TEMPORALES
+############################
+.ipynb_checkpoints/
+# Datos generados en local (evita subir dumps grandes)
+*.csv
+*.tsv
+*.parquet
+*.xls
+*.xlsx
+
+############################
+# LOGS
+############################
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+############################
+# VARIABLES DE ENTORNO
+############################
+# Nunca subir secretos; ofrece un ejemplo
+.env
+.env.*
+!.env.example
+
+############################
+# DOCKER / CONTENEDORES
+############################
+# Archivos generados por Docker
+docker-compose.override.yml
+# Volúmenes/artefactos locales
+tmp/
+run/
+# Si generas imágenes/outputs locales
+*.tar
+
+############################
+# FRONTEND (Node / Vite / React / Angular / Svelte, etc.)
+############################
+# Dependencias y builds
+node_modules/
+dist/
+out/
+build/
+# Cachés de herramientas
+.vite/
+.cache/
+.tmp/
+# Storybook (si lo usas)
+storybook-static/
+# Coverage de front
+coverage/
+# Archivos de bloqueo: normalmente SÍ se comitean; si quieres ignorarlos, comenta
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+############################
+# CYPRESS / PLAYWRIGHT / JEST
+############################
+# Directorios de reportes y vídeos
+cypress/videos/
+cypress/screenshots/
+cypress/report/
+playwright-report/
+test-results/
+
+############################
+# IMÁGENES/TEMP
+############################
+# Archivos generados temporalmente o locales
+*.
