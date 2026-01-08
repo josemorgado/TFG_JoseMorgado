@@ -12,7 +12,7 @@ class Queja(models.Model):
     id = models.AutoField(primary_key=True)
     titulo = models.CharField(max_length=200)
     descripcion = models.TextField()
-    #categoria_id = models.ForeignKey('Categoria', on_delete=models.CASCADE)
+    categoria = models.ForeignKey('categoria.Categoria', on_delete=models.CASCADE, related_name='quejas', null=False, blank=False)
     #distrito_id = models.ForeignKey('Distrito', on_delete=models.CASCADE)
     estado = models.CharField(max_length=3,choices= EstadoQueja.choices, default=EstadoQueja.PENDIENTE)
     ubicacion = models.CharField(max_length=255,blank=True, null=True)
