@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'categoria',
     'distrito',
     'quejas',
+    'comentario',
 ]
 
 MIDDLEWARE = [
