@@ -5,6 +5,6 @@ from .models import Queja
 @admin.register(Queja)
 class QuejaAdmin(admin.ModelAdmin):
     list_display = ("titulo", "estado", "categoria", "fecha_creacion", "num_votos", "num_comentarios", "ubicacion")
-    list_filter = ("estado", "categoria")
+    list_filter = ("estado", "categoria", "distrito", "fecha_creacion")
     search_fields = ("titulo", "descripcion")
     readonly_fields = ("fecha_creacion", "fecha_actualizacion")
