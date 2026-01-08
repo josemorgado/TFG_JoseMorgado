@@ -9,3 +9,4 @@ class Comentario(models.Model):
     contenido = models.TextField()
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     num_votos = models.IntegerField(default=0)
+    quejaOcoment = models.BooleanField(default=True)  # True si es comentario a queja, False si es respuesta a comentario
