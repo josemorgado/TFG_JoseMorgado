@@ -31,5 +31,12 @@ class Queja(models.Model):
     def num_votos(self):
         ct = ContentType.objects.get_for_model(self, for_concrete_model=False)
         return MeGusta.objects.filter(content_type=ct, object_id=self.pk).count()
-    num_comentarios = models.IntegerField(default=0)
+    @property
+    def num_comentarios(self):
+        from comentario.models import Comentario
+        return Comentario.objects.filter(queja=self.pk).count()
+    @property
+    def num_comentarios_top_level(self):
+        from comentario.models import Comentario
+        return Comentario.objects.filter(queja=self.pk, parent__isnull=True).count()
     
