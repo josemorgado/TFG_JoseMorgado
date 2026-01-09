@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'distrito',
     'quejas',
     'comentario',
+    'megusta',
+    
 ]
 
 MIDDLEWARE = [
