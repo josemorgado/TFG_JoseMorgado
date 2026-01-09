@@ -9,3 +9,4 @@ class Comentario(models.Model):
     contenido = models.TextField()
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     num_votos = models.IntegerField(default=0)
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, related_name='respuestas', null=True, blank=True, verbose_name="Comentario Padre")
