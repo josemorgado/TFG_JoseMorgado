@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'quejas',
     'comentario',
     'megusta',
-    
+    'imagen',    
 ]
 
 MIDDLEWARE = [
