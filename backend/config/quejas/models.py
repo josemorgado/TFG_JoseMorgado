@@ -2,7 +2,7 @@ from django.db import models
 
 # Create your models here.
 
-
+from django.conf import settings
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from megusta.models import MeGusta
@@ -22,7 +22,7 @@ class Queja(models.Model):
     distrito = models.ForeignKey('distrito.Distrito', on_delete=models.CASCADE, related_name='quejas', null=False, blank=False)
     estado = models.CharField(max_length=3,choices= EstadoQueja.choices, default=EstadoQueja.PENDIENTE)
     ubicacion = models.CharField(max_length=255,blank=True, null=True)
-    autor = models.ForeignKey('auth.User', on_delete=models.CASCADE)
+    autor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     fecha_actualizacion = models.DateTimeField(auto_now=True)
     #Este campo se actualizará mediante señales cuando se añadan o eliminen MeGusta o Comentarios
