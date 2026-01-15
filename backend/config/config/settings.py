@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'comentario',
     'megusta',
     'imagen',    
+    'perfil',
 ]
 
 MIDDLEWARE = [
