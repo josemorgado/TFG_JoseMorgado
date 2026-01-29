@@ -7,18 +7,18 @@ from django.conf import settings
 
 # Create your models here.
 
-MAX_IMAGENES = 5
-# Funcion para definir la ruta de acceso a la imagen
+MAX_VIDEOS = 2
+# Funcion para definir la ruta de acceso al video
 def media_upload_to(instance, filename):
     tipo = instance.content_type.model
-    return f'media/{tipo}/{instance.object_id}/imagenes/{filename}'
+    return f'media/{tipo}/{instance.object_id}/videos/{filename}'
 
-class Imagen(models.Model):
+class Video(models.Model):
     id = models.BigAutoField(primary_key=True)
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
-    imagen = models.ImageField(upload_to=media_upload_to)
+    video = models.FileField(upload_to=media_upload_to)
     orden = models.PositiveIntegerField(default=0)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     
@@ -28,19 +28,19 @@ class Imagen(models.Model):
             models.Index(fields=['content_type', 'object_id']),
         ]
         constraints = [
-            models.UniqueConstraint(fields=['content_type', 'object_id', 'orden'], name='unique_image_order_per_object')
+            models.UniqueConstraint(fields=['content_type', 'object_id', 'orden'], name='unique_video_order_per_object')
         ]
         
     def clean(self):
-        # Validar el numero maximo de imagenes por objeto
+        # Validar el numero maximo de videos por objeto
         if self.pk is None:
-            total = Imagen.objects.filter(
+            total = Video.objects.filter(
                 content_type=self.content_type,
                 object_id=self.object_id
             ).count()
-            if total >= MAX_IMAGENES:
+            if total >= MAX_VIDEOS:
                 raise ValidationError(
-                    _(f'Solo se permiten un maximo de {MAX_IMAGENES} imagenes por objeto.')
+                    _(f'Solo se permiten un maximo de {MAX_VIDEOS} videos por objeto.')
                 )
                 
     def save(self, *args, **kwargs):
@@ -48,7 +48,7 @@ class Imagen(models.Model):
         super().save(*args, **kwargs)
         
     def __str__(self):
-        return f'Imagen {self.id} para {self.content_object} (Orden: {self.orden})'
+        return f'Video {self.id} para {self.content_object} (Orden: {self.orden})'
             
     
 
