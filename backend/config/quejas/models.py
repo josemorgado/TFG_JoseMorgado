@@ -20,7 +20,7 @@ class Queja(models.Model):
     descripcion = models.TextField()
     categoria = models.ForeignKey('categoria.Categoria', on_delete=models.CASCADE, related_name='quejas', null=False, blank=False)
     distrito = models.ForeignKey('distrito.Distrito', on_delete=models.CASCADE, related_name='quejas', null=False, blank=False)
-    estado = models.CharField(max_length=3,choices= EstadoQueja.choices, default=EstadoQueja.PENDIENTE)
+    estado = models.CharField(choices= EstadoQueja.choices, default=EstadoQueja.PENDIENTE)
     ubicacion = models.CharField(max_length=255,blank=True, null=True)
     autor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
