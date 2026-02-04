@@ -3,15 +3,13 @@ from django.contrib.contenttypes.admin import GenericTabularInline
 from django.utils.html import format_html
 from .models import Video
 
-# 1. Clase Inline: Cópiala y úsala en el admin de tus otros modelos (ej. QuejaAdmin)
 class VideoInline(GenericTabularInline):
     model = Video
     extra = 1
-    max_num = 2  # Respeta tu límite de MAX_VIDEOS
+    max_num = 2  
     fields = ('video', 'orden', 'fecha_creacion')
     readonly_fields = ('fecha_creacion',)
 
-# 2. Clase Admin: Para gestionar todos los vídeos del sistema
 @admin.register(Video)
 class VideoAdmin(admin.ModelAdmin):
     list_display = ('id', 'display_content_object', 'preview_video', 'orden', 'fecha_creacion')
@@ -19,7 +17,6 @@ class VideoAdmin(admin.ModelAdmin):
     search_fields = ('object_id',)
     readonly_fields = ('fecha_creacion', 'preview_video_full')
     
-    # Organiza los campos en la ficha de edición
     fieldsets = (
         (None, {
             'fields': ('content_type', 'object_id', 'video', 'orden')
