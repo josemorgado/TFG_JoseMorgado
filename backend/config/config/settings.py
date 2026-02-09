@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'imagen',    
     'perfil',
     'video',
+    'api'
 ]
 
 MIDDLEWARE = [
