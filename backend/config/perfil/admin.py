@@ -12,7 +12,7 @@ class PerfilInline(admin.StackedInline):
     
     fieldsets = (
         ('Datos Personales', {
-            'fields': ('nombre_completo', ('apellido_1', 'apellido_2'), 'fecha_nacimiento', 'foto_perfil')
+            'fields': ('nombre_completo', ('apellido_1', 'apellido_2'), 'fecha_nacimiento', 'foto_perfil', 'genero', 'moderator')
         }),
         ('Contacto y Ubicación', {
             'fields': (('telefono', 'direccion', 'email'),)
