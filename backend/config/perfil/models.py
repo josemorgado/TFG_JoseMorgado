@@ -14,6 +14,7 @@ class Perfil(models.Model):
     apellido_1 = models.CharField(max_length=50, blank=True)
     apellido_2 = models.CharField(max_length=50, blank=True)
     biografia = models.TextField(blank=True)
+    moderator = models.BooleanField(default=False)
     telefono = models.CharField(max_length=15, blank=True)
     email = models.EmailField(max_length=254, blank=True)
     direccion = models.CharField(max_length=255, blank=True)
