@@ -4,8 +4,8 @@ from django.contrib.auth.models import User
 from rest_framework.fields import SerializerMethodField
 
 class QuejaSerializer(serializers.ModelSerializer):
-    #Quitar esta linea en produccion
-    autor = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+
+    autor = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())    #Quitar esta linea en produccion
     categoria = serializers.PrimaryKeyRelatedField(queryset=Queja._meta.get_field('categoria').remote_field.model.objects.all())
     distrito = serializers.PrimaryKeyRelatedField(queryset=Queja._meta.get_field('distrito').remote_field.model.objects.all())
     categoria_nombre = SerializerMethodField(read_only=True)
@@ -33,7 +33,7 @@ class QuejaSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id', 
             'estado',
-            #'autor',
+            'autor',
             'fecha_creacion', 
             'fecha_actualizacion', 
             'num_votos', 
@@ -44,7 +44,9 @@ class QuejaSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context.get('request')
         user = getattr(request, 'user', None)
-        #validated_data.setdefault("autor", user)
+#        if not user or not user.is_authenticated:
+#            raise serializers.ValidationError("No se puede crear una queja sin estar autenticado.")
+        validated_data.setdefault("autor", user)
         validated_data.setdefault("estado", "PENDIENTE")
         return super().create(validated_data)
     
@@ -62,7 +64,7 @@ class QuejaSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = getattr(request, 'user', None)
         if user and Queja.objects.filter(
-            autor=user,
+            #autor=user,
             titulo=data.get('titulo'),
             distrito=data.get('distrito')
         ).exists():

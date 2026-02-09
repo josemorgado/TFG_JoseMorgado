@@ -11,7 +11,7 @@ from quejas.models import Queja
 # -----------------------------------------
 @api_view(['GET'])
 def quejas_list(request):
-    qs = Queja.objects.all().order_by('-id')
+    qs = Queja.objects.all().order_by('id')
     serializer = QuejaSerializer(qs, many=True)  # salida: no hace falta context
     return Response(serializer.data)
 
@@ -53,20 +53,6 @@ def queja_update(request, pk):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# -------------------------------------------------------------------------
-# PATCH /quejas/<pk>/  → Actualiza parcialmente una queja (campos sueltos)
-# -------------------------------------------------------------------------
-@api_view(['PATCH'])
-def queja_partial_update(request, pk):
-    queja = get_object_or_404(Queja, pk=pk)
-    # PATCH = actualización parcial → partial=True
-    serializer = QuejaSerializer(queja, data=request.data, partial=True, context={'request': request})
-    if serializer.is_valid():
-        queja = serializer.save()
-        return Response(QuejaSerializer(queja).data, status=status.HTTP_200_OK)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
 # --------------------------------------------------------
 # DELETE /quejas/<pk>/  → Elimina una queja por su identificador
 # --------------------------------------------------------
@@ -82,7 +68,7 @@ def queja_delete(request, pk):
 # ---------------------------------------------------------------------------------------
 @api_view(['GET'])
 def quejas_por_categoria(request, categoria_id):
-    qs = Queja.objects.filter(categoria_id=categoria_id).order_by('-id')
+    qs = Queja.objects.filter(categoria_id=categoria_id).order_by('id')
     serializer = QuejaSerializer(qs, many=True)
     return Response(serializer.data)
 
@@ -92,7 +78,7 @@ def quejas_por_categoria(request, categoria_id):
 # -----------------------------------------------------------------------------------
 @api_view(['GET'])
 def quejas_por_distrito(request, distrito_id):
-    qs = Queja.objects.filter(distrito_id=distrito_id).order_by('-id')
+    qs = Queja.objects.filter(distrito_id=distrito_id).order_by('id')
     serializer = QuejaSerializer(qs, many=True)
     return Response(serializer.data)
 
@@ -102,7 +88,7 @@ def quejas_por_distrito(request, distrito_id):
 # -----------------------------------------------------------------------------
 @api_view(['GET'])
 def quejas_por_autor(request, autor_id):
-    qs = Queja.objects.filter(autor_id=autor_id).order_by('-id')
+    qs = Queja.objects.filter(autor_id=autor_id).order_by('id')
     serializer = QuejaSerializer(qs, many=True)
     return Response(serializer.data)
 
