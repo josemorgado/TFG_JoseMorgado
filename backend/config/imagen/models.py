@@ -19,7 +19,7 @@ class Imagen(models.Model):
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
     imagen = models.ImageField(upload_to=media_upload_to)
-    orden = models.PositiveIntegerField(default=0)
+    orden = models.PositiveIntegerField()
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     
     class Meta:
@@ -43,7 +43,17 @@ class Imagen(models.Model):
                     _(f'Solo se permiten un maximo de {MAX_IMAGENES} imagenes por objeto.')
                 )
                 
+
     def save(self, *args, **kwargs):
+        if self.pk is None:  # Solo al crear
+            if self.orden is None:
+                qs = Imagen.objects.filter(
+                    content_type=self.content_type,
+                    object_id=self.object_id
+                )
+                ultimo = qs.order_by('-orden').first()
+                self.orden = (ultimo.orden + 1) if ultimo else 0
+
         self.full_clean()
         super().save(*args, **kwargs)
         

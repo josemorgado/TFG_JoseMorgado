@@ -23,4 +23,5 @@ urlpatterns = [
     path('api/categorias/', include('categoria.urls')),
     path('api/distritos/', include('distrito.urls')),
     path('api/comentarios/', include('comentario.urls')),
+    path('api/imagenes/', include('imagen.urls')),
 ]
