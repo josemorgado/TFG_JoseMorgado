@@ -22,4 +22,5 @@ urlpatterns = [
     path('api/quejas/', include('quejas.urls')),
     path('api/categorias/', include('categoria.urls')),
     path('api/distritos/', include('distrito.urls')),
+    path('api/comentarios/', include('comentario.urls')),
 ]
