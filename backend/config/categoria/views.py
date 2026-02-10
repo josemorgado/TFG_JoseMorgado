@@ -8,7 +8,7 @@ from categoria.models import Categoria
 from categoria.serializers import CategoriaSerializer
 
 
-# GET /categoria/  → Listado de categorías
+# GET /categorias/  → Listado de categorías
 @api_view(['GET'])
 def categoria_list(request):
     qs = Categoria.objects.all().order_by('-id')
@@ -16,7 +16,7 @@ def categoria_list(request):
     return Response(serializer.data)
 
 
-# GET /categoria/<pk>/ → Detalle de una categoría
+# GET /categorias/<pk>/ → Detalle de una categoría
 @api_view(['GET'])
 def categoria_detail(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
@@ -24,7 +24,7 @@ def categoria_detail(request, pk):
     return Response(serializer.data)
 
 
-# POST /categoria/create/ → Crear categoría
+# POST /categorias/create/ → Crear categoría
 @api_view(['POST'])
 def categoria_create(request):
     serializer = CategoriaSerializer(data=request.data)
@@ -34,7 +34,7 @@ def categoria_create(request):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# PUT /categoria/<pk>/update/ → Actualizar toda la categoría
+# PUT /categorias/<pk>/update/ → Actualizar toda la categoría
 @api_view(['PUT'])
 def categoria_update(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
@@ -45,9 +45,23 @@ def categoria_update(request, pk):
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# DELETE /categoria/<pk>/delete/ → Eliminar categoría
+# DELETE /categorias/<pk>/delete/ → Eliminar categoría
 @api_view(['DELETE'])
 def categoria_delete(request, pk):
     categoria = get_object_or_404(Categoria, pk=pk)
     categoria.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+# POST /categorias/<pk>/toggle-estado/ → Alternar activo <-> inactivo
+@api_view(['POST'])
+def categoria_toggle_estado(request, pk):
+    """
+    POST  /categoria/<pk>/toggle-estado/  → alterna activo <-> inactivo
+    """
+    categoria = get_object_or_404(Categoria, pk=pk)
+
+    categoria.activo = not categoria.activo
+
+    categoria.save()
+    return Response(CategoriaSerializer(categoria).data, status=status.HTTP_200_OK)
