@@ -74,6 +74,9 @@ class MeGusta(models.Model):
         constraints = [
             models.UniqueConstraint(fields=['content_type', 'object_id', 'autor'], name='unique_megusta_per_user_per_object')
         ]
+        indexes = [
+            models.Index(fields=['content_type', 'object_id']),
+        ]
         
     def __str__(self):
         return f'MeGusta by {self.autor} on {self.content_object}'
