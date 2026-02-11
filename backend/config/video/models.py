@@ -7,7 +7,7 @@ from django.conf import settings
 
 # Create your models here.
 
-MAX_VIDEOS = 2
+MAX_VIDEOS = 1
 # Funcion para definir la ruta de acceso al video
 def media_upload_to(instance, filename):
     tipo = instance.content_type.model
