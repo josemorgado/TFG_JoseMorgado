@@ -44,8 +44,7 @@ INSTALLED_APPS = [
     'megusta',
     'imagen',    
     'perfil',
-    'video',
-    'api'
+    'video'
 ]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
