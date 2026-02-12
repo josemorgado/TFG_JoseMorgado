@@ -9,10 +9,21 @@ from categoria.views import (
 )
 
 urlpatterns = [
-    path('', categoria_list),                                   # GET /categorias/
-    path('<int:pk>/', categoria_detail),                         # GET /categorias/<pk>/
-    path('create/', categoria_create),                           # POST /categorias/create/
-    path('<int:pk>/update/', categoria_update),                  # PUT /categorias/<pk>/update/
-    path('<int:pk>/delete/', categoria_delete),                  # DELETE /categorias/<pk>/delete/
-    path('<int:pk>/toggle-estado/', categoria_toggle_estado),    # POST/PATCH /categorias/<pk>/toggle-estado/
+    # GET           /categorias/
+    path('', categoria_list),
+
+    # GET           /categorias/<int:pk>/
+    path('<int:pk>/', categoria_detail),
+
+    # POST          /categorias/create/
+    path('create/', categoria_create),
+
+    # PUT           /categorias/<int:pk>/update/
+    path('<int:pk>/update/', categoria_update),
+
+    # DELETE        /categorias/<int:pk>/delete/
+    path('<int:pk>/delete/', categoria_delete),
+
+    # POST          /categorias/<int:pk>/toggle-estado/
+    path('<int:pk>/toggle-estado/', categoria_toggle_estado),
 ]
