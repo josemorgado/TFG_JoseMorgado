@@ -8,9 +8,18 @@ from distrito.views import (
 )
 
 urlpatterns = [
-    path('', distrito_list),                                  # GET    /distrito/
-    path('<int:pk>/', distrito_detail),                       # GET    /distrito/<pk>/
-    path('create/', distrito_create),                         # POST   /distrito/create/
-    path('<int:pk>/update/', distrito_update),                # PUT    /distrito/<pk>/update/
-    path('<int:pk>/delete/', distrito_delete),                # DELETE /distrito/<pk>/delete/
+    # GET               /distritos/
+    path('', distrito_list),
+
+    # GET               /distritos/<int:pk>/
+    path('<int:pk>/', distrito_detail),
+
+    # POST              /distritos/create/
+    path('create/', distrito_create),
+
+    # PUT               /distritos/<int:pk>/update/
+    path('<int:pk>/update/', distrito_update),
+
+    # DELETE            /distritos/<int:pk>/delete/
+    path('<int:pk>/delete/', distrito_delete),
 ]
