@@ -18,7 +18,7 @@ class Imagen(models.Model):
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey("content_type", "object_id")
     imagen = models.ImageField(upload_to=media_upload_to)
-    orden = models.PositiveIntegerField(default=0)
+    orden = models.PositiveIntegerField(default=None)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     class Meta:
