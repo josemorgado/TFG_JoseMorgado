@@ -14,27 +14,22 @@ from .models import Perfil
 User = get_user_model()
 
 
-# ---------- Listado y detalle (lecturas) ----------
-
 # GET /usuarios/ → Lista de usuarios con perfil embebido
 @api_view(['GET'])
 def usuario_list(request):
-    # ⬇️ Cargamos el perfil junto con el usuario para evitar N+1
+    # Cargamos el perfil junto con el usuario para evitar N+1
     qs = User.objects.select_related('perfil').all().order_by('-id')
-    # ⬇️ Cambiamos a UserPerfilSerializer para incluir el perfil en la respuesta
     serializer = UserPerfilSerializer(qs, many=True, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
-# GET /usuarios/<pk>/ → Detalle de usuario + perfil
+# GET /usuarios/<int:pk>/ → Detalle de usuario + perfil
 @api_view(['GET'])
 def usuario_detail(request, pk):
     user = get_object_or_404(User.objects.select_related('perfil'), pk=pk)
     serializer = UserPerfilSerializer(user, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
-
-# ---------- Crear ----------
 
 # POST /usuarios/create/ → Crea User + Perfil (acepta multipart para foto_perfil)
 @api_view(['POST'])
@@ -45,19 +40,17 @@ def usuario_create(request):
     serializer.is_valid(raise_exception=True)
     user = serializer.save()
 
-    # ⬇️ MUY IMPORTANTE: recargar la instancia con el perfil ya persistido
+    # Recargar la instancia con el perfil ya persistido
     user = User.objects.select_related('perfil').get(pk=user.pk)
 
-    # ⬇️ Devolver con el mismo serializer y contexto
+    # Devolver con el mismo serializer y contexto
     return Response(
         UserPerfilSerializer(user, context={'request': request}).data,
         status=status.HTTP_201_CREATED
     )
 
 
-# ---------- Actualizar (PUT/PATCH) ----------
-
-# PUT /usuarios/<pk>/update/ → Actualización completa de User + Perfil
+# PUT /usuarios/<int:pk>/update/ → Actualización completa de User + Perfil
 @api_view(['PUT'])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def usuario_update(request, pk):
@@ -66,13 +59,13 @@ def usuario_update(request, pk):
     serializer.is_valid(raise_exception=True)
     user = serializer.save()
 
-    # ⬇️ Recargar para asegurar que el perfil actualizado está en la instancia
+    # Recargar para asegurar que el perfil actualizado está en la instancia
     user = User.objects.select_related('perfil').get(pk=user.pk)
 
     return Response(UserPerfilSerializer(user, context={'request': request}).data, status=status.HTTP_200_OK)
 
 
-# PATCH /usuarios/<pk>/partial-update/ → Actualización parcial de User + Perfil
+# PATCH /usuarios/<int:pk>/partial-update/ → Actualización parcial de User + Perfil
 @api_view(['PATCH'])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def usuario_partial_update(request, pk):
@@ -81,15 +74,13 @@ def usuario_partial_update(request, pk):
     serializer.is_valid(raise_exception=True)
     user = serializer.save()
 
-    # ⬇️ Recargar para asegurar consistencia en la respuesta
+    # Recargar para asegurar consistencia en la respuesta
     user = User.objects.select_related('perfil').get(pk=user.pk)
 
     return Response(UserPerfilSerializer(user, context={'request': request}).data, status=status.HTTP_200_OK)
 
 
-# ---------- Borrado ----------
-
-# DELETE /usuarios/<pk>/delete/ → Elimina User (Perfil cae por CASCADE)
+# DELETE /usuarios/<int:pk>/delete/ → Elimina User (Perfil cae por CASCADE)
 @api_view(['DELETE'])
 def usuario_delete(request, pk):
     user = get_object_or_404(User, pk=pk)

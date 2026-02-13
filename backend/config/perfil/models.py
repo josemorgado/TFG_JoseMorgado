@@ -7,23 +7,20 @@ from django.dispatch import receiver
 from django.core.exceptions import ValidationError
 
 
-# ------------------------------------------------------------------------------------
-# Modelo de perfil asociado a User mediante relación OneToOne.
-# Este modelo amplía la información del usuario con datos adicionales que no
-# pertenecen al modelo estándar de Django.
-# ------------------------------------------------------------------------------------
-
+# Opciones de género como TextChoices
 class Genero(models.TextChoices):
     MASCULINO = 'M', 'Masculino'
-    FEMENINO = 'F', 'Femenino'
-    OTRO = 'O', 'Otro'
+    FEMENINO  = 'F', 'Femenino'
+    OTRO      = 'O', 'Otro'
 
 
+# Ruta de almacenamiento para el avatar del usuario
 def avatar_path(instance, filename):
-    # Cada usuario almacena su avatar en una carpeta propia.
+    # Cada usuario almacena su avatar en una carpeta propia
     return f'users/{instance.user_id}/avatar/{filename}'
 
 
+# Validador para el campo teléfono
 telefono_validator = RegexValidator(
     regex=r'^\+?\d{7,15}$',
     message='El teléfono debe contener entre 7 y 15 dígitos, opcionalmente empezando por +.'
@@ -32,7 +29,7 @@ telefono_validator = RegexValidator(
 
 class Perfil(models.Model):
 
-    # Relación uno a uno con User. El perfil funciona como extensión del modelo de usuario.
+    # Relación uno a uno con User, actuando como extensión del modelo de usuario
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -40,28 +37,29 @@ class Perfil(models.Model):
         primary_key=True,
     )
 
-    # Campos adicionales propios del perfil
+    # Campos adicionales del perfil
     genero = models.CharField(max_length=1, choices=Genero.choices, default=Genero.MASCULINO)
     biografia = models.TextField(blank=True)
-    moderator = models.BooleanField(default=False)  # Indica si el usuario actúa como moderador
+    moderator = models.BooleanField(default=False)  # Indica si el usuario es moderador
     telefono = models.CharField(max_length=15, blank=True, validators=[telefono_validator])
     direccion = models.CharField(max_length=255, blank=True)
     fecha_nacimiento = models.DateField(null=True, blank=True)
 
-    # Este campo se actualiza automáticamente cada vez que se modifica el perfil.
+    # Fecha de última actualización del perfil
     fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     # Imagen de perfil subida por el usuario
     foto_perfil = models.ImageField(upload_to=avatar_path, null=True, blank=True)
 
     class Meta:
-        # Se añaden índices para optimizar búsquedas por género y rol de moderador.
+        # Índices para optimizar consultas
         indexes = [
             models.Index(fields=['moderator']),
             models.Index(fields=['genero']),
         ]
 
     def __str__(self):
+        # Representación legible del perfil en panel admin y logs
         return f'Perfil de {self.user.username}'
 
     # Validaciones adicionales del modelo
@@ -69,13 +67,13 @@ class Perfil(models.Model):
         super().clean()
 
         if self.fecha_nacimiento:
-            # La fecha de nacimiento no puede ser futura
+            # La fecha de nacimiento no puede estar en el futuro
             if self.fecha_nacimiento > date.today():
                 raise ValidationError({
                     'fecha_nacimiento': 'La fecha de nacimiento no puede estar en el futuro.'
                 })
 
-            # Se establece una edad mínima para el uso del sistema
+            # Validación de edad mínima
             min_age = 14
             edad = (date.today() - self.fecha_nacimiento).days // 365
 
@@ -86,7 +84,7 @@ class Perfil(models.Model):
 
     @property
     def edad(self):
-        # Cálculo dinámico de la edad en función de la fecha de nacimiento
+        # Cálculo dinámico de edad basado en la fecha de nacimiento
         if not self.fecha_nacimiento:
             return None
 
@@ -97,7 +95,7 @@ class Perfil(models.Model):
         )
 
 
-# Creación automática de un perfil asociado a cada nuevo usuario
+# Crea automáticamente un perfil para cada usuario nuevo
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user_profile(sender, instance, created, **kwargs):
     if created:
