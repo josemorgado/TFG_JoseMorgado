@@ -1,8 +1,9 @@
-# megusta/serializers.py
 from rest_framework import serializers
 from django.contrib.contenttypes.models import ContentType
 from .models import MeGusta
 
+
+# Serializador para exponer y validar 'me gusta'
 class MeGustaSerializer(serializers.ModelSerializer):
 
     content_object_text = serializers.SerializerMethodField(read_only=True)
@@ -23,11 +24,14 @@ class MeGustaSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['id', 'fecha_creacion']
 
+    # Devuelve un texto legible del objeto genérico asociado
     def get_content_object_text(self, obj):
         return str(obj.content_object) if obj.content_object else None
 
+    # Valida la combinación content_type + object_id
     def validate(self, attrs):
-        ct: ContentType = attrs.get('content_type')
+        # NOTA: validación conjunta igual que en el ejemplo de Distrito
+        ct = attrs.get('content_type')
         object_id = attrs.get('object_id')
 
         # Validar ContentType
@@ -35,8 +39,13 @@ class MeGustaSerializer(serializers.ModelSerializer):
         if not model_cls:
             raise serializers.ValidationError({'content_type': 'ContentType inválido.'})
 
-        # Validar existencia de la instancia asociada
+        # Validar object_id (existencia en ese modelo)
+        if object_id is None:
+            raise serializers.ValidationError({'object_id': 'Debe indicar un objeto válido.'})
+
         if not model_cls.objects.filter(pk=object_id).exists():
-            raise serializers.ValidationError({'object_id': 'El objeto asociado no existe para ese content_type.'})
+            raise serializers.ValidationError(
+                {'object_id': 'El objeto asociado no existe para ese ContentType.'}
+            )
 
         return attrs
