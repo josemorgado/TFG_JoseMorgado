@@ -8,7 +8,7 @@ from comentario.models import Comentario
 from comentario.serializers import ComentarioSerializer
 
 
-# GET /comentario/  → Listado de comentarios
+# GET /comentario/ — Listado de comentarios ordenados por fecha
 @api_view(['GET'])
 def comentario_list(request):
     qs = Comentario.objects.all().order_by('fecha_creacion')
@@ -16,55 +16,55 @@ def comentario_list(request):
     return Response(serializer.data)
 
 
-# GET /comentario/<pk>/ → Detalle de comentario
+# GET /comentario/<int:pk>/ — Detalle de un comentario por id
 @api_view(['GET'])
 def comentario_detail(request, pk):
-    comentario = get_object_or_404(Comentario, pk=pk)
+    comentario = get_object_or_404(Comentario, pk=pk)  # NOTA: devuelve 404 si no existe
     serializer = ComentarioSerializer(comentario)
     return Response(serializer.data)
 
 
-# GET /comentario/queja/<queja_id>/ → Comentarios por queja
+# GET /comentario/queja/<int:queja_id>/ — Comentarios asociados a una queja
 @api_view(['GET'])
 def comentarios_por_queja(request, queja_id):
-    qs = Comentario.objects.filter(queja_id=queja_id).order_by('fecha_creacion')
+    qs = Comentario.objects.filter(queja_id=queja_id).order_by('fecha_creacion')  # NOTA: mantiene orden cronológico
     serializer = ComentarioSerializer(qs, many=True)
     return Response(serializer.data)
 
 
-# GET /comentario/user/<user_id>/ → Comentarios por usuario
+# GET /comentario/user/<int:user_id>/ — Comentarios realizados por un usuario concreto
 @api_view(['GET'])
 def comentarios_por_usuario(request, user_id):
-    # Si quieres validar que el usuario exista:
-    get_object_or_404(User, pk=user_id)
+    get_object_or_404(User, pk=user_id)  # NOTA: valida la existencia del usuario antes de filtrar
     qs = Comentario.objects.filter(autor_id=user_id).order_by('fecha_creacion')
     serializer = ComentarioSerializer(qs, many=True)
     return Response(serializer.data)
 
 
-# POST /comentario/create/ → Crear comentario
+# POST /comentario/create/ — Crea un nuevo comentario
 @api_view(['POST'])
 def comentario_create(request):
-    serializer = ComentarioSerializer(data=request.data)
+    serializer = ComentarioSerializer(data=request.data)  # NOTA: incluye validaciones de contenido y coherencia del parent
     if serializer.is_valid():
-        comentario = serializer.save()
+        comentario = serializer.save()  # NOTA: persiste el comentario en la base de datos
         return Response(ComentarioSerializer(comentario).data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# PUT /comentario/<pk>/update/ → Actualizar comentario completo
+# PUT /comentario/<int:pk>/update/ — Actualización completa de un comentario
 @api_view(['PUT'])
 def comentario_update(request, pk):
-    comentario = get_object_or_404(Comentario, pk=pk)
-    serializer = ComentarioSerializer(comentario, data=request.data)
+    comentario = get_object_or_404(Comentario, pk=pk)  # NOTA: asegura existencia antes de actualizar
+    serializer = ComentarioSerializer(comentario, data=request.data)  # NOTA: actualización total (PUT)
     if serializer.is_valid():
         comentario = serializer.save()
         return Response(ComentarioSerializer(comentario).data)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-# DELETE /comentario/<pk>/delete/ → Borrar comentario
+
+# DELETE /comentario/<int:pk>/delete/ — Elimina un comentario
 @api_view(['DELETE'])
 def comentario_delete(request, pk):
-    comentario = get_object_or_404(Comentario, pk=pk)
-    comentario.delete()
+    comentario = get_object_or_404(Comentario, pk=pk)  # NOTA: devuelve 404 si no existe
+    comentario.delete()  # NOTA: elimina el comentario de la base de datos
     return Response(status=status.HTTP_204_NO_CONTENT)

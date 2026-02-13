@@ -10,11 +10,24 @@ from comentario.views import (
 )
 
 urlpatterns = [
-    path('', comentario_list),                                   # GET /comentario/
-    path('<int:pk>/', comentario_detail),                        # GET /comentario/<pk>/
-    path('queja/<int:queja_id>/', comentarios_por_queja),            # GET    /comentario/queja/<queja_id>/
-    path('user/<int:user_id>/', comentarios_por_usuario),         # GET    /comentario/user/<user_id>/
-    path('create/', comentario_create),                          # POST /comentario/create/
-    path('<int:pk>/update/', comentario_update),                 # PUT /comentario/<pk>/update/
-    path('<int:pk>/delete/', comentario_delete),                 # DELETE /comentario/<pk>/delete/
+    # GET               /comentarios/
+    path('', comentario_list),
+
+    # GET               /comentarios/<int:pk>/
+    path('<int:pk>/', comentario_detail),
+
+    # GET               /comentarios/queja/<int:queja_id>/
+    path('queja/<int:queja_id>/', comentarios_por_queja),
+
+    # GET               /comentarios/user/<int:user_id>/
+    path('user/<int:user_id>/', comentarios_por_usuario),
+
+    # POST              /comentarios/create/
+    path('create/', comentario_create),
+
+    # PUT               /comentarios/<int:pk>/update/
+    path('<int:pk>/update/', comentario_update),
+
+    # DELETE            /comentarios/<int:pk>/delete/
+    path('<int:pk>/delete/', comentario_delete),
 ]
