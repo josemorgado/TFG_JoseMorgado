@@ -3,54 +3,66 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from django.conf import settings
-
-# Create your models here.
 
 MAX_VIDEOS = 1
-# Funcion para definir la ruta de acceso al video
+
+
+# Ruta de almacenamiento para los videos
 def media_upload_to(instance, filename):
+    # Cada objeto guarda sus videos en una carpeta por tipo y su ID
     tipo = instance.content_type.model
     return f'media/{tipo}/{instance.object_id}/videos/{filename}'
 
+
 class Video(models.Model):
+    # Identificador principal
     id = models.BigAutoField(primary_key=True)
+
+    # Relación genérica hacia cualquier modelo
     content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     object_id = models.PositiveIntegerField()
     content_object = GenericForeignKey('content_type', 'object_id')
+
+    # Archivo de video subido
     video = models.FileField(upload_to=media_upload_to)
+
+    # Orden dentro del conjunto (aunque MAX_VIDEOS=1)
     orden = models.PositiveIntegerField(default=0)
+
+    # Fecha de creación del registro
     fecha_creacion = models.DateTimeField(auto_now_add=True)
-    
+
     class Meta:
         ordering = ['orden', 'fecha_creacion']
         indexes = [
             models.Index(fields=['content_type', 'object_id']),
         ]
         constraints = [
-            models.UniqueConstraint(fields=['content_type', 'object_id', 'orden'], name='unique_video_order_per_object')
+            # Un video por orden dentro del mismo objeto
+            models.UniqueConstraint(
+                fields=['content_type', 'object_id', 'orden'],
+                name='unique_video_order_per_object'
+            ),
         ]
-        
+
     def clean(self):
-        # Validar el numero maximo de videos por objeto
+        # Validar número máximo de videos por objeto (solo al crear)
         if self.pk is None:
             total = Video.objects.filter(
                 content_type=self.content_type,
                 object_id=self.object_id
             ).count()
+
             if total >= MAX_VIDEOS:
                 raise ValidationError(
-                    _(f'Solo se permiten un maximo de {MAX_VIDEOS} videos por objeto.')
+                    _(f'Solo se permiten un máximo de {MAX_VIDEOS} videos por objeto.')
                 )
-                
+
     def save(self, *args, **kwargs):
+        # Validaciones antes de guardar
         self.full_clean()
         super().save(*args, **kwargs)
-        
-    def __str__(self):
-        return f'Video {self.id} para {self.content_object} (Orden: {self.orden})'
-            
-    
 
-       
-    
+    def __str__(self):
+        # Representación legible
+        return f'Video {self.id} para {self.content_object} (Orden: {self.orden})'

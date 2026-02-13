@@ -1,4 +1,3 @@
-# video/views.py
 from rest_framework.decorators import api_view, parser_classes
 from rest_framework.response import Response
 from rest_framework import status
@@ -11,7 +10,7 @@ from .models import Video
 from .serializers import VideoSerializer
 
 
-# GET /videos/
+# GET /videos/ — Listado de videos ordenado por id descendente
 @api_view(['GET'])
 def video_list(request):
     qs = Video.objects.all().order_by('-id')
@@ -19,7 +18,7 @@ def video_list(request):
     return Response(serializer.data)
 
 
-# GET /videos/<pk>/
+# GET /videos/<int:pk>/ — Detalle de un video concreto
 @api_view(['GET'])
 def video_detail(request, pk):
     video = get_object_or_404(Video, pk=pk)
@@ -27,55 +26,41 @@ def video_detail(request, pk):
     return Response(serializer.data)
 
 
-# GET /videos/queja/<queja_id>/
+# GET /videos/queja/<int:queja_id>/ — Listado de videos por queja (orden por 'orden' asc.)
 @api_view(['GET'])
 def videos_por_queja(request, queja_id):
-    """
-    Ajusta 'app_label' y 'model' si tus nombres reales difieren.
-    En el ejemplo de imágenes usas: app_label='quejas', model='queja'
-    """
+    # Ajusta 'app_label' y 'model' si tus nombres reales difieren
     queja_ct = ContentType.objects.get(app_label='quejas', model='queja')
     qs = Video.objects.filter(content_type=queja_ct, object_id=queja_id).order_by('orden')
     serializer = VideoSerializer(qs, many=True)
     return Response(serializer.data)
 
 
-# GET /videos/comentario/<comentario_id>/
+# GET /videos/comentario/<int:comentario_id>/ — Listado de videos por comentario (orden por 'orden' asc.)
 @api_view(['GET'])
 def videos_por_comentario(request, comentario_id):
-    """
-    En tu ejemplo de imágenes usas: app_label='comentario', model='comentario'
-    Cambia aquí si tu app real se llama distinto (p.ej., 'comentarios').
-    """
+    # Cambia aquí si tu app real se llama distinto (p. ej., 'comentarios')
     comentario_ct = ContentType.objects.get(app_label='comentario', model='comentario')
     qs = Video.objects.filter(content_type=comentario_ct, object_id=comentario_id).order_by('orden')
     serializer = VideoSerializer(qs, many=True)
     return Response(serializer.data)
 
 
-# POST /videos/create/
+# POST /videos/create/ — Sube un video y asigna 'orden' automáticamente por objeto
 @api_view(['POST'])
 @parser_classes([MultiPartParser, FormParser])
 def video_create(request):
-    """
-    - Sube un video con Multipart/Form.
-    - Valida el content_object.
-    - Calcula 'orden' automáticamente (0..n) por cada objeto.
-    - Captura el ValidationError del modelo (MAX_VIDEOS).
-    """
+    # Valida payload multipart/form y existencia del objeto asociado
     serializer = VideoSerializer(data=request.data)
 
     if serializer.is_valid():
         content_type = serializer.validated_data['content_type']
         object_id = serializer.validated_data['object_id']
 
-        # Obtener los videos ya existentes del mismo objeto
-        qs = Video.objects.filter(
-            content_type=content_type,
-            object_id=object_id
-        )
+        # Obtener videos existentes del mismo objeto para calcular el siguiente 'orden'
+        qs = Video.objects.filter(content_type=content_type, object_id=object_id)
 
-        # Calcular el siguiente 'orden'
+        # Calcular el siguiente 'orden' (0 si no hay anteriores)
         if qs.exists():
             ultimo = qs.order_by('-orden').first()
             nuevo_orden = ultimo.orden + 1
@@ -83,22 +68,19 @@ def video_create(request):
             nuevo_orden = 0
 
         try:
-            # Guardar video aplicando el orden automático
+            # Guardar video con el 'orden' asignado
             video = serializer.save(orden=nuevo_orden)
         except DjangoValidationError as e:
-            # Por ejemplo, si se supera MAX_VIDEOS en clean()
-            return Response({'detail': e.message_dict if hasattr(e, 'message_dict') else e.messages},
-                            status=status.HTTP_400_BAD_REQUEST)
+            # Captura de ValidationError del modelo (por ejemplo, MAX_VIDEOS)
+            payload = {'detail': e.message_dict if hasattr(e, 'message_dict') else e.messages}
+            return Response(payload, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(
-            VideoSerializer(video).data,
-            status=status.HTTP_201_CREATED
-        )
+        return Response(VideoSerializer(video).data, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-# DELETE /videos/<pk>/delete/
+# DELETE /videos/<int:pk>/delete/ — Elimina un video
 @api_view(['DELETE'])
 def video_delete(request, pk):
     video = get_object_or_404(Video, pk=pk)
