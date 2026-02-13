@@ -26,6 +26,19 @@ telefono_validator = RegexValidator(
     message='El teléfono debe contener entre 7 y 15 dígitos, opcionalmente empezando por +.'
 )
 
+# Campos heredados de User:
+# - username
+# - password
+# - first_name
+# - last_name
+# - email
+# - is_staff
+# - is_active
+# - is_superuser
+# - last_login
+# - date_joined
+# - groups
+# - user_permissions
 
 class Perfil(models.Model):
 
