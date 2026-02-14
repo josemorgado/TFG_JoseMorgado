@@ -13,7 +13,7 @@ from .serializers import VideoSerializer
 # GET /videos/ — Listado de videos ordenado por id descendente
 @api_view(['GET'])
 def video_list(request):
-    qs = Video.objects.all().order_by('-id')
+    qs = Video.objects.all().order_by('id')
     serializer = VideoSerializer(qs, many=True)
     return Response(serializer.data)
 

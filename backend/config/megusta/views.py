@@ -11,7 +11,7 @@ from .serializers import MeGustaSerializer
 # GET /megusta/ — Listado de 'me gusta' ordenado por id descendente
 @api_view(['GET'])
 def megusta_list(request):
-    qs = MeGusta.objects.all().order_by('-id')
+    qs = MeGusta.objects.all().order_by('id')
     serializer = MeGustaSerializer(qs, many=True)
     return Response(serializer.data)
 

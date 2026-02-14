@@ -10,7 +10,7 @@ from distrito.serializers import DistritoSerializer
 # GET /distritos/ — Listado de distritos ordenado por id descendente
 @api_view(['GET'])
 def distrito_list(request):
-    qs = Distrito.objects.all().order_by('-id')
+    qs = Distrito.objects.all().order_by('id')
     serializer = DistritoSerializer(qs, many=True)
     return Response(serializer.data)
 

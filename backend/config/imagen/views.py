@@ -13,7 +13,7 @@ from .serializers import ImagenSerializer
 # GET /imagenes/ — Listado de imágenes ordenado por id descendente
 @api_view(['GET'])
 def imagen_list(request):
-    qs = Imagen.objects.all().order_by('-id')
+    qs = Imagen.objects.all().order_by('id')
     serializer = ImagenSerializer(qs, many=True)
     return Response(serializer.data)
 

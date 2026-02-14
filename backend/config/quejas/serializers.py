@@ -1,3 +1,5 @@
+import dis
+from webbrowser import get
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework.fields import SerializerMethodField
@@ -93,11 +95,13 @@ class QuejaSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         user = getattr(request, 'user', None)
 
-        # No se filtra por autor porque lo tenías comentado
-        if user and Queja.objects.filter(
-            titulo=data.get('titulo'),
-            distrito=data.get('distrito'),
-        ).exists():
+        titulo = data.get('titulo', getattr(self.instance, 'titulo', None))
+        distrito = data.get('distrito', getattr(self.instance, 'distrito', None))
+
+        qs = Queja.objects.filter(titulo__iexact=titulo, distrito=distrito)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
             raise serializers.ValidationError(
                 "Ya has presentado una queja con el mismo título en este distrito."
             )

@@ -3,6 +3,8 @@ import random
 from venv import create
 from django.core.management.base import BaseCommand
 from django.contrib.contenttypes.models import ContentType
+from django.db import connection
+from django.apps import apps
 from categoria.models import Categoria
 from distrito.models import Distrito
 from perfil.models import Perfil
@@ -20,6 +22,10 @@ from datetime import date
 
 class Command(BaseCommand):
     def handle(self, *args, **kwargs):
+        with connection.cursor() as cursor:
+            for model in apps.get_models():
+                table = model._meta.db_table
+                cursor.execute(f'TRUNCATE TABLE "{table}" RESTART IDENTITY CASCADE;')
 
         # Crear categorías de ejemplo
         categorias = [
@@ -343,11 +349,18 @@ class Command(BaseCommand):
             }
         ]
         created_count = 0
+
         for comentario_data in comentarios:
             queja = Queja.objects.get(titulo=comentario_data.pop("queja"))
             autor = User.objects.get(username=comentario_data.pop("autor"))
             parent_id = comentario_data.pop("parent")
-            parent = Comentario.objects.get(id=parent_id) if parent_id else None
+
+            parent = None
+            if parent_id:
+                try:
+                    parent = Comentario.objects.get(id=parent_id)
+                except Comentario.DoesNotExist:
+                    parent = None  # el padre no existe, seguimos sin romper
 
             comentario, created = Comentario.objects.get_or_create(
                 queja=queja,
@@ -355,9 +368,13 @@ class Command(BaseCommand):
                 contenido=comentario_data["contenido"],
                 parent=parent
             )
+
             if created:
                 created_count += 1
-        self.stdout.write(self.style.SUCCESS(f'{created_count} Comentarios de ejemplo creados exitosamente.'))
+
+        self.stdout.write(
+            self.style.SUCCESS(f'{created_count} Comentarios de ejemplo creados exitosamente.')
+        )
 
         # Crear 'me gusta' de ejemplo
         megustas = [

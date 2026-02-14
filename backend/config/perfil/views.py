@@ -18,7 +18,7 @@ User = get_user_model()
 @api_view(['GET'])
 def usuario_list(request):
     # Cargamos el perfil junto con el usuario para evitar N+1
-    qs = User.objects.select_related('perfil').all().order_by('-id')
+    qs = User.objects.select_related('perfil').all().order_by('id')
     serializer = UserPerfilSerializer(qs, many=True, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
