@@ -11,20 +11,20 @@ from .views import (
 
 urlpatterns = [
     # GET               /imagenes/
-    path('', imagen_list),
+    path('', imagen_list, name='imagen-list'),
 
     # GET               /imagenes/<int:pk>/
-    path('<int:pk>/', imagen_detail),
+    path('<int:pk>/', imagen_detail, name='imagen-detail'),
 
     # GET               /imagenes/queja/<int:queja_id>/
-    path('queja/<int:queja_id>/', imagenes_por_queja),
+    path('queja/<int:queja_id>/', imagenes_por_queja, name='imagenes-por-queja'),
 
     # GET               /imagenes/comentario/<int:comentario_id>/
-    path('comentario/<int:comentario_id>/', imagenes_por_comentario),
+    path('comentario/<int:comentario_id>/', imagenes_por_comentario, name='imagenes-por-comentario'),
 
     # POST              /imagenes/create/
-    path('create/', imagen_create),
+    path('create/', imagen_create, name='imagen-create'),
 
     # DELETE            /imagenes/<int:pk>/delete/
-    path('<int:pk>/delete/', imagen_delete),
+    path('<int:pk>/delete/', imagen_delete, name='imagen-delete'),
 ]

@@ -9,17 +9,17 @@ from distrito.views import (
 
 urlpatterns = [
     # GET               /distritos/
-    path('', distrito_list),
+    path('', distrito_list, name='distrito-list'),
 
     # GET               /distritos/<int:pk>/
-    path('<int:pk>/', distrito_detail),
+    path('<int:pk>/', distrito_detail, name='distrito-detail'),
 
     # POST              /distritos/create/
-    path('create/', distrito_create),
+    path('create/', distrito_create, name='distrito-create'),
 
     # PUT               /distritos/<int:pk>/update/
-    path('<int:pk>/update/', distrito_update),
+    path('<int:pk>/update/', distrito_update, name='distrito-update'),
 
     # DELETE            /distritos/<int:pk>/delete/
-    path('<int:pk>/delete/', distrito_delete),
+    path('<int:pk>/delete/', distrito_delete, name='distrito-delete'),
 ]
