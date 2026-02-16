@@ -78,7 +78,7 @@ class Command(BaseCommand):
             {
                 "username": "primo",
                 "email": "primo@test.com",
-                "password": "Password123",
+                "password": "1234",
                 "first_name": "Primo",
                 "last_name": "Morgado",
                 "perfil": {
@@ -93,7 +93,7 @@ class Command(BaseCommand):
             {
                 "username": "mano",
                 "email": "mano@test.com",
-                "password": "Password123",
+                "password": "1234",
                 "first_name": "Mano",
                 "last_name": "Prudencio",
                 "perfil": {

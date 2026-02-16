@@ -1,15 +1,19 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.contrib.contenttypes.models import ContentType
-
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from core.permissions import IsAuthorOrModerator, IsModerator
 from .models import MeGusta
 from .serializers import MeGustaSerializer
 
 
 # GET /megusta/ — Listado de 'me gusta' ordenado por id descendente
 @api_view(['GET'])
+@authentication_classes([])  # Sin autenticación
+@permission_classes([])  # Cualquiera puede acceder
 def megusta_list(request):
     qs = MeGusta.objects.all().order_by('id')
     serializer = MeGustaSerializer(qs, many=True)
@@ -18,6 +22,8 @@ def megusta_list(request):
 
 # GET /megusta/<int:pk>/ — Detalle de un 'me gusta' concreto
 @api_view(['GET'])
+@authentication_classes([])  # Sin autenticación
+@permission_classes([])  # Cualquiera puede acceder
 def megusta_detail(request, pk):
     mg = get_object_or_404(MeGusta, pk=pk)  # devuelve 404 si no existe
     serializer = MeGustaSerializer(mg)
@@ -26,6 +32,8 @@ def megusta_detail(request, pk):
 
 # GET /megusta/queja/<int:queja_id>/ — Listado por queja
 @api_view(['GET'])
+@authentication_classes([])  # Sin autenticación
+@permission_classes([])  # Cualquiera puede acceder
 def megusta_por_queja(request, queja_id):
     ct = ContentType.objects.get(app_label='quejas', model='queja')
     qs = MeGusta.objects.filter(content_type=ct, object_id=queja_id)
@@ -35,6 +43,8 @@ def megusta_por_queja(request, queja_id):
 
 # GET /megusta/comentario/<int:comentario_id>/ — Listado por comentario
 @api_view(['GET'])
+@authentication_classes([])  # Sin autenticación
+@permission_classes([])  # Cualquiera puede acceder
 def megusta_por_comentario(request, comentario_id):
     ct = ContentType.objects.get(app_label='comentario', model='comentario')
     qs = MeGusta.objects.filter(content_type=ct, object_id=comentario_id)
@@ -45,6 +55,8 @@ def megusta_por_comentario(request, comentario_id):
 # POST /megusta/toggle/ — Alterna like para usuario autenticado sobre una queja o comentario
 # NOTA: necesita testing tras implementar autenticación de usuarios
 @api_view(['POST'])
+@authentication_classes([JWTAuthentication])  # Autenticación JWT
+@permission_classes([IsAuthenticated])  # Solo usuarios autenticados pueden dar 'me gusta'
 def megusta_toggle(request):
     user = request.user
     if not user or not user.is_authenticated:
@@ -72,6 +84,8 @@ def megusta_toggle(request):
 
 # DELETE /megusta/<int:pk>/delete/ — Elimina un 'me gusta'
 @api_view(['DELETE'])
+@authentication_classes([JWTAuthentication])  # Autenticación JWT
+@permission_classes([IsAuthenticated, IsAuthorOrModerator])  # Solo usuarios autenticados pueden eliminar 'me gusta'
 def megusta_delete(request, pk):
     mg = get_object_or_404(MeGusta, pk=pk)
     mg.delete()

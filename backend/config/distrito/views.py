@@ -1,6 +1,9 @@
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from core.permissions import IsAuthorOrModerator, IsModerator
 from django.shortcuts import get_object_or_404
 
 from distrito.models import Distrito
@@ -9,6 +12,8 @@ from distrito.serializers import DistritoSerializer
 
 # GET /distritos/ — Listado de distritos ordenado por id descendente
 @api_view(['GET'])
+@authentication_classes([])  # Sin autenticación
+@permission_classes([])  # Cualquiera puede acceder
 def distrito_list(request):
     qs = Distrito.objects.all().order_by('id')
     serializer = DistritoSerializer(qs, many=True)
@@ -17,6 +22,8 @@ def distrito_list(request):
 
 # GET /distritos/<int:pk>/ — Detalle de un distrito concreto
 @api_view(['GET'])
+@authentication_classes([])  # Sin autenticación
+@permission_classes([])  # Cualquiera puede acceder
 def distrito_detail(request, pk):
     distrito = get_object_or_404(Distrito, pk=pk)  # NOTA: devuelve 404 si no existe
     serializer = DistritoSerializer(distrito)
@@ -25,6 +32,8 @@ def distrito_detail(request, pk):
 
 # POST /distritos/create/ — Crear un nuevo distrito
 @api_view(['POST'])
+@authentication_classes([JWTAuthentication])  # Autenticación JWT
+@permission_classes([IsAuthenticated])  # Solo usuarios autenticados pueden crear distritos
 def distrito_create(request):
     serializer = DistritoSerializer(data=request.data)  # NOTA: incluye validaciones de nombre y código
     if serializer.is_valid():
@@ -35,6 +44,8 @@ def distrito_create(request):
 
 # PUT /distritos/<int:pk>/update/ — Actualización completa del distrito
 @api_view(['PUT'])
+@authentication_classes([JWTAuthentication])  # Autenticación JWT
+@permission_classes([IsAuthenticated, IsAuthorOrModerator])  # Solo usuarios autenticados pueden actualizar distritos
 def distrito_update(request, pk):
     distrito = get_object_or_404(Distrito, pk=pk)
     serializer = DistritoSerializer(distrito, data=request.data)  # NOTA: actualización total (PUT)
@@ -46,6 +57,8 @@ def distrito_update(request, pk):
 
 # DELETE /distritos/<int:pk>/delete/ — Elimina un distrito
 @api_view(['DELETE'])
+@authentication_classes([JWTAuthentication])  # Autenticación JWT
+@permission_classes([IsAuthenticated, IsAuthorOrModerator])  # Solo usuarios autenticados pueden eliminar distritos
 def distrito_delete(request, pk):
     distrito = get_object_or_404(Distrito, pk=pk)
     distrito.delete()  # NOTA: elimina definitivamente el distrito

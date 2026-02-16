@@ -1,5 +1,7 @@
+from tokenize import Token
 from django.contrib import admin
 from django.urls import include, path
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 # Rutas globales del proyecto. Cada prefijo /api/... delega en el archivo urls.py de su app correspondiente.
 urlpatterns = [
@@ -29,4 +31,12 @@ urlpatterns = [
 
     # API de usuarios y perfiles.
     path('api/usuarios/', include('perfil.urls')),
+
+    # Endpoint para obtener el par de tokens JWT (access + refresh)
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+
+    # Endpoint para renovar el token de acceso usando el refresh token
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
+
 ]

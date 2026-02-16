@@ -1,15 +1,22 @@
 # quejas/views.py
+from re import U
 from django.shortcuts import get_object_or_404
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes, authentication_classes, throttle_classes
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework import status
-
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from core.permissions import IsModerator, IsAuthorOrModerator
 from quejas.serializers import QuejaSerializer
 from quejas.models import Queja
+from django.contrib.auth import get_user_model
 
+User = get_user_model()
 
 # GET /quejas/ → Lista todas las quejas
 @api_view(['GET'])
+@authentication_classes([])  # Sin autenticación
+@permission_classes([AllowAny])  # Cualquiera puede acceder
 def quejas_list(request):
     qs = Queja.objects.all().order_by('id')
     serializer = QuejaSerializer(qs, many=True)  # salida: no hace falta context
@@ -18,14 +25,37 @@ def quejas_list(request):
 
 # GET /quejas/<int:pk>/ → Detalle de una queja
 @api_view(['GET'])
+@authentication_classes([])  # Sin autenticación
+@permission_classes([AllowAny])  # Cualquiera puede acceder
 def queja_detail(request, pk):
     queja = get_object_or_404(Queja, pk=pk)
     serializer = QuejaSerializer(queja)  # salida: no hace falta context
     return Response(serializer.data)
 
 
+# GET /quejas/categoria/<int:categoria_id>/ → Lista quejas filtradas por categoría
+@api_view(['GET'])
+@authentication_classes([])  # Sin autenticación
+@permission_classes([AllowAny])  # Cualquiera puede acceder
+def quejas_por_categoria(request, categoria_id):
+    qs = Queja.objects.filter(categoria_id=categoria_id).order_by('id')
+    serializer = QuejaSerializer(qs, many=True)
+    return Response(serializer.data)
+
+
+# GET /quejas/distrito/<int:distrito_id>/ → Lista quejas filtradas por distrito
+@api_view(['GET'])
+@authentication_classes([])  # Sin autenticación
+@permission_classes([AllowAny])  # Cualquiera puede acceder
+def quejas_por_distrito(request, distrito_id):
+    qs = Queja.objects.filter(distrito_id=distrito_id).order_by('id')
+    serializer = QuejaSerializer(qs, many=True)
+    return Response(serializer.data)
+
+
 # POST /quejas/create/ → Crea una queja nueva (valida con serializer)
 @api_view(['POST'])
+@permission_classes([IsAuthenticated])  # Solo usuarios autenticados pueden crear quejas
 def queja_create(request):
     # El serializer usa request en create/validate → pasar context
     serializer = QuejaSerializer(data=request.data, context={'request': request})
@@ -37,6 +67,7 @@ def queja_create(request):
 
 # PUT /quejas/<int:pk>/update/ → Reemplaza completamente una queja
 @api_view(['PUT'])
+@permission_classes([IsAuthenticated, IsAuthorOrModerator])  # Solo usuarios autenticados pueden actualizar quejas
 def queja_update(request, pk):
     queja = get_object_or_404(Queja, pk=pk)
     # PUT = actualización total → partial=False
@@ -49,30 +80,18 @@ def queja_update(request, pk):
 
 # DELETE /quejas/<int:pk>/delete/ → Elimina una queja por su identificador
 @api_view(['DELETE'])
+@permission_classes([IsAuthenticated])  # Solo usuarios autenticados pueden eliminar quejas
 def queja_delete(request, pk):
     queja = get_object_or_404(Queja, pk=pk)
     queja.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-# GET /quejas/categoria/<int:categoria_id>/ → Lista quejas filtradas por categoría
-@api_view(['GET'])
-def quejas_por_categoria(request, categoria_id):
-    qs = Queja.objects.filter(categoria_id=categoria_id).order_by('id')
-    serializer = QuejaSerializer(qs, many=True)
-    return Response(serializer.data)
-
-
-# GET /quejas/distrito/<int:distrito_id>/ → Lista quejas filtradas por distrito
-@api_view(['GET'])
-def quejas_por_distrito(request, distrito_id):
-    qs = Queja.objects.filter(distrito_id=distrito_id).order_by('id')
-    serializer = QuejaSerializer(qs, many=True)
-    return Response(serializer.data)
-
 
 # GET /quejas/autor/<int:autor_id>/ → Lista quejas creadas por un usuario (autor)
 @api_view(['GET'])
+@authentication_classes([])  # Sin autenticación
+@permission_classes([AllowAny])  # Cualquiera puede acceder
 def quejas_por_autor(request, autor_id):
     qs = Queja.objects.filter(autor_id=autor_id).order_by('id')
     serializer = QuejaSerializer(qs, many=True)
@@ -81,6 +100,8 @@ def quejas_por_autor(request, autor_id):
 
 # PATCH /quejas/<int:pk>/estado/ → Cambia SOLO el estado de la queja
 @api_view(['PATCH'])
+@authentication_classes([JWTAuthentication])  # Autenticación JWT
+@permission_classes([IsAuthenticated,IsModerator])  # Solo moderadores pueden cambiar el estado de las quejas
 def queja_cambiar_estado(request, pk):
     # Espera un body JSON con {"estado": "PEN" | "ENP" | "RES" | "REC"}
     queja = get_object_or_404(Queja, pk=pk)
