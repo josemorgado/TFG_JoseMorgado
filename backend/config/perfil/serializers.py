@@ -10,6 +10,10 @@ User = get_user_model()
 
 # Serializador del Perfil del usuario
 class PerfilSerializer(serializers.ModelSerializer):
+    """
+    Serializador del perfil de usuario.
+    Expone campos del perfil y valida la fecha de nacimiento (no futura y edad mínima).
+    """
     edad = serializers.IntegerField(read_only=True)  # edad calculada desde el modelo
 
     class Meta:
@@ -26,6 +30,17 @@ class PerfilSerializer(serializers.ModelSerializer):
             'edad',
         ]
         read_only_fields = ['fecha_actualizacion', 'edad']
+        extra_kwargs = {
+            "genero": {"help_text": "Género del usuario (M, F u O)."},
+            "biografia": {"help_text": "Descripción o biografía breve del usuario."},
+            "moderator": {"help_text": "Indica si el usuario tiene rol de moderador."},
+            "telefono": {"help_text": "Teléfono en formato internacional (+NN...)."},
+            "direccion": {"help_text": "Dirección postal o de contacto."},
+            "fecha_nacimiento": {"help_text": "Fecha de nacimiento del usuario (YYYY-MM-DD)."},
+            "foto_perfil": {"help_text": "Archivo de imagen para el avatar (multipart/form-data)."},
+            "edad": {"help_text": "Edad calculada en años (solo lectura)."},
+            "fecha_actualizacion": {"help_text": "Última fecha/hora de actualización (solo lectura)."},
+        }
 
     # Validación de fecha_nacimiento
     def validate_fecha_nacimiento(self, value):
@@ -71,10 +86,23 @@ class UserLiteSerializer(serializers.ModelSerializer):
             'last_login',
         ]
         read_only_fields = ['id', 'date_joined', 'last_login']
+        extra_kwargs = {
+            "username": {"help_text": "Nombre único de usuario."},
+            "email": {"help_text": "Correo electrónico del usuario."},
+            "first_name": {"help_text": "Nombre."},
+            "last_name": {"help_text": "Apellidos."},
+            "is_active": {"help_text": "Indica si la cuenta está activa."},
+            "date_joined": {"help_text": "Fecha de alta (solo lectura)."},
+            "last_login": {"help_text": "Último acceso (solo lectura)."},
+        }
 
 
 # Serializador completo con perfil embebido
 class UserPerfilSerializer(serializers.ModelSerializer):
+    """
+    Serializador compuesto para crear/actualizar el usuario y su perfil embebido
+    en una sola operación. Acepta multipart/form-data para foto de perfil.
+    """
     perfil = PerfilSerializer(required=True)  # perfil es obligatorio
     password = serializers.CharField(write_only=True, required=True)
 
@@ -93,6 +121,17 @@ class UserPerfilSerializer(serializers.ModelSerializer):
             'last_login',
         ]
         read_only_fields = ['id', 'date_joined', 'last_login']
+        extra_kwargs = {
+            "username": {"help_text": "Nombre único de usuario."},
+            "email": {"help_text": "Correo electrónico único del usuario."},
+            "first_name": {"help_text": "Nombre."},
+            "last_name": {"help_text": "Apellidos."},
+            "password": {"help_text": "Contraseña del usuario (solo escritura)."},
+            "is_active": {"help_text": "Indica si la cuenta está activa."},
+            "perfil": {"help_text": "Datos del perfil asociado al usuario."},
+            "date_joined": {"help_text": "Fecha de alta (solo lectura)."},
+            "last_login": {"help_text": "Último acceso (solo lectura)."},
+        }
 
     # Validación opcional de email bien formado (refuerzo)
     def validate_email(self, value):
