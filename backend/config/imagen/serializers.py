@@ -3,11 +3,21 @@ from rest_framework import serializers
 from django.contrib.contenttypes.models import ContentType
 from .models import Imagen
 
-# Serializador para exponer y validar imágenes asociadas genéricamente.
+
 class ImagenSerializer(serializers.ModelSerializer):
-    content_object_text = serializers.SerializerMethodField(read_only=True)
+    """
+    Serializador para el modelo Imagen.
+    Valida la correspondencia entre `content_type` y `object_id`,
+    y expone una representación legible del objeto relacionado.
+    """
+
+    content_object_text = serializers.SerializerMethodField(
+        read_only=True,
+        help_text="Representación textual del objeto asociado (queja/comentario)."
+    )
     content_type = serializers.PrimaryKeyRelatedField(
-        queryset=ContentType.objects.all()
+        queryset=ContentType.objects.all(),
+        help_text="ContentType del objeto asociado (p.ej., quejas.queja o comentario.comentario)."
     )
 
     class Meta:
@@ -22,18 +32,34 @@ class ImagenSerializer(serializers.ModelSerializer):
             'content_object_text',
         ]
         read_only_fields = ['id', 'fecha_creacion', 'orden']
+        extra_kwargs = {
+            "object_id": {
+                "help_text": "ID del objeto (queja/comentario) dentro del modelo indicado en content_type."
+            },
+            "imagen": {
+                "help_text": "Archivo de imagen (multipart/form-data)."
+            },
+            "orden": {
+                "help_text": "Posición de la imagen dentro del objeto. Se asigna automáticamente."
+            }
+        }
 
-    # Devuelve el texto legible del objeto genérico asociado
     def get_content_object_text(self, obj):
+        """Devuelve el texto legible del objeto genérico asociado."""
         return str(obj.content_object) if obj.content_object else None
 
-    # Valida que el content_type sea válido y el object_id exista para ese modelo
     def validate(self, attrs):
-        # Nota: se valida en conjunto para garantizar la correspondencia CT + object_id
+        """
+        Valida que:
+        - content_type sea válido y resoluble a un modelo.
+        - object_id sea entero positivo.
+        - exista un objeto con ese id para el modelo indicado.
+        También soporta updates completando desde la instancia.
+        """
         ct = attrs.get('content_type')
         object_id = attrs.get('object_id')
 
-        # Si es update, completar con valores de instancia cuando falten en attrs
+        # En update, completamos con los valores actuales si no vienen en attrs
         if self.instance is not None:
             ct = ct or getattr(self.instance, 'content_type', None)
             object_id = object_id if object_id is not None else getattr(self.instance, 'object_id', None)
@@ -43,7 +69,7 @@ class ImagenSerializer(serializers.ModelSerializer):
         if not model_cls:
             raise serializers.ValidationError({'content_type': 'ContentType inválido.'})
 
-        # Validación de object_id (entero positivo y existencia)
+        # Validación de object_id
         if object_id in (None, ''):
             raise serializers.ValidationError({'object_id': 'Debe indicar el identificador del objeto.'})
         if not isinstance(object_id, int) or object_id <= 0:
@@ -53,9 +79,8 @@ class ImagenSerializer(serializers.ModelSerializer):
 
         return attrs
 
-    # Valida que se suministre un archivo de imagen válido
     def validate_imagen(self, value):
-        # Nota: DRF y el campo ImageField ya validan el archivo; se añade mensaje claro
+        """Valida que se suministre un archivo de imagen válido."""
         if value is None:
             raise serializers.ValidationError('Debe proporcionar un archivo de imagen.')
         return value
