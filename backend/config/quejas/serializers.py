@@ -8,22 +8,31 @@ from quejas.models import Queja
 
 
 class QuejaSerializer(serializers.ModelSerializer):
+    """
+    Serializador para el modelo Queja.
+    Mantiene todas las validaciones y lógica original, añadiendo
+    descripciones para mejorar la documentación en Swagger.
+    """
+
     # Campos de solo lectura derivados
-    categoria_nombre = SerializerMethodField(read_only=True)
-    distrito_nombre = SerializerMethodField(read_only=True)
-    autor_nombre = SerializerMethodField(read_only=True)
+    categoria_nombre = SerializerMethodField(read_only=True, help_text="Nombre legible de la categoría.")
+    distrito_nombre  = SerializerMethodField(read_only=True, help_text="Nombre legible del distrito.")
+    autor_nombre     = SerializerMethodField(read_only=True, help_text="Nombre completo o username del autor.")
 
     # Campos relacionados (en producción el autor vendrá del request)
     autor = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all()
+        queryset=User.objects.all(),
+        help_text="ID del usuario autor de la queja (se asigna automáticamente en producción)."
     )  # Quitar esta línea en producción
 
     # Querysets dinámicos para evitar import circular
     categoria = serializers.PrimaryKeyRelatedField(
-        queryset=Queja._meta.get_field('categoria').remote_field.model.objects.all()
+        queryset=Queja._meta.get_field('categoria').remote_field.model.objects.all(),
+        help_text="ID de la categoría asociada."
     )
     distrito = serializers.PrimaryKeyRelatedField(
-        queryset=Queja._meta.get_field('distrito').remote_field.model.objects.all()
+        queryset=Queja._meta.get_field('distrito').remote_field.model.objects.all(),
+        help_text="ID del distrito asociado."
     )
 
     class Meta:
@@ -56,6 +65,26 @@ class QuejaSerializer(serializers.ModelSerializer):
             'num_comentarios',
             'num_comentarios_top_level',
         ]
+        extra_kwargs = {
+            "titulo": {
+                "help_text": "Título breve y descriptivo (5–200 caracteres)."
+            },
+            "descripcion": {
+                "help_text": "Descripción detallada de la queja (10–5000 caracteres)."
+            },
+            "ubicacion": {
+                "help_text": "Ubicación relacionada con la incidencia (opcional)."
+            },
+            "estado": {
+                "help_text": "Estado de la queja (solo lectura)."
+            },
+            "fecha_creacion": {
+                "help_text": "Fecha y hora de creación (solo lectura)."
+            },
+            "fecha_actualizacion": {
+                "help_text": "Fecha y hora de última modificación (solo lectura)."
+            },
+        }
 
     # CREACIÓN DE QUEJA
     def create(self, validated_data):

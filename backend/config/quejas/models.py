@@ -14,11 +14,19 @@ class EstadoQueja(models.TextChoices):
 
 class Queja(models.Model):
     # Identificador principal
-    id = models.AutoField(primary_key=True)
+    id = models.AutoField(
+        primary_key=True,
+        help_text="Identificador único de la queja."
+    )
 
     # Datos principales
-    titulo = models.CharField(max_length=200)
-    descripcion = models.TextField()
+    titulo = models.CharField(
+        max_length=200,
+        help_text="Título breve y descriptivo de la queja (máx. 200 caracteres)."
+    )
+    descripcion = models.TextField(
+        help_text="Descripción detallada de la incidencia."
+    )
 
     # Relaciones
     categoria = models.ForeignKey(
@@ -27,6 +35,7 @@ class Queja(models.Model):
         related_name='quejas',
         null=False,
         blank=False,
+        help_text="Categoría a la que pertenece la queja."
     )
     distrito = models.ForeignKey(
         'distrito.Distrito',
@@ -34,6 +43,7 @@ class Queja(models.Model):
         related_name='quejas',
         null=False,
         blank=False,
+        help_text="Distrito asociado a la queja."
     )
 
     # Estado con choices (longitud 3 para los códigos PEN/ENP/RES/REC)
@@ -41,17 +51,33 @@ class Queja(models.Model):
         max_length=3,
         choices=EstadoQueja.choices,
         default=EstadoQueja.PENDIENTE,
+        help_text="Estado actual de la queja (PEN/ENP/RES/REC)."
     )
 
     # Ubicación opcional
-    ubicacion = models.CharField(max_length=255, blank=True, null=True)
+    ubicacion = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Ubicación opcional relacionada con la queja."
+    )
 
     # Autor de la queja
-    autor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    autor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        help_text="Usuario autor que creó la queja."
+    )
 
     # Auditoría
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-    fecha_actualizacion = models.DateTimeField(auto_now=True)
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Fecha y hora de creación de la queja."
+    )
+    fecha_actualizacion = models.DateTimeField(
+        auto_now=True,
+        help_text="Fecha y hora de la última actualización."
+    )
 
     class Meta:
         # Orden por creación descendente
@@ -64,6 +90,8 @@ class Queja(models.Model):
             models.Index(fields=['distrito']),
             models.Index(fields=['-fecha_creacion']),
         ]
+        verbose_name = "Queja"
+        verbose_name_plural = "Quejas"
 
     def __str__(self):
         # Representación corta y legible

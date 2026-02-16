@@ -11,9 +11,24 @@ from quejas.serializers import QuejaSerializer
 from quejas.models import Queja
 from django.contrib.auth import get_user_model
 
+from drf_spectacular.utils import (
+    extend_schema,
+    OpenApiParameter,
+    OpenApiResponse,
+    OpenApiExample
+)
+
 User = get_user_model()
 
 # GET /quejas/ → Lista todas las quejas
+@extend_schema(
+    summary="Listar quejas",
+    description="Devuelve el listado completo de quejas ordenadas por ID ascendente.",
+    tags=["Quejas"],
+    responses={
+        200: OpenApiResponse(response=QuejaSerializer(many=True)),
+    }
+)
 @api_view(['GET'])
 @authentication_classes([])  # Sin autenticación
 @permission_classes([AllowAny])  # Cualquiera puede acceder
@@ -24,6 +39,24 @@ def quejas_list(request):
 
 
 # GET /quejas/<int:pk>/ → Detalle de una queja
+@extend_schema(
+    summary="Obtener detalle de una queja",
+    description="Retorna los datos completos de una queja a partir de su ID.",
+    tags=["Quejas"],
+    parameters=[
+        OpenApiParameter(
+            name="pk",
+            type=int,
+            description="ID de la queja",
+            required=True,
+            location=OpenApiParameter.PATH
+        )
+    ],
+    responses={
+        200: OpenApiResponse(response=QuejaSerializer),
+        404: OpenApiResponse(description="Queja no encontrada"),
+    }
+)
 @api_view(['GET'])
 @authentication_classes([])  # Sin autenticación
 @permission_classes([AllowAny])  # Cualquiera puede acceder
@@ -34,6 +67,23 @@ def queja_detail(request, pk):
 
 
 # GET /quejas/categoria/<int:categoria_id>/ → Lista quejas filtradas por categoría
+@extend_schema(
+    summary="Listar quejas por categoría",
+    description="Devuelve las quejas asociadas a una categoría concreta.",
+    tags=["Quejas"],
+    parameters=[
+        OpenApiParameter(
+            name="categoria_id",
+            type=int,
+            description="ID de la categoría",
+            required=True,
+            location=OpenApiParameter.PATH
+        )
+    ],
+    responses={
+        200: OpenApiResponse(response=QuejaSerializer(many=True)),
+    }
+)
 @api_view(['GET'])
 @authentication_classes([])  # Sin autenticación
 @permission_classes([AllowAny])  # Cualquiera puede acceder
@@ -44,6 +94,23 @@ def quejas_por_categoria(request, categoria_id):
 
 
 # GET /quejas/distrito/<int:distrito_id>/ → Lista quejas filtradas por distrito
+@extend_schema(
+    summary="Listar quejas por distrito",
+    description="Devuelve las quejas asociadas a un distrito concreto.",
+    tags=["Quejas"],
+    parameters=[
+        OpenApiParameter(
+            name="distrito_id",
+            type=int,
+            description="ID del distrito",
+            required=True,
+            location=OpenApiParameter.PATH
+        )
+    ],
+    responses={
+        200: OpenApiResponse(response=QuejaSerializer(many=True)),
+    }
+)
 @api_view(['GET'])
 @authentication_classes([])  # Sin autenticación
 @permission_classes([AllowAny])  # Cualquiera puede acceder
@@ -54,6 +121,29 @@ def quejas_por_distrito(request, distrito_id):
 
 
 # POST /quejas/create/ → Crea una queja nueva (valida con serializer)
+@extend_schema(
+    summary="Crear queja",
+    description="Crea una nueva queja utilizando el serializer para validación.",
+    tags=["Quejas"],
+    request=QuejaSerializer,
+    responses={
+        201: OpenApiResponse(response=QuejaSerializer),
+        400: OpenApiResponse(description="Datos inválidos"),
+        401: OpenApiResponse(description="No autenticado"),
+    },
+    examples=[
+        OpenApiExample(
+            "Ejemplo de creación",
+            value={
+                "titulo": "Acera en mal estado",
+                "descripcion": "Hay losas sueltas en la calle Mayor.",
+                "categoria": 3,
+                "distrito": 1
+            },
+            request_only=True
+        )
+    ]
+)
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])  # Solo usuarios autenticados pueden crear quejas
 def queja_create(request):
@@ -66,6 +156,28 @@ def queja_create(request):
 
 
 # PUT /quejas/<int:pk>/update/ → Reemplaza completamente una queja
+@extend_schema(
+    summary="Actualizar queja (completo)",
+    description="Actualiza completamente los datos de una queja existente.",
+    tags=["Quejas"],
+    request=QuejaSerializer,
+    parameters=[
+        OpenApiParameter(
+            name="pk",
+            type=int,
+            description="ID de la queja",
+            required=True,
+            location=OpenApiParameter.PATH
+        )
+    ],
+    responses={
+        200: OpenApiResponse(response=QuejaSerializer),
+        400: OpenApiResponse(description="Datos inválidos"),
+        401: OpenApiResponse(description="No autenticado"),
+        403: OpenApiResponse(description="Permisos insuficientes"),
+        404: OpenApiResponse(description="Queja no encontrada"),
+    }
+)
 @api_view(['PUT'])
 @permission_classes([IsAuthenticated, IsAuthorOrModerator])  # Solo usuarios autenticados pueden actualizar quejas
 def queja_update(request, pk):
@@ -79,6 +191,26 @@ def queja_update(request, pk):
 
 
 # DELETE /quejas/<int:pk>/delete/ → Elimina una queja por su identificador
+@extend_schema(
+    summary="Eliminar queja",
+    description="Elimina una queja por su ID.",
+    tags=["Quejas"],
+    parameters=[
+        OpenApiParameter(
+            name="pk",
+            type=int,
+            description="ID de la queja",
+            required=True,
+            location=OpenApiParameter.PATH
+        )
+    ],
+    responses={
+        204: OpenApiResponse(description="Queja eliminada"),
+        401: OpenApiResponse(description="No autenticado"),
+        403: OpenApiResponse(description="Permisos insuficientes"),
+        404: OpenApiResponse(description="Queja no encontrada"),
+    }
+)
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])  # Solo usuarios autenticados pueden eliminar quejas
 def queja_delete(request, pk):
@@ -87,8 +219,24 @@ def queja_delete(request, pk):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-
 # GET /quejas/autor/<int:autor_id>/ → Lista quejas creadas por un usuario (autor)
+@extend_schema(
+    summary="Listar quejas por autor",
+    description="Devuelve las quejas creadas por un usuario concreto.",
+    tags=["Quejas"],
+    parameters=[
+        OpenApiParameter(
+            name="autor_id",
+            type=int,
+            description="ID del usuario autor de la queja",
+            required=True,
+            location=OpenApiParameter.PATH
+        )
+    ],
+    responses={
+        200: OpenApiResponse(response=QuejaSerializer(many=True)),
+    }
+)
 @api_view(['GET'])
 @authentication_classes([])  # Sin autenticación
 @permission_classes([AllowAny])  # Cualquiera puede acceder
@@ -99,9 +247,41 @@ def quejas_por_autor(request, autor_id):
 
 
 # PATCH /quejas/<int:pk>/estado/ → Cambia SOLO el estado de la queja
+@extend_schema(
+    summary="Cambiar estado de la queja",
+    description=(
+        "Cambia únicamente el campo `estado` de la queja. "
+        "Valores permitidos según choices del modelo (p. ej.: 'PEN', 'ENP', 'RES', 'REC')."
+    ),
+    tags=["Quejas"],
+    parameters=[
+        OpenApiParameter(
+            name="pk",
+            type=int,
+            description="ID de la queja a modificar",
+            required=True,
+            location=OpenApiParameter.PATH
+        )
+    ],
+    request=None,  # se envía un body JSON simple con {'estado': '<valor>'}
+    responses={
+        200: OpenApiResponse(response=QuejaSerializer, description="Estado actualizado"),
+        400: OpenApiResponse(description="Solicitud inválida o estado no permitido"),
+        401: OpenApiResponse(description="No autenticado"),
+        403: OpenApiResponse(description="Permisos insuficientes (solo moderadores)"),
+        404: OpenApiResponse(description="Queja no encontrada"),
+    },
+    examples=[
+        OpenApiExample(
+            "Ejemplo body",
+            value={"estado": "ENP"},
+            request_only=True
+        )
+    ]
+)
 @api_view(['PATCH'])
 @authentication_classes([JWTAuthentication])  # Autenticación JWT
-@permission_classes([IsAuthenticated,IsModerator])  # Solo moderadores pueden cambiar el estado de las quejas
+@permission_classes([IsAuthenticated, IsModerator])  # Solo moderadores pueden cambiar el estado de las quejas
 def queja_cambiar_estado(request, pk):
     # Espera un body JSON con {"estado": "PEN" | "ENP" | "RES" | "REC"}
     queja = get_object_or_404(Queja, pk=pk)
