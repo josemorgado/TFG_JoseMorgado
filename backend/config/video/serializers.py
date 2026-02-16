@@ -6,8 +6,20 @@ from .models import Video, MAX_VIDEOS
 
 # Serializador para validar y exponer videos asociados a objetos genéricos
 class VideoSerializer(serializers.ModelSerializer):
-    content_object_text = serializers.SerializerMethodField(read_only=True)
-    content_type = serializers.PrimaryKeyRelatedField(queryset=ContentType.objects.all())
+    """
+    Serializador del modelo Video.
+    Incluye validación de ContentType + object_id, límite de videos por objeto,
+    y expone una representación legible del objeto asociado.
+    """
+    content_object_text = serializers.SerializerMethodField(
+        read_only=True,
+        help_text="Representación textual del objeto al que pertenece este video."
+    )
+
+    content_type = serializers.PrimaryKeyRelatedField(
+        queryset=ContentType.objects.all(),
+        help_text="ContentType del objeto asociado (p. ej., quejas.queja o comentario.comentario)."
+    )
 
     class Meta:
         model = Video
@@ -21,6 +33,12 @@ class VideoSerializer(serializers.ModelSerializer):
             'content_object_text',
         ]
         read_only_fields = ['id', 'fecha_creacion', 'orden']
+        extra_kwargs = {
+            "object_id": {"help_text": "ID del objeto dentro del modelo especificado (queja/comentario)."},
+            "video": {"help_text": "Archivo de video enviado vía multipart/form-data."},
+            "orden": {"help_text": "Orden del video dentro del conjunto. Se asigna automáticamente."},
+            "fecha_creacion": {"help_text": "Fecha de creación del registro (solo lectura)."},
+        }
 
     # Devuelve una representación legible del objeto asociado
     def get_content_object_text(self, obj):

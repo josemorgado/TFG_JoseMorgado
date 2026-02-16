@@ -16,23 +16,43 @@ def media_upload_to(instance, filename):
 
 class Video(models.Model):
     # Identificador principal
-    id = models.BigAutoField(primary_key=True)
+    id = models.BigAutoField(
+        primary_key=True,
+        help_text="Identificador único del video."
+    )
 
     # Relación genérica hacia cualquier modelo
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
-    object_id = models.PositiveIntegerField()
+    content_type = models.ForeignKey(
+        ContentType,
+        on_delete=models.CASCADE,
+        help_text="Modelo al que está asociado el video (p. ej., queja o comentario)."
+    )
+    object_id = models.PositiveIntegerField(
+        help_text="ID del objeto concreto dentro del modelo asociado."
+    )
     content_object = GenericForeignKey('content_type', 'object_id')
 
     # Archivo de video subido
-    video = models.FileField(upload_to=media_upload_to)
+    video = models.FileField(
+        upload_to=media_upload_to,
+        help_text="Archivo de video subido (multipart/form-data)."
+    )
 
     # Orden dentro del conjunto (aunque MAX_VIDEOS=1)
-    orden = models.PositiveIntegerField(default=0)
+    orden = models.PositiveIntegerField(
+        default=0,
+        help_text="Posición del video dentro del objeto padre."
+    )
 
     # Fecha de creación del registro
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_creacion = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Fecha y hora de creación del registro."
+    )
 
     class Meta:
+        verbose_name = "Video"
+        verbose_name_plural = "Videos"
         ordering = ['orden', 'fecha_creacion']
         indexes = [
             models.Index(fields=['content_type', 'object_id']),
