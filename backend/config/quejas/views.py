@@ -212,7 +212,7 @@ def queja_update(request, pk):
     }
 )
 @api_view(['DELETE'])
-@permission_classes([IsAuthenticated])  # Solo usuarios autenticados pueden eliminar quejas
+@permission_classes([IsAuthenticated, IsAuthorOrModerator])  # Solo usuarios autenticados pueden eliminar quejas
 def queja_delete(request, pk):
     queja = get_object_or_404(Queja, pk=pk)
     queja.delete()
