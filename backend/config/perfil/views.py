@@ -1,8 +1,10 @@
+from ast import IsNot
 from django.shortcuts import get_object_or_404
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from core.permissions import IsAuthorOrModerator, IsModerator
+from core.permissions import IsAuthorOrModerator, IsModerator, IsAnonymousUser
 from rest_framework.decorators import (
     api_view, parser_classes, permission_classes, authentication_classes
 )
@@ -105,7 +107,7 @@ def usuario_detail(request, pk):
 )
 @api_view(['POST'])
 @authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAnonymousUser])  # Solo no autenticados pueden crear cuenta
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def usuario_create(request):
     serializer = UserPerfilSerializer(data=request.data, context={'request': request})
@@ -150,13 +152,28 @@ def usuario_create(request):
 @permission_classes([IsAuthenticated, IsAuthorOrModerator])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def usuario_update(request, pk):
+    # ---- Early 403: si no es moderador y no es su propio pk, corta aquí
+    is_moderator = getattr(getattr(request.user, 'perfil', None), 'moderator', False)
+    try:
+        target_pk = int(pk)
+    except (TypeError, ValueError):
+        return Response({"detail": "Parámetro pk inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not is_moderator and request.user.id != target_pk:
+        return Response({"detail": IsAuthorOrModerator.message}, status=status.HTTP_403_FORBIDDEN)
+
+    # ---- A partir de aquí, ya puede buscar el objeto
     user = get_object_or_404(User.objects.select_related('perfil'), pk=pk)
+
+    # Check de objeto (por consistencia y seguridad)
+    perm = IsAuthorOrModerator()
+    if not perm.has_object_permission(request, None, user):
+        return Response({"detail": perm.message}, status=status.HTTP_403_FORBIDDEN)
+
     serializer = UserPerfilSerializer(user, data=request.data, context={'request': request})
     serializer.is_valid(raise_exception=True)
     user = serializer.save()
-
     user = User.objects.select_related('perfil').get(pk=user.pk)
-
     return Response(UserPerfilSerializer(user, context={'request': request}).data, status=status.HTTP_200_OK)
 
 
@@ -190,13 +207,25 @@ def usuario_update(request, pk):
 @permission_classes([IsAuthenticated, IsAuthorOrModerator])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def usuario_partial_update(request, pk):
+    is_moderator = getattr(getattr(request.user, 'perfil', None), 'moderator', False)
+    try:
+        target_pk = int(pk)
+    except (TypeError, ValueError):
+        return Response({"detail": "Parámetro pk inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not is_moderator and request.user.id != target_pk:
+        return Response({"detail": IsAuthorOrModerator.message}, status=status.HTTP_403_FORBIDDEN)
+
     user = get_object_or_404(User.objects.select_related('perfil'), pk=pk)
+
+    perm = IsAuthorOrModerator()
+    if not perm.has_object_permission(request, None, user):
+        return Response({"detail": perm.message}, status=status.HTTP_403_FORBIDDEN)
+
     serializer = UserPerfilSerializer(user, data=request.data, partial=True, context={'request': request})
     serializer.is_valid(raise_exception=True)
     user = serializer.save()
-
     user = User.objects.select_related('perfil').get(pk=user.pk)
-
     return Response(UserPerfilSerializer(user, context={'request': request}).data, status=status.HTTP_200_OK)
 
 
@@ -227,6 +256,20 @@ def usuario_partial_update(request, pk):
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated, IsAuthorOrModerator])
 def usuario_delete(request, pk):
+    is_moderator = getattr(getattr(request.user, 'perfil', None), 'moderator', False)
+    try:
+        target_pk = int(pk)
+    except (TypeError, ValueError):
+        return Response({"detail": "Parámetro pk inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if not is_moderator and request.user.id != target_pk:
+        return Response({"detail": IsAuthorOrModerator.message}, status=status.HTTP_403_FORBIDDEN)
+
     user = get_object_or_404(User, pk=pk)
+
+    perm = IsAuthorOrModerator()
+    if not perm.has_object_permission(request, None, user):
+        return Response({"detail": perm.message}, status=status.HTTP_403_FORBIDDEN)
+
     user.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)

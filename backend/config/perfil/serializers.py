@@ -57,16 +57,16 @@ class PerfilSerializer(serializers.ModelSerializer):
 
         return value
 
-    # Validación opcional (no cambia lógica): telefono no solo espacios
-    def validate_telefono(self, value):
-        if value and value.strip() == "":
-            raise serializers.ValidationError("El teléfono no puede estar vacío.")
+    # Validación: biografía no vacía
+    def validate_biografia(self, value):
+        if value is not None and value.strip() == "":
+            raise serializers.ValidationError("La biografía no puede estar vacía.")
         return value
 
-    # Validación opcional: biografía sin solo espacios
-    def validate_biografia(self, value):
-        if value and value.strip() == "":
-            raise serializers.ValidationError("La biografía no puede estar vacía.")
+    # Validación: teléfono no vacío
+    def validate_telefono(self, value):
+        if value is not None and value.strip() == "":
+            raise serializers.ValidationError("El teléfono no puede estar vacío.")
         return value
 
 
@@ -135,9 +135,15 @@ class UserPerfilSerializer(serializers.ModelSerializer):
 
     # Validación opcional de email bien formado (refuerzo)
     def validate_email(self, value):
-        if value and value.strip() == "":
-            raise serializers.ValidationError("El email no puede estar vacío.")
+        if value is None or value.strip() == "":
+            raise serializers.ValidationError("El email es obligatorio.")
+        value = value.strip()
+
+        # email duplicado
+        if User.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError("Este email ya está registrado.")
         return value
+
 
     # Validación opcional de username
     def validate_username(self, value):
