@@ -21,4 +21,7 @@ urlpatterns = [
 
     # DELETE            /usuarios/<int:pk>/delete/
     path('<int:pk>/delete/', views.usuario_delete, name='usuario-delete'),
+
+    # GET/PATCH/PUT     /usuarios/me/
+    path('me/', views.usuario_me, name='usuario-me'),
 ]
