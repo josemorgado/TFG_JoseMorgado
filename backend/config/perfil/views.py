@@ -277,7 +277,7 @@ def usuario_delete(request, pk):
 # GET/PATCH/PUT /usuarios/me/ → Permite al usuario autenticado leer/actualizar su propio perfil
 @api_view(['GET', 'PATCH', 'PUT'])
 @authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated, IsAuthorOrModerator])  # Solo el propio usuario o moderadores pueden acceder a esta vista
+@permission_classes([IsAuthenticated])  # Solo el propio usuario o moderadores pueden acceder a esta vista
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def usuario_me(request):
     # Carga el user con su perfil para evitar N+1

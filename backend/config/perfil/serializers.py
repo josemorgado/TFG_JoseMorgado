@@ -134,14 +134,26 @@ class UserPerfilSerializer(serializers.ModelSerializer):
         }
 
     # Validación opcional de email bien formado (refuerzo)
-    def validate_email(self, value):
-        if value is None or value.strip() == "":
-            raise serializers.ValidationError("El email es obligatorio.")
-        value = value.strip()
 
-        # email duplicado
-        if User.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError("Este email ya está registrado.")
+    def validate_email(self, value):
+        if value is None:
+            return value
+        qs = User.objects.filter(email__iexact=value)
+        # Excluir al propio usuario en caso de update
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("Ya existe un usuario con ese email.")
+        return value
+
+    def validate_username(self, value):
+        if value is None:
+            return value
+        qs = User.objects.filter(username__iexact=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError("Ya existe un usuario con ese nombre de usuario.")
         return value
 
 
