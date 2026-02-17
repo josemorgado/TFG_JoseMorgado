@@ -12,7 +12,7 @@ from drf_spectacular.utils import (
     OpenApiExample
 )
 
-from core.permissions import IsAuthorOrModerator
+from core.permissions import IsAuthorOrModerator, IsModerator
 from distrito.models import Distrito
 from distrito.serializers import DistritoSerializer
 
@@ -90,7 +90,7 @@ def distrito_detail(request, pk):
 )
 @api_view(['POST'])
 @authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsModerator])
 def distrito_create(request):
     serializer = DistritoSerializer(data=request.data)
     if serializer.is_valid():
@@ -126,7 +126,7 @@ def distrito_create(request):
 )
 @api_view(['PUT'])
 @authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated, IsAuthorOrModerator])
+@permission_classes([IsAuthenticated, IsModerator])
 def distrito_update(request, pk):
     distrito = get_object_or_404(Distrito, pk=pk)
     serializer = DistritoSerializer(distrito, data=request.data)
@@ -161,7 +161,7 @@ def distrito_update(request, pk):
 )
 @api_view(['DELETE'])
 @authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated, IsAuthorOrModerator])
+@permission_classes([IsAuthenticated, IsModerator])
 def distrito_delete(request, pk):
     distrito = get_object_or_404(Distrito, pk=pk)
     distrito.delete()

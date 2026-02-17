@@ -1,11 +1,19 @@
 from rest_framework import serializers
-from distrito.models import Distrito, long_minima_codigo, long_minima_nombre, long_max_codigo, long_max_nombre
+from distrito.models import (
+    Distrito,
+    long_minima_codigo,
+    long_minima_nombre,
+    long_max_codigo,
+    long_max_nombre
+)
+import re
 
 
 class DistritoSerializer(serializers.ModelSerializer):
     """
     Serializador para el modelo Distrito.
-    Incluye validaciones de longitud y formato en los campos 'nombre' y 'codigo'.
+    Incluye validaciones de longitud, formato y unicidad
+    para los campos 'nombre' y 'codigo'.
     """
 
     class Meta:
@@ -24,6 +32,9 @@ class DistritoSerializer(serializers.ModelSerializer):
             }
         }
 
+    # ------------------------------
+    # VALIDADOR DE NOMBRE
+    # ------------------------------
     def validate_nombre(self, value: str) -> str:
         """Valida y normaliza el nombre del distrito."""
         if value is None or not isinstance(value, str):
@@ -43,6 +54,9 @@ class DistritoSerializer(serializers.ModelSerializer):
 
         return limpio
 
+    # ------------------------------
+    # VALIDADOR DE CÓDIGO
+    # ------------------------------
     def validate_codigo(self, value: str) -> str:
         """Valida y normaliza el código del distrito."""
         if value is None or not isinstance(value, str):
@@ -63,10 +77,34 @@ class DistritoSerializer(serializers.ModelSerializer):
         if " " in limpio:
             raise serializers.ValidationError("El código no puede contener espacios.")
 
-        import re
         if not re.match(r"^[A-Za-z0-9_-]+$", limpio):
             raise serializers.ValidationError(
                 "El código solo puede contener letras, números, guión y guión bajo."
             )
 
-        return limpio.upper()
+        return limpio.upper()  # Normalizado a mayúsculas
+
+    # ------------------------------
+    # VALIDACIÓN GLOBAL (UNICIDAD)
+    # ------------------------------
+    def validate(self, data):
+        """Valida unicidad sin interferir en updates del mismo objeto."""
+
+        instance = getattr(self, 'instance', None)
+
+        nombre = data.get("nombre", instance.nombre if instance else None)
+        codigo = data.get("codigo", instance.codigo if instance else None)
+
+        # Validación de nombre único
+        if Distrito.objects.exclude(id=instance.id if instance else None).filter(nombre=nombre).exists():
+            raise serializers.ValidationError({
+                "nombre": "Ya existe un distrito con este nombre."
+            })
+
+        # Validación de código único
+        if Distrito.objects.exclude(id=instance.id if instance else None).filter(codigo=codigo).exists():
+            raise serializers.ValidationError({
+                "codigo": "Ya existe un distrito con este código."
+            })
+
+        return data
