@@ -12,6 +12,7 @@ class Categoria(models.Model):
     )
     nombre = models.CharField(
         max_length=100,
+        unique=True,
         help_text="Nombre visible de la categoría. Ejemplo: 'Transporte', 'Limpieza', etc."
     )
     descripcion = models.TextField(
