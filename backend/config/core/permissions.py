@@ -51,3 +51,44 @@ class IsAuthorOrModerator(BasePermission):
         )
         es_moderador = getattr(getattr(user, 'perfil', None), 'moderator', False)
         return es_autor or es_moderador
+
+
+class IsModeratorOrRelatedQuejaAuthor(BasePermission):
+    """
+    Permite la acción si el usuario es moderador o es el autor de la queja relacionada
+    con el objeto (directamente si es una Queja, o indirectamente si el objeto es un
+    Comentario que cuelga de una Queja).
+    """
+
+    def has_object_permission(self, request, view, obj):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+
+        # Define aquí tu criterio de moderador
+        is_moderator = getattr(user, 'is_moderator', False) or user.is_staff or user.is_superuser
+        if is_moderator:
+            return True
+
+        # Obtenemos el objeto genérico asociado a la imagen
+        related = getattr(obj, 'content_object', None)
+        if related is None:
+            return False
+
+        # Caso 1: la imagen cuelga de una Queja -> related.autor
+        # (No dependemos del nombre exacto de la clase; duck typing por atributos)
+        if hasattr(related, 'autor'):
+            # Si es una queja, debería bastar con autor
+            try:
+                return related.autor_id == user.id
+            except Exception:
+                pass  # por si related.autor no es FK convencional
+
+        # Caso 2: la imagen cuelga de un Comentario -> related.queja.autor
+        if hasattr(related, 'queja') and hasattr(related.queja, 'autor_id'):
+            try:
+                return related.queja.autor_id == user.id
+            except Exception:
+                pass
+
+        return False

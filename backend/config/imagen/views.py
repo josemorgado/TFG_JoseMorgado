@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.contrib.contenttypes.models import ContentType
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from core.permissions import IsModeratorOrRelatedQuejaAuthor
 
 from drf_spectacular.utils import (
     extend_schema,
@@ -203,8 +204,11 @@ def imagen_create(request):
 )
 @api_view(['DELETE'])
 @authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated, IsAuthorOrModerator])
+@permission_classes([IsAuthenticated])
 def imagen_delete(request, pk):
     imagen = get_object_or_404(Imagen, pk=pk)
+    permission = IsModeratorOrRelatedQuejaAuthor()
+    if not permission.has_object_permission(request, None, imagen):
+        return Response({'detail': 'No tienes permiso para eliminar esta imagen.'}, status=status.HTTP_403_FORBIDDEN)
     imagen.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
