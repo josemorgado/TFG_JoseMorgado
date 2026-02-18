@@ -7,7 +7,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from core.permissions import IsAuthorOrModerator
+from core.permissions import IsAuthorOrModerator, IsModeratorOrRelatedQuejaAuthor
 from .models import Video
 from .serializers import VideoSerializer
 
@@ -206,8 +206,11 @@ def video_create(request):
 )
 @api_view(['DELETE'])
 @authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated, IsAuthorOrModerator])
+@permission_classes([IsAuthenticated, IsModeratorOrRelatedQuejaAuthor])
 def video_delete(request, pk):
     video = get_object_or_404(Video, pk=pk)
+    permission = IsModeratorOrRelatedQuejaAuthor()
+    if not permission.has_object_permission(request, None, video):
+        return Response({'detail': 'No tienes permiso para eliminar este video.'}, status=status.HTTP_403_FORBIDDEN)
     video.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
