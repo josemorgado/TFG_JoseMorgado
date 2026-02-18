@@ -30,7 +30,7 @@ class MeGustaSerializer(serializers.ModelSerializer):
             'fecha_creacion',
             'content_object_text',
         ]
-        read_only_fields = ['id', 'fecha_creacion']
+        read_only_fields = ['id', 'fecha_creacion','autor']
         extra_kwargs = {
             "object_id": {
                 "help_text": "ID del objeto (queja/comentario) dentro del modelo especificado."

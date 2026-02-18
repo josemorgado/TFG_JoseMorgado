@@ -204,5 +204,11 @@ def megusta_toggle(request):
 @permission_classes([IsAuthenticated, IsAuthorOrModerator])
 def megusta_delete(request, pk):
     mg = get_object_or_404(MeGusta, pk=pk)
+    is_moderator = getattr(getattr(request.user, 'perfil', None), 'moderator', False)
+
+    # 3) Chequeo de permisos a nivel de objeto:
+    #    - Si NO es moderador y NO es el autor del comentario -> 403
+    if not is_moderator and mg.autor_id != request.user.id:
+        return Response({"detail": IsAuthorOrModerator.message}, status=status.HTTP_403_FORBIDDEN)
     mg.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
