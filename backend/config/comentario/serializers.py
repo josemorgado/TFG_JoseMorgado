@@ -26,7 +26,7 @@ class ComentarioSerializer(serializers.ModelSerializer):
             'num_votos',
             'parent',
         ]
-        read_only_fields = ['id', 'fecha_creacion', 'num_votos']
+        read_only_fields = ['id', 'fecha_creacion', 'num_votos', 'autor']
         extra_kwargs = {
             "queja": {
                 "help_text": "ID de la queja a la que pertenece este comentario."
@@ -71,3 +71,7 @@ class ComentarioSerializer(serializers.ModelSerializer):
                 })
 
         return attrs
+
+    def create(self, validated_data):
+        validated_data['autor'] = self.context['request'].user
+        return super().create(validated_data)

@@ -167,12 +167,11 @@ def comentarios_por_usuario(request, user_id):
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated])
 def comentario_create(request):
-    serializer = ComentarioSerializer(data=request.data)
+    serializer = ComentarioSerializer(data=request.data, context={'request': request})
     if serializer.is_valid():
-        comentario = serializer.save()
+        comentario = serializer.save(autor=request.user)
         return Response(ComentarioSerializer(comentario).data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
 
 # ============================================================
 # PUT /comentario/{pk}/update/ — Actualización completa
@@ -203,13 +202,29 @@ def comentario_create(request):
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated, IsAuthorOrModerator])
 def comentario_update(request, pk):
+    # 1) Carga el comentario
     comentario = get_object_or_404(Comentario, pk=pk)
-    serializer = ComentarioSerializer(comentario, data=request.data)
+
+    # 2) Calcula si el usuario es moderador
+    is_moderator = getattr(getattr(request.user, 'perfil', None), 'moderator', False)
+
+    # 3) Chequeo de permisos a nivel de objeto:
+    #    - Si NO es moderador y NO es el autor del comentario -> 403
+    if not is_moderator and comentario.autor_id != request.user.id:
+        return Response({"detail": IsAuthorOrModerator.message}, status=status.HTTP_403_FORBIDDEN)
+
+    # 4) Serializar con contexto
+    serializer = ComentarioSerializer(
+        comentario,
+        data=request.data,
+        context={"request": request}
+    )
+
     if serializer.is_valid():
         comentario = serializer.save()
         return Response(ComentarioSerializer(comentario).data)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # ============================================================
 # DELETE /comentario/{pk}/delete/ — Eliminar comentario
@@ -239,5 +254,16 @@ def comentario_update(request, pk):
 @permission_classes([IsAuthenticated, IsAuthorOrModerator])
 def comentario_delete(request, pk):
     comentario = get_object_or_404(Comentario, pk=pk)
+    # 1) Carga el comentario
+    comentario = get_object_or_404(Comentario, pk=pk)
+
+    # 2) Calcula si el usuario es moderador
+    is_moderator = getattr(getattr(request.user, 'perfil', None), 'moderator', False)
+
+    # 3) Chequeo de permisos a nivel de objeto:
+    #    - Si NO es moderador y NO es el autor del comentario -> 403
+    if not is_moderator and comentario.autor_id != request.user.id:
+        return Response({"detail": IsAuthorOrModerator.message}, status=status.HTTP_403_FORBIDDEN)
+
     comentario.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
