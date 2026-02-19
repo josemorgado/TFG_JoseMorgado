@@ -477,9 +477,14 @@ class Command(BaseCommand):
             "5.png",
             "6.png",
         ]
+
         ct_queja = ContentType.objects.get_for_model(Queja)
         created_count = 0
-        for queja in Queja.objects.all():
+
+        # Índice para asignación fija pero variada
+        index_img = 0
+
+        for queja in Queja.objects.order_by("id"):
 
             actuales = Imagen.objects.filter(
                 content_type=ct_queja,
@@ -489,12 +494,24 @@ class Command(BaseCommand):
             if actuales >= 5:
                 continue  # ya tiene el máximo
 
-            max_a_crear = min(5 - actuales, 3)
-            num_imagenes = random.randint(1, max_a_crear)
+            # --- Patrón heterogéneo pero sin azar ---
+            # Solo ciertas quejas reciben imágenes
+            # Ejemplo: 1 de cada 2 quejas sí reciben imágenes
+            if (queja.id % 2) == 0:
+                continue
 
-            usadas = random.sample(imagenes_prueba, k=num_imagenes)
+            # Cuántas quedan por llenar sin sobrepasar máximo
+            faltan = 5 - actuales
 
-            for nombre_imagen in usadas:
+            # Cantidad fija pero variada según patrón
+            a_crear = min( (queja.id % 3) + 1, faltan )
+            # Esto produce 1,2,3 imágenes dependiendo del id
+
+            for _ in range(a_crear):
+
+                nombre_imagen = imagenes_prueba[index_img % len(imagenes_prueba)]
+                index_img += 1
+
                 ruta = os.path.join(
                     settings.MEDIA_ROOT,
                     "imagenes_prueba",
@@ -511,16 +528,27 @@ class Command(BaseCommand):
                         imagen=File(f, name=nombre_imagen)
                     )
 
-                    created_count += 1
-        self.stdout.write(self.style.SUCCESS(f"{created_count} Imágenes de ejemplo creadas exitosamente."))
+                created_count += 1
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"{created_count} Imágenes de ejemplo creadas exitosamente."
+            )
+        )
+
 
         # Crear videos de ejemplo
         videos_prueba = [
             "video_ejemplo.mp4",
         ]
+
         ct_queja = ContentType.objects.get_for_model(Queja)
         created_count = 0
-        for queja in Queja.objects.all():
+
+        index_vid = 0  # índice determinista
+
+        for queja in Queja.objects.order_by("id"):
+
             actuales = Video.objects.filter(
                 content_type=ct_queja,
                 object_id=queja.id
@@ -529,15 +557,23 @@ class Command(BaseCommand):
             if actuales >= MAX_VIDEOS:
                 continue
 
-            max_a_crear = min(MAX_VIDEOS - actuales, 1)
-            num_videos = random.randint(0, max_a_crear)
-
-            if num_videos == 0:
+            # --- Patrón heterogéneo ---
+            # Solo 1 de cada 3 quejas tendrá video
+            if (queja.id % 2) != 1:
                 continue
 
-            usadas = random.sample(videos_prueba, k=num_videos)
+            # Cuántos faltan
+            faltan = MAX_VIDEOS - actuales
 
-            for nombre_video in usadas:
+            # Siempre 1 vídeo como máximo según tu código original
+            a_crear = min(1, faltan)
+            if a_crear <= 0:
+                continue
+
+            for _ in range(a_crear):
+                nombre_video = videos_prueba[index_vid % len(videos_prueba)]
+                index_vid += 1
+
                 ruta = os.path.join(
                     settings.MEDIA_ROOT,
                     "videos_prueba",
@@ -555,5 +591,11 @@ class Command(BaseCommand):
                     )
 
                 created_count += 1
-        self.stdout.write(self.style.SUCCESS(f"{created_count} Videos de ejemplo creados exitosamente."))
+
+        self.stdout.write(
+            self.style.SUCCESS(
+                f"{created_count} Videos de ejemplo creados exitosamente."
+            )
+        )
+
 
