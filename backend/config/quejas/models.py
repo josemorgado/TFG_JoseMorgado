@@ -1,7 +1,12 @@
 from django.conf import settings
 from django.db import models
+from django.db.models.signals import pre_delete
 from django.contrib.contenttypes.models import ContentType
+from imagen.models import Imagen
+from video.models import Video
 from megusta.models import MeGusta
+from django.dispatch import receiver
+
 
 
 # Estados posibles de una queja
@@ -124,3 +129,19 @@ class Queja(models.Model):
         # Número de comentarios de primer nivel
         from comentario.models import Comentario
         return Comentario.objects.filter(queja=self.pk, parent__isnull=True).count()
+
+
+@receiver(pre_delete, sender=Queja)
+def borrar_imagenes_queja(sender, instance, **kwargs):
+    ct = ContentType.objects.get_for_model(instance)
+    Imagen.objects.filter(content_type=ct, object_id=instance.id).delete()
+
+@receiver(pre_delete, sender=Queja)
+def borrar_videos_queja(sender, instance, **kwargs):
+    ct = ContentType.objects.get_for_model(instance)
+    Video.objects.filter(content_type=ct, object_id=instance.id).delete()
+
+@receiver(pre_delete, sender=Queja)
+def borrar_megusta_comentario(sender, instance, **kwargs):
+    ct = ContentType.objects.get_for_model(instance)
+    MeGusta.objects.filter(content_type=ct, object_id=instance.id).delete()

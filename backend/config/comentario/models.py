@@ -1,5 +1,10 @@
 from django.db import models
 from django.contrib.contenttypes.models import ContentType
+from video.models import Video
+from megusta.models import MeGusta
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+from imagen.models import Imagen
 from megusta.models import MeGusta
 
 
@@ -60,3 +65,19 @@ class Comentario(models.Model):
 
     def __str__(self):
         return f"Comentario #{self.id} de {self.autor}"
+
+@receiver(pre_delete, sender=Comentario)
+def borrar_imagenes_comentario(sender, instance, **kwargs):
+    ct = ContentType.objects.get_for_model(instance)
+    Imagen.objects.filter(content_type=ct, object_id=instance.id).delete()
+
+
+@receiver(pre_delete, sender=Comentario)
+def borrar_videos_comentario(sender, instance, **kwargs):
+    ct = ContentType.objects.get_for_model(instance)
+    Video.objects.filter(content_type=ct, object_id=instance.id).delete()
+
+@receiver(pre_delete, sender=Comentario)
+def borrar_megusta_comentario(sender, instance, **kwargs):
+    ct = ContentType.objects.get_for_model(instance)
+    MeGusta.objects.filter(content_type=ct, object_id=instance.id).delete()
