@@ -136,8 +136,8 @@ class UserPerfilSerializer(serializers.ModelSerializer):
     # Validación opcional de email bien formado (refuerzo)
 
     def validate_email(self, value):
-        if value is None:
-            return value
+        if value is None or value.strip() == "":
+            raise serializers.ValidationError("El email no puede ser nulo.")
         qs = User.objects.filter(email__iexact=value)
         # Excluir al propio usuario en caso de update
         if self.instance:

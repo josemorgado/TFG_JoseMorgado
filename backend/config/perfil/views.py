@@ -4,7 +4,7 @@ from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.authentication import JWTAuthentication
-from core.permissions import IsAuthorOrModerator, IsModerator, IsAnonymousUser
+from core.permissions import IsAnonymousOrModerator, IsAuthorOrModerator, IsModerator, IsAnonymousUser
 from rest_framework.decorators import (
     api_view, parser_classes, permission_classes, authentication_classes
 )
@@ -107,7 +107,7 @@ def usuario_detail(request, pk):
 )
 @api_view(['POST'])
 @authentication_classes([JWTAuthentication])
-@permission_classes([IsAnonymousUser])  # Solo no autenticados pueden crear cuenta
+@permission_classes([IsAnonymousOrModerator])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def usuario_create(request):
     serializer = UserPerfilSerializer(data=request.data, context={'request': request})

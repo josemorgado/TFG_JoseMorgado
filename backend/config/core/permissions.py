@@ -9,6 +9,39 @@ class IsAnonymousUser(BasePermission):
         # Necesita que la autenticación esté activa para distinguir correctamente
         return not (request.user and request.user.is_authenticated)
 
+class IsAnonymousOrModerator(BasePermission):
+    """
+    Permite acceso a:
+    - Usuarios NO autenticados (anónimos), o
+    - Usuarios autenticados con `moderator=True` ya sea en User o en Perfil.
+    """
+    def has_permission(self, request, view):
+        user = getattr(request, "user", None)
+
+        # Manejar is_authenticated tanto si es property como si es método (según versión de Django)
+        def is_authenticated(u):
+            if u is None:
+                return False
+            attr = getattr(u, "is_authenticated", False)
+            return attr() if callable(attr) else bool(attr)
+
+        # Caso 1: usuario no autenticado → permitir
+        if not is_authenticated(user):
+            return True
+
+        # Caso 2: usuario autenticado y moderador en el propio User → permitir
+        if bool(getattr(user, "moderator", False)):
+            return True
+
+        # Caso 3: usuario autenticado y moderador en el Perfil relacionado → permitir
+        perfil = getattr(user, "perfil", None)
+        if bool(getattr(perfil, "moderator", False)):
+            return True
+
+        # En cualquier otro caso → denegar
+        return False
+
+
 
 class IsModerator(BasePermission):
     """
