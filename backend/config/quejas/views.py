@@ -5,6 +5,7 @@ from rest_framework.decorators import api_view, permission_classes, authenticati
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from core.permissions import IsModerator, IsAuthorOrModerator
 from quejas.serializers import QuejaSerializer
@@ -19,6 +20,16 @@ from drf_spectacular.utils import (
 )
 
 User = get_user_model()
+
+def _enforce_object_permissions(request, obj):
+    """
+    Ejecuta permisos de objeto MANUALMENTE en FBVs (DRF no lo hace solo).
+    """
+    # Ya tienes IsAuthenticated a nivel de vista
+    perm = IsAuthorOrModerator()
+    if hasattr(perm, "has_object_permission"):
+        if not perm.has_object_permission(request, view=None, obj=obj):
+            raise PermissionDenied(detail="No tienes permisos para modificar esta queja.")
 
 # GET /quejas/ → Lista todas las quejas
 @extend_schema(
@@ -179,10 +190,12 @@ def queja_create(request):
     }
 )
 @api_view(['PUT'])
+@authentication_classes([JWTAuthentication])  # Autenticación JWT
 @permission_classes([IsAuthenticated, IsAuthorOrModerator])  # Solo usuarios autenticados pueden actualizar quejas
 def queja_update(request, pk):
     queja = get_object_or_404(Queja, pk=pk)
-    # PUT = actualización total → partial=False
+        # Check de objeto (por consistencia y seguridad)
+    _enforce_object_permissions(request, queja)
     serializer = QuejaSerializer(queja, data=request.data, context={'request': request})
     if serializer.is_valid():
         queja = serializer.save()
@@ -212,9 +225,11 @@ def queja_update(request, pk):
     }
 )
 @api_view(['DELETE'])
+@authentication_classes([JWTAuthentication])  # Autenticación JWT
 @permission_classes([IsAuthenticated, IsAuthorOrModerator])  # Solo usuarios autenticados pueden eliminar quejas
 def queja_delete(request, pk):
     queja = get_object_or_404(Queja, pk=pk)
+    _enforce_object_permissions(request, queja)
     queja.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 

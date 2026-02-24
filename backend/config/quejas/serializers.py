@@ -1,4 +1,5 @@
 import dis
+import re
 from webbrowser import get
 from rest_framework import serializers
 from django.contrib.auth.models import User
@@ -22,8 +23,9 @@ class QuejaSerializer(serializers.ModelSerializer):
     # Campos relacionados (en producción el autor vendrá del request)
     autor = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
-        help_text="ID del usuario autor de la queja (se asigna automáticamente en producción)."
-    )  # Quitar esta línea en producción
+        required=False,
+        help_text="ID del usuario autor de la queja."
+    )
 
     # Querysets dinámicos para evitar import circular
     categoria = serializers.PrimaryKeyRelatedField(
@@ -58,7 +60,6 @@ class QuejaSerializer(serializers.ModelSerializer):
         read_only_fields = [
             'id',
             'estado',
-            'autor',
             'fecha_creacion',
             'fecha_actualizacion',
             'num_votos',
@@ -90,12 +91,38 @@ class QuejaSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         # El autor se asigna automáticamente desde el request
         request = self.context.get('request')
-        user = getattr(request, 'user', None)
+        user = request.user
 
-        validated_data.setdefault("autor", user)
-        validated_data.setdefault("estado", "PEN")  # Estado inicial
+        autor_enviado= validated_data.get('autor', None)
 
+        if not user.perfil.moderator:
+            validated_data['autor'] = user
+
+        else:
+            if autor_enviado is None:
+                validated_data['autor'] = user
+            else:
+                validated_data['autor'] = autor_enviado
+
+        validated_data.setdefault('estado', "PEN")
         return super().create(validated_data)
+
+
+    def update(self, instance, validated_data):
+        request = self.context["request"]
+        user = request.user
+
+        autor_enviado = validated_data.get("autor", None)
+
+        # Usuarios normales NO pueden cambiar el autor
+        if not user.is_staff:
+            validated_data.pop("autor", None)
+        else:
+            # Si es moderador: si no envía autor → él mismo
+            if autor_enviado is None:
+                validated_data["autor"] = user
+
+        return super().update(instance, validated_data)
 
     # VALIDACIÓN DEL TÍTULO
     def validate_titulo(self, value):
