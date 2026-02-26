@@ -1,18 +1,25 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useAuth } from "../context/AuthContext";
+import { useLocation, useNavigate } from "react-router-dom";
+import AuthLayout from "../components/AuthLayout.tsx";
+import TextField from "../components/TextField";
+import PasswordField from "../components/PasswordField";
+import SubmitButton from "../components/SubmitButton.tsx";
+import ErrorMessage from "../components/ErrorMessage";
+
+type LocationState = { from?: { pathname?: string } } | null;
 
 const Login: React.FC = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation() as any;
+  const location = useLocation() as unknown as { state: LocationState };
 
-  const [form, setForm] = useState({ username: '', password: '' });
+  const [form, setForm] = useState({ username: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const from = location.state?.from?.pathname ?? '/';
-  const [showPassword, setShowPassword] = useState(false);
+  const from = location?.state?.from?.pathname ?? "/";
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -21,10 +28,10 @@ const Login: React.FC = () => {
       await login(form);
       navigate(from, { replace: true });
     } catch (err: any) {
-      if (err.response?.status === 401) {
-        setError('Usuario o contraseña incorrectos');
+      if (err?.response?.status === 401) {
+        setError("Usuario o contraseña incorrectos");
       } else {
-        setError('Error del servidor, inténtalo de nuevo más tarde');
+        setError("Error del servidor, inténtalo de nuevo más tarde");
       }
     } finally {
       setLoading(false);
@@ -32,45 +39,33 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div style={{ maxWidth: 420, margin: '6rem auto' }}>
-      <h1>Iniciar sesión</h1>
-      <form onSubmit={onSubmit}>
-        <label>
-          Usuario
-          <input
-            value={form.username}
-            disabled={loading}
-            onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
-            autoComplete="username"
-            required
-          />
-        </label>
-        <label style={{ display: 'block', marginTop: 8 }}>
-          Contraseña
-          <input
-            type={showPassword ? 'text' : 'password'}
-            disabled={loading}
-            value={form.password}
-            onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-            autoComplete="current-password"
-            required
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword((v) => !v)}
-            style={{ marginLeft: "8px" }}
-          >
-            {showPassword ? "🙈" : "👁️"}
-          </button>
-        </label>
-        <button disabled={loading} type="submit" style={{ marginTop: 12 }}>
-          {loading ? 'Entrando…' : 'Entrar'}
-        </button>
-        {error && <p style={{ color: 'crimson' }}>{error}</p>}
+    <AuthLayout title="Iniciar sesión">
+      <form onSubmit={onSubmit} noValidate>
+        <TextField
+          label="Usuario"
+          name="username"
+          value={form.username}
+          onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
+          autoComplete="username"
+          required
+          disabled={loading}
+        />
+
+        <PasswordField
+          label="Contraseña"
+          name="password"
+          value={form.password}
+          onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+          required
+          disabled={loading}
+        />
+
+        <SubmitButton loading={loading}>Entrar</SubmitButton>
+        <ErrorMessage message={error} />
       </form>
-    </div>
+    </AuthLayout>
+
   );
 };
 
 export default Login;
-
