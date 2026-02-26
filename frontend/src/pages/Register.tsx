@@ -1,24 +1,59 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 
 const Register: React.FC = () => {
-  const [form, setForm] = useState({
-    username: "",
-    password: "",
-    confirmPassword: "",
-    email: "",
-    firstName: "",
-    lastName: "",
-    genero: "",
-    fechaNacimiento: "",
-    biografia: "",
-    telefono: "",
-    direccion: "",
-  });
+    const navigate = useNavigate();
 
-  return (
+    const [form, setForm] = useState({
+        username: "",
+        password: "",
+        confirmPassword: "",
+        email: "",
+        firstName: "",
+        lastName: "",
+        genero: "",
+        fechaNacimiento: "",
+        biografia: "",
+        telefono: "",
+        direccion: "",
+});
+
+const [error, setError] = useState<string | null>(null);
+
+const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+
+    if (form.password !== form.confirmPassword) {
+        setError("Las contraseñas no coinciden");
+        return;
+    }
+
+    if (!form.fechaNacimiento) {
+        setError("La fecha de nacimiento es obligatoria");
+        return;
+    }
+
+    if (!form.telefono.trim()) {
+        setError("El telefono es obligatorio");
+        return;
+    }
+
+    if (!form.direccion.trim()) {
+        setError("La dirección es obligatoria.");
+        return;
+    }
+
+    console.log("Formulario válido. Datos preparados:");
+    console.log(form);
+
+};
+
+return (
     <div style={{ maxWidth: 420, margin: "6rem auto" }}>
       <h1>Crear cuenta</h1>
-      <form>
+      <form onSubmit={handleSubmit}>
         <label style={{ display: "block", marginTop: 8 }}>
           First Name:
           <input
@@ -140,7 +175,25 @@ const Register: React.FC = () => {
         <button type="submit" style={{ marginTop: 12 }}>
           Crear cuenta
         </button>
+        {error && <p style={{ color: "crimson" }}>{error}</p>}
       </form>
+        <p style={{ marginTop: 12 }}>
+        ¿No tienes cuenta?{" "}
+            <button
+            type="button"
+            onClick={() => navigate("/login")}
+            style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                color: "#007bff",
+                textDecoration: "underline",
+                cursor: "pointer"
+            }}
+            >
+            Crear cuenta
+            </button>
+        </p>
     </div>
   );
 };

@@ -63,22 +63,22 @@ const Login: React.FC = () => {
         <SubmitButton loading={loading}>Entrar</SubmitButton>
         <ErrorMessage message={error} />
       </form>
-            <p style={{ marginTop: 12 }}>
+        <p style={{ marginTop: 12 }}>
         ¿No tienes cuenta?{" "}
-        <button
-          type="button"
-          onClick={() => navigate("/register")}
-          style={{
-            background: "none",
-            border: "none",
-            padding: 0,
-            color: "#007bff",
-            textDecoration: "underline",
-            cursor: "pointer"
-          }}
-        >
-          Crear cuenta
-        </button>
+          <button
+            type="button"
+            onClick={() => navigate("/register")}
+            style={{
+              background: "none",
+              border: "none",
+              padding: 0,
+              color: "#007bff",
+              textDecoration: "underline",
+              cursor: "pointer"
+            }}
+          >
+            Crear cuenta
+          </button>
       </p>
     </AuthLayout>
 
