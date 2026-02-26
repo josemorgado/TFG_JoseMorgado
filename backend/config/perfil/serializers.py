@@ -1,4 +1,5 @@
 from datetime import date
+import email
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
@@ -15,6 +16,10 @@ class PerfilSerializer(serializers.ModelSerializer):
     Expone campos del perfil y valida la fecha de nacimiento (no futura y edad mínima).
     """
     edad = serializers.IntegerField(read_only=True)  # edad calculada desde el modelo
+    email = serializers.EmailField(required=True)  # email del usuario (solo lectura)
+    first_name = serializers.CharField(required=True)
+    last_name = serializers.CharField(required=True)
+
 
     class Meta:
         model = Perfil
@@ -31,6 +36,9 @@ class PerfilSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['fecha_actualizacion', 'edad']
         extra_kwargs = {
+            "email": {"help_text": "Correo electrónico del usuario."},
+            "first_name": {"help_text": "Nombre del usuario."},
+            "last_name": {"help_text": "Apellidos del usuario."},
             "genero": {"help_text": "Género del usuario (M, F u O)."},
             "biografia": {"help_text": "Descripción o biografía breve del usuario."},
             "moderator": {"help_text": "Indica si el usuario tiene rol de moderador."},

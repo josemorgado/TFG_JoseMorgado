@@ -18,6 +18,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.exceptions import ValidationError
+from drf_spectacular.utils import F
 
 
 class Genero(models.TextChoices):
@@ -61,7 +62,7 @@ class Perfil(models.Model):
     genero = models.CharField(
         max_length=1,
         choices=Genero.choices,
-        default=Genero.MASCULINO,
+        default=Genero.OTRO,
         help_text="Género del usuario."
     )
     biografia = models.TextField(
@@ -74,13 +75,14 @@ class Perfil(models.Model):
     )
     telefono = models.CharField(
         max_length=15,
-        blank=True,
+        null=False,
+        blank=False,
         validators=[telefono_validator],
         help_text="Teléfono de contacto en formato internacional (+NN...)."
     )
     direccion = models.CharField(
         max_length=255,
-        blank=True,
+        blank=False,
         help_text="Dirección postal o de contacto."
     )
     fecha_nacimiento = models.DateField(
