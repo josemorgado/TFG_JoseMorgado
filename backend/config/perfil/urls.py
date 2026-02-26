@@ -36,4 +36,7 @@ urlpatterns = [
 
     # GET               /usuarios/me/videos/
     path('me/videos/', views.mis_videos, name='usuario-me-videos'),
+
+    #POST              /usuarios/logout/
+    path('logout/', views.logout_view, name='usuario-logout'),
 ]

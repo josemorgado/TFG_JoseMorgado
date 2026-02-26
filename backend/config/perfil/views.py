@@ -12,6 +12,15 @@ from core.permissions import IsAnonymousOrModerator, IsAuthorOrModerator, IsMode
 from rest_framework.decorators import (
     api_view, parser_classes, permission_classes, authentication_classes
 )
+
+from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.permissions import AllowAny
+from rest_framework import status
+from rest_framework.response import Response
+
+from rest_framework_simplejwt.tokens import RefreshToken, TokenError
+
+from drf_spectacular.utils import extend_schema, OpenApiExample
 from rest_framework.parsers import JSONParser, MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
@@ -614,5 +623,52 @@ def mis_videos(request):
         "page_size": page_size,
         "results": serializer.data
     }, status=status.HTTP_200_OK)
+
+
+# ============================================================
+# POST /api/perfil/logout/ — Logout con blacklist del refresh
+# ============================================================
+
+@extend_schema(
+    summary="Logout con blacklist",
+    description=(
+        "Invalida (blacklistea) el refresh token recibido en el body. "
+        "Después de llamar a este endpoint, ese refresh token no podrá "
+        "volver a usarse para obtener nuevos access tokens."
+    ),
+    tags=["Auth"],
+    request={
+        "application/json": {
+            "type": "object",
+            "properties": {"refresh": {"type": "string"}},
+            "required": ["refresh"],
+            "example": {"refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...."},
+        }
+    },
+    responses={
+        205: {"description": "Sesión cerrada. Refresh token invalidado."},
+        400: {"description": "Falta 'refresh' en el body."},
+    },
+)
+@api_view(["POST"])
+@authentication_classes([])
+@permission_classes([])
+def logout_view(request):
+    refresh = request.data.get("refresh")
+    if not refresh:
+        return Response(
+            {"detail": "refresh token requerido"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        token = RefreshToken(refresh)
+        token.blacklist()  # ← aquí metemos el refresh en la lista negra
+    except TokenError:
+        # Si ya estaba invalidado o es inválido, no explotamos; devolvemos 205 igualmente
+        pass
+
+    # 205 Reset Content: indica que el cliente debe resetear el estado (borrar storage/cookies)
+    return Response(status=status.HTTP_205_RESET_CONTENT)
 
 
