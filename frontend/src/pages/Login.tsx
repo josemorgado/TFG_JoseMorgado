@@ -12,7 +12,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const from = location.state?.from?.pathname ?? '/';
-
+  const [showPassword, setShowPassword] = useState(false);
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -39,6 +39,7 @@ const Login: React.FC = () => {
           Usuario
           <input
             value={form.username}
+            disabled={loading}
             onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
             autoComplete="username"
             required
@@ -47,12 +48,20 @@ const Login: React.FC = () => {
         <label style={{ display: 'block', marginTop: 8 }}>
           Contraseña
           <input
-            type="password"
+            type={showPassword ? 'text' : 'password'}
+            disabled={loading}
             value={form.password}
             onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
             autoComplete="current-password"
             required
           />
+          <button
+            type="button"
+            onClick={() => setShowPassword((v) => !v)}
+            style={{ marginLeft: "8px" }}
+          >
+            {showPassword ? "🙈" : "👁️"}
+          </button>
         </label>
         <button disabled={loading} type="submit" style={{ marginTop: 12 }}>
           {loading ? 'Entrando…' : 'Entrar'}
@@ -64,3 +73,4 @@ const Login: React.FC = () => {
 };
 
 export default Login;
+

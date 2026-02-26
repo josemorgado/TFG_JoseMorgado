@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import { loginRequest, fetchMe } from '../api/auth';
 import type { LoginRequest } from '../api/auth';
 import { storage } from '../utils/storage';
@@ -23,6 +23,25 @@ export const useAuth = () => useContext(AuthContext);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    const access = storage.getAccess();
+    if (!access) {
+      return;
+    }
+
+  const restoreSession = async () => {
+      try {
+        const me = await fetchMe(access);
+        setUser(me);
+      } catch (err) {
+        storage.clearAll();
+        setUser(null);
+      }
+  };
+
+  restoreSession();
+  }, []);
 
   const login = async (credentials: LoginRequest) => {
     // 1) pedir tokens
