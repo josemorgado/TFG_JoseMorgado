@@ -164,19 +164,19 @@ class UserPerfilSerializer(serializers.ModelSerializer):
         user.save()
 
         # Gracias al post_save, ya debe existir user.perfil; si no, lo creamos
-        perfil_instance = getattr(user, 'perfil', None)
+        '''perfil_instance = getattr(user, 'perfil', None)
         if perfil_instance is None:
-            perfil_instance = Perfil.objects.create(user=user)
+            perfil_instance = Perfil.objects.create(user=user)'''
 
         # Rellenamos el perfil con los datos recibidos
         perfil_serializer = PerfilSerializer(
-            instance=perfil_instance,
+            #instance=perfil_instance,
             data=perfil_data,
-            partial=False,
+            #partial=False,
             context=self.context,
         )
         perfil_serializer.is_valid(raise_exception=True)
-        perfil_serializer.save()
+        perfil_serializer.save(user=user)
 
         return user
 
@@ -196,15 +196,15 @@ class UserPerfilSerializer(serializers.ModelSerializer):
         if perfil_data is not None:
             perfil_instance = getattr(instance, 'perfil', None)
             if perfil_instance is None:
-                perfil_instance = Perfil.objects.create(user=instance)
+                #perfil_instance = Perfil.objects.create(user=instance)
 
-            perfil_serializer = PerfilSerializer(
-                instance=perfil_instance,
-                data=perfil_data,
-                partial=getattr(self, 'partial', False),
-                context=self.context,
-            )
-            perfil_serializer.is_valid(raise_exception=True)
-            perfil_serializer.save()
+                perfil_serializer = PerfilSerializer(
+                    #instance=perfil_instance,
+                    data=perfil_data,
+                    #partial=getattr(self, 'partial', False),
+                    context=self.context,
+                )
+                perfil_serializer.is_valid(raise_exception=True)
+                perfil_serializer.save()
 
         return instance

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { registerRequest, loginRequest, fetchMe } from "../api/auth";
+import { storage } from "../utils/storage";
 
 const Register: React.FC = () => {
     const navigate = useNavigate();
@@ -21,7 +22,7 @@ const Register: React.FC = () => {
 
 const [error, setError] = useState<string | null>(null);
 
-const handleSubmit = (e: React.FormEvent) => {
+const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -46,6 +47,67 @@ const handleSubmit = (e: React.FormEvent) => {
     }
 
     console.log("Formulario válido. Datos preparados:");
+
+    const payload = {
+      username: form.username.trim(),
+      email: form.email.trim(),
+      first_name: form.firstName.trim(),
+      last_name: form.lastName.trim(),
+      password: form.password.trim(),
+      perfil: {
+        telefono: form.telefono.trim(),
+        direccion: form.direccion.trim(),
+        fecha_nacimiento: form.fechaNacimiento.trim(),
+        ...(form.genero ? { genero: form.genero as "M" | "F" | "O" } : {}),
+        ...(form.biografia ? { biografia: form.biografia.trim()} : {}),
+      },
+    } as const;
+
+    try {
+
+      console.log("[Register] calling registerRequest", payload);
+      await registerRequest(payload);
+      console.log("[Register] register OK, about to login");
+
+
+      const tokens = await loginRequest({username: form.username, password: form.password});
+
+      if (tokens.refresh) storage.setRefresh(tokens.refresh);
+      storage.setAccess(tokens.access)
+
+      navigate("/")
+    } catch (err: any) {
+      if (err.response?.data){
+        const data= err.response.data;
+
+        if (typeof data == "string") {
+          setError(data);
+          return;
+        }
+
+        const messages: string[] = [];
+
+        if (data.username) messages.push(`username: ${data.username.join(" ")}`);
+        if (data.email) messages.push(`email: ${data.email.join(" ")}`);
+        if (data.first_name) messages.push(`nombre: ${data.first_name.join(" ")}`);
+        if (data.last_name) messages.push(`apellidos: ${data.last_name.join(" ")}`);
+        if (data.password) messages.push(`password: ${data.password.join(" ")}`);
+
+        if (data.perfil) {
+          const p = data.perfil;
+          if (p.telefono) messages.push(`teléfono: ${p.telefono.join(" ")}`);
+          if (p.direccion) messages.push(`dirección: ${p.direccion.join(" ")}`);
+          if (p.fecha_nacimiento) messages.push(`fecha de nacimiento: ${p.fecha_nacimiento.join(" ")}`);
+          if (p.genero) messages.push(`género: ${p.genero.join(" ")}`);
+          if (p.biografia) messages.push(`biografía: ${p.biografia.join(" ")}`);
+        }
+
+        setError(messages.join(" . ") || "No se puede crear la cuenta. Revisa los campos.")
+      } else {
+        setError("No se pudo conectar con el servidor. Intentalo de nuevo mas tarde.")
+      }
+    }
+
     console.log(form);
 
 };

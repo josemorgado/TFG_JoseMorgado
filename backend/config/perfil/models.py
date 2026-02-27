@@ -150,8 +150,8 @@ class Perfil(models.Model):
         )
 
 
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+'''@receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_user_profile(sender, instance, created, **kwargs):
     """Crea automáticamente un perfil cuando se crea un nuevo usuario."""
     if created:
-        Perfil.objects.get_or_create(user=instance)
+        Perfil.objects.get_or_create(user=instance)'''
