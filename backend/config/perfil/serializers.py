@@ -1,5 +1,4 @@
 from datetime import date
-import email
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
@@ -9,17 +8,13 @@ from .models import Perfil
 User = get_user_model()
 
 
-# Serializador del Perfil del usuario
+# --------- Perfil ---------
 class PerfilSerializer(serializers.ModelSerializer):
     """
-    Serializador del perfil de usuario.
-    Expone campos del perfil y valida la fecha de nacimiento (no futura y edad mínima).
+    Serializador del perfil de usuario, alineado con el modelo.
+    Incluye validación de fecha de nacimiento y expone campos de solo lectura.
     """
-    edad = serializers.IntegerField(read_only=True)  # edad calculada desde el modelo
-    email = serializers.EmailField(required=True)  # email del usuario (solo lectura)
-    first_name = serializers.CharField(required=True)
-    last_name = serializers.CharField(required=True)
-
+    edad = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Perfil
@@ -36,51 +31,46 @@ class PerfilSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['fecha_actualizacion', 'edad']
         extra_kwargs = {
-            "email": {"help_text": "Correo electrónico del usuario."},
-            "first_name": {"help_text": "Nombre del usuario."},
-            "last_name": {"help_text": "Apellidos del usuario."},
-            "genero": {"help_text": "Género del usuario (M, F u O)."},
-            "biografia": {"help_text": "Descripción o biografía breve del usuario."},
-            "moderator": {"help_text": "Indica si el usuario tiene rol de moderador."},
-            "telefono": {"help_text": "Teléfono en formato internacional (+NN...)."},
-            "direccion": {"help_text": "Dirección postal o de contacto."},
-            "fecha_nacimiento": {"help_text": "Fecha de nacimiento del usuario (YYYY-MM-DD)."},
-            "foto_perfil": {"help_text": "Archivo de imagen para el avatar (multipart/form-data)."},
-            "edad": {"help_text": "Edad calculada en años (solo lectura)."},
-            "fecha_actualizacion": {"help_text": "Última fecha/hora de actualización (solo lectura)."},
+            "genero": {
+                "help_text": "Género del usuario (M, F u O)."
+            },
+            "biografia": {
+                "help_text": "Descripción o biografía breve del usuario.",
+            },
+            "moderator": {
+                "help_text": "Indica si el usuario tiene rol de moderador."
+            },
+            "telefono": {
+                "help_text": "Teléfono en formato internacional (+NN...).",
+                "required": True,
+            },
+            "direccion": {
+                "help_text": "Dirección postal o de contacto.",
+                "required": True,
+            },
+            "fecha_nacimiento": {
+                "help_text": "Fecha de nacimiento del usuario (YYYY-MM-DD).",
+                "required": True,
+            },
+            "foto_perfil": {
+                "help_text": "Archivo de imagen para el avatar (multipart/form-data)."
+            },
         }
 
-    # Validación de fecha_nacimiento
+    # Validación: fecha_nacimiento no futura y edad mínima
     def validate_fecha_nacimiento(self, value):
-        # La fecha no puede ser futura
         if value and value > date.today():
             raise serializers.ValidationError('La fecha de nacimiento no puede estar en el futuro.')
-
-        # Validación de edad mínima
         if value:
             min_age = 14
             edad = (date.today() - value).days // 365
             if edad < min_age:
                 raise serializers.ValidationError(f'La edad mínima es {min_age} años.')
-
-        return value
-
-    # Validación: biografía no vacía
-    def validate_biografia(self, value):
-        if value is not None and value.strip() == "":
-            raise serializers.ValidationError("La biografía no puede estar vacía.")
-        return value
-
-    # Validación: teléfono no vacío
-    def validate_telefono(self, value):
-        if value is not None and value.strip() == "":
-            raise serializers.ValidationError("El teléfono no puede estar vacío.")
         return value
 
 
-# Serializador básico para listar o mostrar usuarios
+# --------- User Lite (para listar/mostrar) ---------
 class UserLiteSerializer(serializers.ModelSerializer):
-    # Serializador ligero para uso en respuestas pequeñas
     class Meta:
         model = User
         fields = [
@@ -105,7 +95,7 @@ class UserLiteSerializer(serializers.ModelSerializer):
         }
 
 
-# Serializador completo con perfil embebido
+# --------- User + Perfil (crear/actualizar en una operación) ---------
 class UserPerfilSerializer(serializers.ModelSerializer):
     """
     Serializador compuesto para crear/actualizar el usuario y su perfil embebido
@@ -141,62 +131,55 @@ class UserPerfilSerializer(serializers.ModelSerializer):
             "last_login": {"help_text": "Último acceso (solo lectura)."},
         }
 
-    # Validación opcional de email bien formado (refuerzo)
-
+    # Validación de email único
     def validate_email(self, value):
         if value is None or value.strip() == "":
-            raise serializers.ValidationError("El email no puede ser nulo.")
-        qs = User.objects.filter(email__iexact=value)
-        # Excluir al propio usuario en caso de update
+            raise serializers.ValidationError("El email no puede estar vacío.")
+        qs = User.objects.filter(email__iexact=value.strip())
         if self.instance:
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
             raise serializers.ValidationError("Ya existe un usuario con ese email.")
-        return value
+        return value.strip()
 
+    # Validación de username único y no vacío
     def validate_username(self, value):
-        if value is None:
-            return value
-        qs = User.objects.filter(username__iexact=value)
+        if not value or value.strip() == "":
+            raise serializers.ValidationError("El nombre de usuario es obligatorio.")
+        qs = User.objects.filter(username__iexact=value.strip())
         if self.instance:
             qs = qs.exclude(pk=self.instance.pk)
         if qs.exists():
             raise serializers.ValidationError("Ya existe un usuario con ese nombre de usuario.")
-        return value
-
-
-    # Validación opcional de username
-    def validate_username(self, value):
-        if not value or value.strip() == "":
-            raise serializers.ValidationError("El nombre de usuario es obligatorio.")
         return value.strip()
 
-    # Creación atómica de usuario + perfil
     @transaction.atomic
     def create(self, validated_data):
         perfil_data = validated_data.pop('perfil')
-        password = validated_data.pop('password', None)
+        password = validated_data.pop('password')
 
         # Crea usuario
         user = User.objects.create(**validated_data)
-        if password:
-            user.set_password(password)
-            user.save(update_fields=['password'])
+        user.set_password(password)
+        user.save()
 
-        # Crea o actualiza perfil asociado
-        perfil_instance, _ = Perfil.objects.get_or_create(user=user)
+        # Gracias al post_save, ya debe existir user.perfil; si no, lo creamos
+        perfil_instance = getattr(user, 'perfil', None)
+        if perfil_instance is None:
+            perfil_instance = Perfil.objects.create(user=user)
+
+        # Rellenamos el perfil con los datos recibidos
         perfil_serializer = PerfilSerializer(
             instance=perfil_instance,
             data=perfil_data,
             partial=False,
-            context=self.context
+            context=self.context,
         )
         perfil_serializer.is_valid(raise_exception=True)
         perfil_serializer.save()
 
         return user
 
-    # Actualización atómica de usuario + perfil
     @transaction.atomic
     def update(self, instance, validated_data):
         perfil_data = validated_data.pop('perfil', None)
@@ -211,12 +194,15 @@ class UserPerfilSerializer(serializers.ModelSerializer):
 
         # Actualiza Perfil si viene incluido
         if perfil_data is not None:
-            perfil_instance, _ = Perfil.objects.get_or_create(user=instance)
+            perfil_instance = getattr(instance, 'perfil', None)
+            if perfil_instance is None:
+                perfil_instance = Perfil.objects.create(user=instance)
+
             perfil_serializer = PerfilSerializer(
                 instance=perfil_instance,
                 data=perfil_data,
                 partial=getattr(self, 'partial', False),
-                context=self.context
+                context=self.context,
             )
             perfil_serializer.is_valid(raise_exception=True)
             perfil_serializer.save()
