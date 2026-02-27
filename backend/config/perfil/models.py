@@ -86,8 +86,8 @@ class Perfil(models.Model):
         help_text="Dirección postal o de contacto."
     )
     fecha_nacimiento = models.DateField(
-        null=True,
-        blank=True,
+        null=False,
+        blank=False,
         help_text="Fecha de nacimiento del usuario."
     )
 
