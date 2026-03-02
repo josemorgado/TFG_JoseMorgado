@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { registerRequest, loginRequest, fetchMe } from "../api/auth";
 import { storage } from "../utils/storage";
+import AuthLayout from "../components/AuthLayout";
 
 const Register: React.FC = () => {
     const navigate = useNavigate();
@@ -123,129 +124,129 @@ if (form.foto) {
 };
 
 return (
-    <div style={{ maxWidth: 420, margin: "6rem auto" }}>
-      <h1>Crear cuenta</h1>
-      <form onSubmit={handleSubmit}>
-        <label style={{ display: "block", marginTop: 8 }}>
-          First Name:
+      <AuthLayout title="Crear cuenta">
+        <form onSubmit={handleSubmit}>
+          {/* Nombre */}
+          <label htmlFor="firstName">Nombre</label>
           <input
+            id="firstName"
+            className="auth-field"
+            type="text"
+            placeholder="Tu nombre"
             value={form.firstName}
             onChange={(e) => setForm({ ...form, firstName: e.target.value })}
             autoComplete="given-name"
             required
           />
-        </label>
 
-        <label style={{ display: "block", marginTop: 8 }}>
-          Last Name:
+          {/* Apellidos */}
+          <label htmlFor="lastName">Apellidos</label>
           <input
+            id="lastName"
+            className="auth-field"
+            type="text"
+            placeholder="Tus apellidos"
             value={form.lastName}
             onChange={(e) => setForm({ ...form, lastName: e.target.value })}
             autoComplete="family-name"
             required
           />
-        </label>
 
-        <label style={{ display: "block", marginTop: 8 }}>
-          Username:
+          {/* Username */}
+          <label htmlFor="username">Nombre de usuario</label>
           <input
+            id="username"
+            className="auth-field"
+            type="text"
+            placeholder="Ej: josemaria"
             value={form.username}
             onChange={(e) => setForm({ ...form, username: e.target.value })}
             autoComplete="username"
             required
           />
-        </label>
 
-        <label style={{ display: "block", marginTop: 8 }}>
-          Email:
+          {/* Email */}
+          <label htmlFor="email">Correo electrónico</label>
           <input
+            id="email"
+            className="auth-field"
             type="email"
+            placeholder="correo@ejemplo.com"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             autoComplete="email"
             required
           />
-        </label>
 
-        <label style={{ display: "block", marginTop: 8 }}>
-          Género:
+          {/* Género */}
+          <label htmlFor="genero">Género</label>
           <select
+            id="genero"
+            className="auth-field"
             value={form.genero}
             onChange={(e) => setForm({ ...form, genero: e.target.value })}
-            style={{ width: "60%", padding: "4px" }}
           >
             <option value="">Selecciona una opción</option>
             <option value="M">Hombre</option>
             <option value="F">Mujer</option>
             <option value="O">Otro</option>
           </select>
-        </label>
 
-        <label style={{ display: "block", marginTop: 8 }}>
-          Password:
+          {/* Fecha de nacimiento */}
+          <label htmlFor="fechaNacimiento">Fecha de nacimiento</label>
           <input
-            type="password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            autoComplete="new-password"
-            required
-          />
-        </label>
-
-        <label style={{ display: "block", marginTop: 8 }}>
-          Confirm Password:
-          <input
-            type="password"
-            value={form.confirmPassword}
-            onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-            autoComplete="new-password"
-            required
-          />
-        </label>
-
-        <label style={{ display: "block", marginTop: 8 }}>
-          Fecha de Nacimiento:
-          <input
+            id="fechaNacimiento"
+            className="auth-field"
             type="date"
             value={form.fechaNacimiento}
             onChange={(e) => setForm({ ...form, fechaNacimiento: e.target.value })}
             autoComplete="bday"
             required
           />
-        </label>
 
-        <label style={{ display: "block", marginTop: 8 }}>
-          Biografía:
-          <textarea
-            value={form.biografia}
-            onChange={(e) => setForm({ ...form, biografia: e.target.value })}
-          />
-        </label>
-
-        <label style={{ display: "block", marginTop: 8 }}>
-          Teléfono:
+          {/* Teléfono */}
+          <label htmlFor="telefono">Teléfono</label>
           <input
+            id="telefono"
+            className="auth-field"
             type="tel"
+            placeholder="+34 600 111 222"
             value={form.telefono}
             onChange={(e) => setForm({ ...form, telefono: e.target.value })}
             autoComplete="tel"
-            pattern='^\+?\d{7,15}$'
+            pattern="^\+?\d{7,15}$"
             required
           />
-        </label>
 
-        <label style={{ display: "block", marginTop: 8 }}>
-          Dirección:
+          {/* Dirección */}
+          <label htmlFor="direccion">Dirección</label>
           <input
+            id="direccion"
+            className="auth-field"
+            type="text"
+            placeholder="Calle, número, ciudad"
             value={form.direccion}
             onChange={(e) => setForm({ ...form, direccion: e.target.value })}
             autoComplete="street-address"
             required
           />
-        </label>
-        <label style={{ display: "block", marginTop: 8 }}>
-          Foto de perfil:
+
+          {/* Biografía */}
+          <label htmlFor="biografia">Biografía (opcional)</label>
+          <textarea
+            id="biografia"
+            className="auth-field"
+            placeholder="Cuéntanos algo sobre ti..."
+            value={form.biografia}
+            onChange={(e) => setForm({ ...form, biografia: e.target.value })}
+            rows={4}
+          />
+
+          {/* Foto de perfil */}
+          <label htmlFor="foto">Foto de perfil (opcional)</label>
           <input
+            id="foto"
+            className="auth-field"
             type="file"
             accept="image/*"
             onChange={(e) => {
@@ -253,31 +254,49 @@ return (
               setForm({ ...form, foto: file });
             }}
           />
-        </label>
 
-        <button type="submit" style={{ marginTop: 12 }}>
-          Crear cuenta
-        </button>
-        {error && <p style={{ color: "crimson" }}>{error}</p>}
-      </form>
-        <p style={{ marginTop: 12 }}>
-        ¿No tienes cuenta?{" "}
-            <button
-            type="button"
-            onClick={() => navigate("/login")}
-            style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                color: "#007bff",
-                textDecoration: "underline",
-                cursor: "pointer"
-            }}
-            >
+          {/* Contraseña */}
+          <label htmlFor="password">Contraseña</label>
+          <input
+            id="password"
+            className="auth-field"
+            type="password"
+            placeholder="Mínimo 8 caracteres"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            autoComplete="new-password"
+            required
+          />
+
+          {/* Confirmar contraseña */}
+          <label htmlFor="confirmPassword">Confirmar contraseña</label>
+          <input
+            id="confirmPassword"
+            className="auth-field"
+            type="password"
+            placeholder="Repite la contraseña"
+            value={form.confirmPassword}
+            onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
+            autoComplete="new-password"
+            required
+          />
+
+          <button className="submit-button" style={{ marginTop: 12 }}>
             Crear cuenta
-            </button>
-        </p>
-    </div>
+          </button>
+          {error && <p style={{ color: "crimson" }}>{error}</p>}
+        </form>
+          <p style={{ marginTop: 12 }}>
+          ¿Ya tienes una cuenta?{" "}
+              <button
+              type="button"
+              className="link"
+              onClick={() => navigate("/login")}
+              >
+              Inicia sesion aqui
+              </button>
+          </p>
+        </AuthLayout>
   );
 };
 

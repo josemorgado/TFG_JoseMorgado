@@ -47,6 +47,7 @@ const Login: React.FC = () => {
         <TextField
           name="username"
           className="auth-field"
+          placeholder="Username"
           value={form.username}
           onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
           autoComplete="username"
@@ -57,12 +58,22 @@ const Login: React.FC = () => {
         <PasswordField
           name="password"
           type="password"
+          placeholder="Password"
           className="auth-field"
           value={form.password}
           onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
           required
           disabled={loading}
         />
+        <p style={{ marginTop: 8 }}>
+          <button
+            type="button"
+            className="link"
+            onClick={() => navigate("/forgot-password")}
+          >
+            ¿Has olvidado tu contraseña?
+          </button>
+        </p>
 
         <SubmitButton loading={loading}>Entrar</SubmitButton>
         <ErrorMessage message={error} />
@@ -71,15 +82,8 @@ const Login: React.FC = () => {
         ¿No tienes cuenta?{" "}
           <button
             type="button"
+            className="link"
             onClick={() => navigate("/register")}
-            style={{
-              background: "none",
-              border: "none",
-              padding: 0,
-              color: "#007bff",
-              textDecoration: "underline",
-              cursor: "pointer"
-            }}
           >
             Crear cuenta
           </button>
