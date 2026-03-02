@@ -50,13 +50,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     storage.setAccess(tokens.access);
     if (tokens.refresh) storage.setRefresh(tokens.refresh);
     // 3) pedir datos de usuario (si tienes /me)
-    try {
-      const me = await fetchMe(tokens.access);
-      setUser(me);
-    } catch {
-      // Si no hay /me, puedes decodificar el JWT o guardar usuario básico
-      setUser({ id: 0, username: credentials.username });
-    }
+    const me = await fetchMe(tokens.access);
+    setUser(me);
+    return me;
   };
 
   const logout = () => {

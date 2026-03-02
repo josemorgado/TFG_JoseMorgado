@@ -3,9 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { registerRequest, loginRequest, fetchMe } from "../api/auth";
 import { storage } from "../utils/storage";
 import AuthLayout from "../components/AuthLayout";
+import { useAuth } from "../context/AuthContext";
+
 
 const Register: React.FC = () => {
     const navigate = useNavigate();
+    const {login: authLogin} = useAuth()
 
     const [form, setForm] = useState({
         username: "",
@@ -50,76 +53,81 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     console.log("Formulario válido. Datos preparados:");
 
-const formData = new FormData();
+  const formData = new FormData();
 
-formData.append("username", form.username.trim());
-formData.append("email", form.email.trim());
-formData.append("first_name", form.firstName.trim());
-formData.append("last_name", form.lastName.trim());
-formData.append("password", form.password.trim());
+  formData.append("username", form.username.trim());
+  formData.append("email", form.email.trim());
+  formData.append("first_name", form.firstName.trim());
+  formData.append("last_name", form.lastName.trim());
+  formData.append("password", form.password.trim());
+  formData.append("telefono", form.telefono.trim());
+  formData.append("direccion", form.direccion.trim());
+  formData.append("fecha_nacimiento", form.fechaNacimiento.trim());
 
-// 🔥 CAMPOS PLANOS (NO perfil.xxx)
-formData.append("telefono", form.telefono.trim());
-formData.append("direccion", form.direccion.trim());
-formData.append("fecha_nacimiento", form.fechaNacimiento.trim());
+  if (form.genero) {
+    formData.append("genero", form.genero);
+  }
 
-if (form.genero) {
-  formData.append("genero", form.genero);
-}
+  if (form.biografia) {
+    formData.append("biografia", form.biografia.trim());
+  }
 
-if (form.biografia) {
-  formData.append("biografia", form.biografia.trim());
-}
+  if (form.foto) {
+    formData.append("foto_perfil", form.foto);
+  }
+  try {
 
-if (form.foto) {
-  formData.append("foto_perfil", form.foto);
-}
-    try {
+    console.log("[Register] calling registerRequest", formData);
+    await registerRequest(formData);
+    console.log("[Register] register OK, about to login");
+    const tokens = await loginRequest({username: form.username, password: form.password});
 
-      console.log("[Register] calling registerRequest", formData);
-      await registerRequest(formData);
-      console.log("[Register] register OK, about to login");
+    if (tokens.refresh) storage.setRefresh(tokens.refresh);
+    storage.setAccess(tokens.access)
+
+    // 🔥 Login usando el AuthContext (que hace fetchMe y setUser)
+
+    const user = await authLogin({
+      username: form.username,
+      password: form.password,
+    });
+
+    // Ahora sí puedes navegar
+    navigate("/");
 
 
-      const tokens = await loginRequest({username: form.username, password: form.password});
+  } catch (err: any) {
+    if (err.response?.data){
+      const data= err.response.data;
 
-      if (tokens.refresh) storage.setRefresh(tokens.refresh);
-      storage.setAccess(tokens.access)
-
-      navigate("/")
-    } catch (err: any) {
-      if (err.response?.data){
-        const data= err.response.data;
-
-        if (typeof data == "string") {
-          setError(data);
-          return;
-        }
-
-        const messages: string[] = [];
-
-        if (data.username) messages.push(`username: ${data.username.join(" ")}`);
-        if (data.email) messages.push(`email: ${data.email.join(" ")}`);
-        if (data.first_name) messages.push(`nombre: ${data.first_name.join(" ")}`);
-        if (data.last_name) messages.push(`apellidos: ${data.last_name.join(" ")}`);
-        if (data.password) messages.push(`password: ${data.password.join(" ")}`);
-
-        if (data.perfil) {
-          const p = data.perfil;
-          if (p.telefono) messages.push(`teléfono: ${p.telefono.join(" ")}`);
-          if (p.direccion) messages.push(`dirección: ${p.direccion.join(" ")}`);
-          if (p.fecha_nacimiento) messages.push(`fecha de nacimiento: ${p.fecha_nacimiento.join(" ")}`);
-          if (p.genero) messages.push(`género: ${p.genero.join(" ")}`);
-          if (p.biografia) messages.push(`biografía: ${p.biografia.join(" ")}`);
-        }
-
-        setError(messages.join(" . ") || "No se puede crear la cuenta o error de login.")
-      } else {
-        setError("No se pudo conectar con el servidor. Intentalo de nuevo mas tarde.")
+      if (typeof data == "string") {
+        setError(data);
+        return;
       }
-    }
 
-    console.log(form);
+      const messages: string[] = [];
+      if (data.username) messages.push(`username: ${data.username.join(" ")}`);
+      if (data.email) messages.push(`email: ${data.email.join(" ")}`);
+      if (data.first_name) messages.push(`nombre: ${data.first_name.join(" ")}`);
+      if (data.last_name) messages.push(`apellidos: ${data.last_name.join(" ")}`);
+      if (data.password) messages.push(`password: ${data.password.join(" ")}`);
+
+      if (data.perfil) {
+        const p = data.perfil;
+        if (p.telefono) messages.push(`teléfono: ${p.telefono.join(" ")}`);
+        if (p.direccion) messages.push(`dirección: ${p.direccion.join(" ")}`);
+        if (p.fecha_nacimiento) messages.push(`fecha de nacimiento: ${p.fecha_nacimiento.join(" ")}`);
+        if (p.genero) messages.push(`género: ${p.genero.join(" ")}`);
+        if (p.biografia) messages.push(`biografía: ${p.biografia.join(" ")}`);
+      }
+
+      setError(messages.join(" . ") || "No se puede crear la cuenta o error de login.")
+    } else {
+      setError("No se pudo conectar con el servidor. Intentalo de nuevo mas tarde.")
+    }
+  }
+
+  console.log(form);
 
 };
 
