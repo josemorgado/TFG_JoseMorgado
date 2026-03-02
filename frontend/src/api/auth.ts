@@ -54,7 +54,7 @@ export async function fetchMe(accessToken: string) {
 }
 
 // Funcion para crear cuenta
-export async function registerRequest(payload :RegisterPayload) {
-  const res= await api.post(AUTH_REGISTER, payload)
+export async function registerRequest(data: FormData) {
+  const res = await api.post(AUTH_REGISTER, data);
   return res.data;
 }

@@ -97,40 +97,32 @@ class UserLiteSerializer(serializers.ModelSerializer):
 
 # --------- User + Perfil (crear/actualizar en una operación) ---------
 class UserPerfilSerializer(serializers.ModelSerializer):
-    """
-    Serializador compuesto para crear/actualizar el usuario y su perfil embebido
-    en una sola operación. Acepta multipart/form-data para foto de perfil.
-    """
-    perfil = PerfilSerializer(required=True)  # perfil es obligatorio
     password = serializers.CharField(write_only=True, required=True)
+
+    # Campos del perfil expuestos directamente
+    telefono = serializers.CharField(write_only=True)
+    direccion = serializers.CharField(write_only=True)
+    fecha_nacimiento = serializers.DateField(write_only=True)
+    genero = serializers.CharField(write_only=True, required=False)
+    biografia = serializers.CharField(write_only=True, required=False)
+    foto_perfil = serializers.ImageField(write_only=True, required=False)
 
     class Meta:
         model = User
         fields = [
-            'id',
-            'username',
-            'email',
-            'first_name',
-            'last_name',
-            'password',
-            'is_active',
-            'perfil',
-            'date_joined',
-            'last_login',
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "password",
+            "telefono",
+            "direccion",
+            "fecha_nacimiento",
+            "genero",
+            "biografia",
+            "foto_perfil",
         ]
-        read_only_fields = ['id', 'date_joined', 'last_login']
-        extra_kwargs = {
-            "username": {"help_text": "Nombre único de usuario."},
-            "email": {"help_text": "Correo electrónico único del usuario."},
-            "first_name": {"help_text": "Nombre."},
-            "last_name": {"help_text": "Apellidos."},
-            "password": {"help_text": "Contraseña del usuario (solo escritura)."},
-            "is_active": {"help_text": "Indica si la cuenta está activa."},
-            "perfil": {"help_text": "Datos del perfil asociado al usuario."},
-            "date_joined": {"help_text": "Fecha de alta (solo lectura)."},
-            "last_login": {"help_text": "Último acceso (solo lectura)."},
-        }
-
     # Validación de email único
     def validate_email(self, value):
         if value is None or value.strip() == "":
@@ -153,58 +145,72 @@ class UserPerfilSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Ya existe un usuario con ese nombre de usuario.")
         return value.strip()
 
+    # -------------------------
+    # CREATE
+    # -------------------------
+
     @transaction.atomic
     def create(self, validated_data):
-        perfil_data = validated_data.pop('perfil')
-        password = validated_data.pop('password')
+        password = validated_data.pop("password")
 
-        # Crea usuario
+        # Extraer datos de perfil
+        telefono = validated_data.pop("telefono")
+        direccion = validated_data.pop("direccion")
+        fecha_nacimiento = validated_data.pop("fecha_nacimiento")
+        genero = validated_data.pop("genero", "O")
+        biografia = validated_data.pop("biografia", "")
+        foto_perfil = validated_data.pop("foto_perfil", None)
+
+        # Crear usuario SOLO con campos válidos
         user = User.objects.create(**validated_data)
         user.set_password(password)
         user.save()
 
-        # Gracias al post_save, ya debe existir user.perfil; si no, lo creamos
-        '''perfil_instance = getattr(user, 'perfil', None)
-        if perfil_instance is None:
-            perfil_instance = Perfil.objects.create(user=user)'''
-
-        # Rellenamos el perfil con los datos recibidos
-        perfil_serializer = PerfilSerializer(
-            #instance=perfil_instance,
-            data=perfil_data,
-            #partial=False,
-            context=self.context,
+        # Crear perfil correctamente
+        Perfil.objects.create(
+            user=user,
+            telefono=telefono,
+            direccion=direccion,
+            fecha_nacimiento=fecha_nacimiento,
+            genero=genero,
+            biografia=biografia,
+            foto_perfil=foto_perfil,
         )
-        perfil_serializer.is_valid(raise_exception=True)
-        perfil_serializer.save(user=user)
 
         return user
+    # -------------------------
+    # UPDATE
+    # -------------------------
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        perfil_data = validated_data.pop('perfil', None)
-        password = validated_data.pop('password', None)
+        perfil_data = validated_data.pop("perfil", None)
+        password = validated_data.pop("password", None)
 
-        # Actualiza User
+        # Actualizar User
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
-        if password is not None:
+
+        if password:
             instance.set_password(password)
+
         instance.save()
 
-        # Actualiza Perfil si viene incluido
+        # Actualizar Perfil
         if perfil_data is not None:
-            perfil_instance = getattr(instance, 'perfil', None)
-            if perfil_instance is None:
-                #perfil_instance = Perfil.objects.create(user=instance)
+            perfil_instance = instance.perfil
 
-                perfil_serializer = PerfilSerializer(
-                    #instance=perfil_instance,
-                    data=perfil_data,
-                    #partial=getattr(self, 'partial', False),
-                    context=self.context,
-                )
-                perfil_serializer.is_valid(raise_exception=True)
-                perfil_serializer.save()
+            request = self.context.get("request")
+            if request and request.FILES.get("perfil.foto_perfil"):
+                perfil_data["foto_perfil"] = request.FILES.get("perfil.foto_perfil")
+
+            perfil_serializer = PerfilSerializer(
+                instance=perfil_instance,
+                data=perfil_data,
+                partial=self.partial,
+                context=self.context,
+            )
+            perfil_serializer.is_valid(raise_exception=True)
+            perfil_serializer.save()
 
         return instance

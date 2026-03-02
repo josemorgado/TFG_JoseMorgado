@@ -18,6 +18,7 @@ const Register: React.FC = () => {
         biografia: "",
         telefono: "",
         direccion: "",
+        foto: null as File | null,
 });
 
 const [error, setError] = useState<string | null>(null);
@@ -48,25 +49,34 @@ const handleSubmit = async (e: React.FormEvent) => {
 
     console.log("Formulario válido. Datos preparados:");
 
-    const payload = {
-      username: form.username.trim(),
-      email: form.email.trim(),
-      first_name: form.firstName.trim(),
-      last_name: form.lastName.trim(),
-      password: form.password.trim(),
-      perfil: {
-        telefono: form.telefono.trim(),
-        direccion: form.direccion.trim(),
-        fecha_nacimiento: form.fechaNacimiento.trim(),
-        ...(form.genero ? { genero: form.genero as "M" | "F" | "O" } : {}),
-        ...(form.biografia ? { biografia: form.biografia.trim()} : {}),
-      },
-    } as const;
+const formData = new FormData();
 
+formData.append("username", form.username.trim());
+formData.append("email", form.email.trim());
+formData.append("first_name", form.firstName.trim());
+formData.append("last_name", form.lastName.trim());
+formData.append("password", form.password.trim());
+
+// 🔥 CAMPOS PLANOS (NO perfil.xxx)
+formData.append("telefono", form.telefono.trim());
+formData.append("direccion", form.direccion.trim());
+formData.append("fecha_nacimiento", form.fechaNacimiento.trim());
+
+if (form.genero) {
+  formData.append("genero", form.genero);
+}
+
+if (form.biografia) {
+  formData.append("biografia", form.biografia.trim());
+}
+
+if (form.foto) {
+  formData.append("foto_perfil", form.foto);
+}
     try {
 
-      console.log("[Register] calling registerRequest", payload);
-      await registerRequest(payload);
+      console.log("[Register] calling registerRequest", formData);
+      await registerRequest(formData);
       console.log("[Register] register OK, about to login");
 
 
@@ -102,7 +112,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           if (p.biografia) messages.push(`biografía: ${p.biografia.join(" ")}`);
         }
 
-        setError(messages.join(" . ") || "No se puede crear la cuenta. Revisa los campos.")
+        setError(messages.join(" . ") || "No se puede crear la cuenta o error de login.")
       } else {
         setError("No se pudo conectar con el servidor. Intentalo de nuevo mas tarde.")
       }
@@ -231,6 +241,17 @@ return (
             onChange={(e) => setForm({ ...form, direccion: e.target.value })}
             autoComplete="street-address"
             required
+          />
+        </label>
+        <label style={{ display: "block", marginTop: 8 }}>
+          Foto de perfil:
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const file = e.target.files?.[0] || null;
+              setForm({ ...form, foto: file });
+            }}
           />
         </label>
 
