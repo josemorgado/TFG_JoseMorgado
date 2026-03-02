@@ -1,15 +1,20 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
-import { createQuejaRequest } from "../api/quejas.ts";
+import { createQuejaRequest } from "../api/quejas";
+import { useCategorias, useDistritos } from "../modules/catalogos/catalogos.queries";
 
 const CreateQueja: React.FC = () => {
   const navigate = useNavigate();
 
+  // Cargar catálogos (IMPORTANTE: hooks dentro del componente)
+  const { data: categorias, isLoading: catLoading, error: catError } = useCategorias();
+  const { data: distritos,  isLoading: disLoading, error: disError } = useDistritos();
+
   const [form, setForm] = useState({
     titulo: "",
     descripcion: "",
-    categoria: "",
+    categoria: "", // select guarda string; luego convertimos a number al enviar
     distrito: "",
     ubicacion: "",
     imagenes: [] as File[],
@@ -22,43 +27,49 @@ const CreateQueja: React.FC = () => {
     e.preventDefault();
     setError(null);
 
-    if (!form.titulo.trim() || form.titulo.length < 5) {
+    // Validaciones rápidas en cliente
+    if (!form.titulo.trim() || form.titulo.trim().length < 5) {
       setError("El título debe tener mínimo 5 caracteres");
       return;
     }
-
-    if (!form.descripcion.trim() || form.descripcion.length < 10) {
+    if (!form.descripcion.trim() || form.descripcion.trim().length < 10) {
       setError("La descripción debe tener mínimo 10 caracteres");
       return;
     }
-
     if (!form.categoria) {
       setError("Debes seleccionar una categoría");
       return;
     }
-
     if (!form.distrito) {
       setError("Debes seleccionar un distrito");
       return;
     }
 
+    // Construir FormData (conversión a number -> string)
     const formData = new FormData();
     formData.append("titulo", form.titulo.trim());
     formData.append("descripcion", form.descripcion.trim());
-    formData.append("categoria", form.categoria);
-    formData.append("distrito", form.distrito);
+    formData.append("categoria", String(Number(form.categoria)));
+    formData.append("distrito", String(Number(form.distrito)));
 
     if (form.ubicacion.trim()) {
       formData.append("ubicacion", form.ubicacion.trim());
     }
 
+    // Adjuntos (si tu backend espera arrays, los nombres "imagenes" / "videos" deben coincidir)
     form.imagenes.forEach((img) => formData.append("imagenes", img));
     form.videos.forEach((vid) => formData.append("videos", vid));
 
     try {
-      const res = await createQuejaRequest(formData);
-      console.log("Queja creada:", res.data);
-      navigate(`/quejas/${res.data.id}`);
+      const res = await createQuejaRequest(formData); // POST /quejas/create/ (multipart)
+      // Si el backend devuelve el objeto con id:
+      const id = res?.data?.id;
+      if (id) {
+        navigate(`/quejas/${id}`);
+      } else {
+        // Fallback si no llega id
+        navigate("/quejas");
+      }
     } catch (err: any) {
       if (err.response?.data) {
         const data = err.response.data;
@@ -71,11 +82,11 @@ const CreateQueja: React.FC = () => {
           return;
         }
 
-        if (data.titulo) messages.push(`Título: ${data.titulo.join(" ")}`);
-        if (data.descripcion) messages.push(`Descripción: ${data.descripcion.join(" ")}`);
-        if (data.categoria) messages.push(`Categoría: ${data.categoria.join(" ")}`);
-        if (data.distrito) messages.push(`Distrito: ${data.distrito.join(" ")}`);
-        if (data.ubicacion) messages.push(`Ubicación: ${data.ubicacion.join(" ")}`);
+        if (data.titulo) messages.push(`Título: ${Array.isArray(data.titulo) ? data.titulo.join(" ") : String(data.titulo)}`);
+        if (data.descripcion) messages.push(`Descripción: ${Array.isArray(data.descripcion) ? data.descripcion.join(" ") : String(data.descripcion)}`);
+        if (data.categoria) messages.push(`Categoría: ${Array.isArray(data.categoria) ? data.categoria.join(" ") : String(data.categoria)}`);
+        if (data.distrito) messages.push(`Distrito: ${Array.isArray(data.distrito) ? data.distrito.join(" ") : String(data.distrito)}`);
+        if (data.ubicacion) messages.push(`Ubicación: ${Array.isArray(data.ubicacion) ? data.ubicacion.join(" ") : String(data.ubicacion)}`);
 
         setError(messages.join(" • ") || "Error al crear la queja");
       } else {
@@ -86,7 +97,7 @@ const CreateQueja: React.FC = () => {
 
   return (
     <AuthLayout title="Crear Queja">
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="grid gap-3">
         {/* Título */}
         <label htmlFor="titulo">Título</label>
         <input
@@ -110,26 +121,46 @@ const CreateQueja: React.FC = () => {
         />
 
         {/* Categoría */}
-        <label htmlFor="categoria">ID Categoría</label>
-        <input
+        <label htmlFor="categoria">Categoría</label>
+        <select
           id="categoria"
           className="auth-field"
-          type="number"
           value={form.categoria}
           onChange={(e) => setForm({ ...form, categoria: e.target.value })}
           required
-        />
+          disabled={catLoading || !!catError}
+        >
+          <option value="" disabled>
+            {catLoading ? "Cargando categorías…" : "Selecciona una categoría"}
+          </option>
+          {catError && <option value="" disabled>⚠️ Error cargando categorías</option>}
+          {categorias?.map((c) => (
+            <option key={c.id} value={String(c.id)}>
+              {c.nombre}
+            </option>
+          ))}
+        </select>
 
         {/* Distrito */}
-        <label htmlFor="distrito">ID Distrito</label>
-        <input
+        <label htmlFor="distrito">Distrito</label>
+        <select
           id="distrito"
           className="auth-field"
-          type="number"
           value={form.distrito}
           onChange={(e) => setForm({ ...form, distrito: e.target.value })}
           required
-        />
+          disabled={disLoading || !!disError}
+        >
+          <option value="" disabled>
+            {disLoading ? "Cargando distritos…" : "Selecciona un distrito"}
+          </option>
+          {disError && <option value="" disabled>⚠️ Error cargando distritos</option>}
+          {distritos?.map((d) => (
+            <option key={d.id} value={String(d.id)}>
+              {d.nombre}
+            </option>
+          ))}
+        </select>
 
         {/* Ubicación */}
         <label htmlFor="ubicacion">Ubicación (opcional)</label>
