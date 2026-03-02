@@ -1,4 +1,5 @@
 import React from "react";
+import "./SubmitButton.css";
 
 type SubmitButtonProps = {
   loading?: boolean;
@@ -11,6 +12,7 @@ const SubmitButton: React.FC<SubmitButtonProps> = ({ loading, children, style, d
   return (
     <button
       type="submit"
+      className="submit-button"
       disabled={disabled || loading}
       style={{ marginTop: 12, ...style }}
       aria-busy={loading || undefined}

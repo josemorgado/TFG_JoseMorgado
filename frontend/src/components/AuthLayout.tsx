@@ -1,4 +1,5 @@
 import React from "react";
+import "./AuthLayout.css";
 
 type AuthLayoutProps = {
   title: string;
@@ -6,11 +7,13 @@ type AuthLayoutProps = {
   maxWidth?: number;
 };
 
-const AuthLayout: React.FC<AuthLayoutProps> = ({ title, children, maxWidth = 420 }) => {
+const AuthLayout: React.FC<AuthLayoutProps> = ({ title, children }) => {
   return (
-    <div style={{ maxWidth, margin: "6rem auto" }}>
-      <h1>{title}</h1>
-      {children}
+    <div className="auth-container">
+      <div className="auth-card">
+        <h1>{title}</h1>
+        {children}
+      </div>
     </div>
   );
 };

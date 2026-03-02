@@ -7,7 +7,7 @@ export default function LoginButton() {
   };
 
   return (
-    <button onClick={handleLogout}>
+    <button className="auth-button"onClick={handleLogout}>
       Iniciar sesión
     </button>
   );

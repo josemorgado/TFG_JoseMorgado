@@ -30,8 +30,11 @@ const Login: React.FC = () => {
     } catch (err: any) {
       if (err?.response?.status === 401) {
         setError("Usuario o contraseña incorrectos");
+        setForm((f) => ({ ...f, password: "" }));
+
       } else {
         setError("Error del servidor, inténtalo de nuevo más tarde");
+        setForm((f) => ({ ...f, password: "" }));
       }
     } finally {
       setLoading(false);
@@ -42,8 +45,8 @@ const Login: React.FC = () => {
     <AuthLayout title="Iniciar sesión">
       <form onSubmit={onSubmit} noValidate>
         <TextField
-          label="Usuario"
           name="username"
+          className="auth-field"
           value={form.username}
           onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
           autoComplete="username"
@@ -52,8 +55,9 @@ const Login: React.FC = () => {
         />
 
         <PasswordField
-          label="Contraseña"
           name="password"
+          type="password"
+          className="auth-field"
           value={form.password}
           onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
           required
