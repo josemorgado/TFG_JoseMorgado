@@ -4,7 +4,7 @@ from webbrowser import get
 from rest_framework import serializers
 from django.contrib.auth.models import User
 from rest_framework.fields import SerializerMethodField
-
+from django.contrib.contenttypes.models import ContentType
 from quejas.models import Queja
 
 
@@ -19,7 +19,7 @@ class QuejaSerializer(serializers.ModelSerializer):
     categoria_nombre = SerializerMethodField(read_only=True, help_text="Nombre legible de la categoría.")
     distrito_nombre  = SerializerMethodField(read_only=True, help_text="Nombre legible del distrito.")
     autor_nombre     = SerializerMethodField(read_only=True, help_text="Nombre completo o username del autor.")
-
+    content_type     = SerializerMethodField(read_only=True, help_text="Id del content type de queja")
     # Campos relacionados (en producción el autor vendrá del request)
     autor = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
@@ -56,6 +56,7 @@ class QuejaSerializer(serializers.ModelSerializer):
             'num_votos',
             'num_comentarios',
             'num_comentarios_top_level',
+            'content_type',
         ]
         read_only_fields = [
             'id',
@@ -65,6 +66,7 @@ class QuejaSerializer(serializers.ModelSerializer):
             'num_votos',
             'num_comentarios',
             'num_comentarios_top_level',
+            'content_type',
         ]
         extra_kwargs = {
             "titulo": {
@@ -86,6 +88,11 @@ class QuejaSerializer(serializers.ModelSerializer):
                 "help_text": "Fecha y hora de última modificación (solo lectura)."
             },
         }
+
+    # Obtener el content_type de queja para la creacion de comentarios, imagenes y videos
+    def get_content_type(selft,obj):
+        ct = ContentType.objects.get_for_model(obj)
+        return ct.id
 
     # CREACIÓN DE QUEJA
     def create(self, validated_data):

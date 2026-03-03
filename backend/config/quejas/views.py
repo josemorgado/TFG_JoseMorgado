@@ -162,6 +162,7 @@ def queja_create(request):
     serializer = QuejaSerializer(data=request.data, context={'request': request})
     if serializer.is_valid():
         queja = serializer.save()
+        print(QuejaSerializer(queja).data)
         return Response(QuejaSerializer(queja).data, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

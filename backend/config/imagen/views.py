@@ -8,6 +8,8 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from core.permissions import IsModeratorOrRelatedQuejaAuthor
 
+from django.core.exceptions import ValidationError as DjangoValidationError
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from drf_spectacular.utils import (
     extend_schema,
     OpenApiParameter,
@@ -173,7 +175,12 @@ def imagen_create(request):
 
         nuevo_orden = qs.order_by('-orden').first().orden + 1 if qs.exists() else 0
 
-        imagen = serializer.save(orden=nuevo_orden)
+        try:
+            imagen = serializer.save(orden=nuevo_orden)
+        except DjangoValidationError as e:
+            detail = e.message_dict.get('__all__') if hasattr(e, 'message_dict') else e.messages
+            raise DRFValidationError({'Maximo de 5 imagenes por queja'})
+
         return Response(ImagenSerializer(imagen).data, status=status.HTTP_201_CREATED)
 
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

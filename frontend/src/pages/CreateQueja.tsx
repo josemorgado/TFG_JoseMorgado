@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import AuthLayout from "../components/AuthLayout";
 import { createQuejaRequest } from "../api/quejas";
 import { useCategorias, useDistritos } from "../modules/catalogos/catalogos.queries";
+import { crearImagenQueja } from "../api/imagenes";
 
 const CreateQueja: React.FC = () => {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const CreateQueja: React.FC = () => {
   });
 
   const [error, setError] = useState<string | null>(null);
-
+  const [errorImagenes, setErrorImagenes] = useState<string | null>(null);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -44,6 +45,11 @@ const CreateQueja: React.FC = () => {
       setError("Debes seleccionar un distrito");
       return;
     }
+    if (form.imagenes.length > 5) {
+      setError("Solo puedes subir un máximo de 5 imágenes.");
+      return;
+    }
+
 
     // Construir FormData (conversión a number -> string)
     const formData = new FormData();
@@ -56,14 +62,18 @@ const CreateQueja: React.FC = () => {
       formData.append("ubicacion", form.ubicacion.trim());
     }
 
-    // Adjuntos (si tu backend espera arrays, los nombres "imagenes" / "videos" deben coincidir)
-    form.imagenes.forEach((img) => formData.append("imagenes", img));
-    form.videos.forEach((vid) => formData.append("videos", vid));
-
     try {
       const res = await createQuejaRequest(formData); // POST /quejas/create/ (multipart)
       // Si el backend devuelve el objeto con id:
       const id = res?.data?.id;
+      const ctId = res?.data?.content_type;
+
+
+
+      for (const file of form.imagenes) {
+        await crearImagenQueja(ctId,id,file)
+      }
+
       if (id) {
         navigate(`/quejas/${id}`);
       } else {
@@ -180,14 +190,25 @@ const CreateQueja: React.FC = () => {
           type="file"
           accept="image/*"
           multiple
-          onChange={(e) =>
+          onChange={(e) =>{
+            const files = Array.from(e.target.files || []);
+            const MAX = 5;
+            if (files.length > MAX) {
+              setErrorImagenes("El maximo de imagenes es 5.");
+              return;
+            }
+            setErrorImagenes(null)
             setForm({
               ...form,
               imagenes: Array.from(e.target.files || []),
-            })
-          }
+            });
+          }}
         />
-
+        {errorImagenes && (
+          <p style={{ color: "crimson", fontSize: "0.9rem" }}>
+            {errorImagenes}
+          </p>
+        )}
         {/* Videos */}
         <label htmlFor="videos">Videos (opcional)</label>
         <input
@@ -196,15 +217,22 @@ const CreateQueja: React.FC = () => {
           type="file"
           accept="video/*"
           multiple
-          onChange={(e) =>
+          onChange={(e) =>{
+            const files = Array.from(e.target.files || []);
+            const MAX = 1;
+            if (files.length > MAX) {
+              setError("El maximo de videos es 1.");
+              setForm({...form, imagenes: []});
+              return;
+            }
             setForm({
               ...form,
               videos: Array.from(e.target.files || []),
             })
-          }
+          }}
         />
 
-        <button className="submit-button" style={{ marginTop: 12 }}>
+        <button className="submit-button" style={{ marginTop: 12 }} disabled={errorImagenes}>
           Crear Queja
         </button>
 
