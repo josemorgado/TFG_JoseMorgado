@@ -1,5 +1,5 @@
 import React from "react";
-import "./SubmitButton.css";
+import "../styles/SubmitButton.css";
 
 type SubmitButtonProps = {
   loading?: boolean;

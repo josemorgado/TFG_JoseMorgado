@@ -18,7 +18,6 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ⬅️ ESTA es la forma correcta (solo casteas .state)
   const state = location.state as LoginState | undefined;
 
   const reason = state?.reason;
@@ -36,7 +35,6 @@ const Login: React.FC = () => {
     try {
       await login(form);
 
-      // Si venía de Crear Queja ➝ redirige allí
       if (reason === "create-queja") {
         navigate("/create-queja", { replace: true });
       } else {
@@ -64,6 +62,9 @@ const Login: React.FC = () => {
       )}
 
       <form onSubmit={onSubmit} noValidate>
+        <label>
+          Username
+        </label>
         <TextField
           name="username"
           className="auth-field"
@@ -74,7 +75,9 @@ const Login: React.FC = () => {
           required
           disabled={loading}
         />
-
+        <label>
+          Password
+        </label>
         <PasswordField
           name="password"
           className="auth-field"

@@ -1,0 +1,50 @@
+
+.auth-container {
+  /* Que el contenedor ocupe todo el ancho de la pantalla */
+  width: 100%;
+  min-height: calc(100vh - 60px);
+
+  /* Centrado del contenido (la card) */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* Separaciones y fondo */
+  background-color: var(--color-bg);
+  padding: 24px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 520px;
+  background: var(--color-white);
+  padding: 32px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-medium);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  text-align: center;
+}
+
+.auth-title {
+  color: var(--color-primary);
+  font-weight: 800;
+  font-size: 28px;
+  text-align: center;
+  margin: 0 0 8px;
+}
+
+.auth-field {
+  margin: 12px 0;
+  width: 100%;
+}
+
+.link {
+  background: none;
+  color: var(--color-primary);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  font-size: 14px;
+}
