@@ -1,0 +1,391 @@
+/* detail.css */
+/* Página de detalle: layout base */
+.detail-page {
+  padding: 24px 16px;
+}
+
+.detail {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Header de la ficha */
+.detail__header {
+  background: var(--color-white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.detail__title {
+  margin: 0 0 8px 0;
+  color: var(--color-primary);
+  line-height: 1.2;
+}
+
+.detail__desc {
+  margin: 0 0 12px 0;
+  color: var(--color-text);
+}
+
+/* Meta (chips + datos) */
+.detail__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  align-items: center;
+  font-size: 14px;
+  color: #444;
+}
+
+.meta__group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.meta__label {
+  color: #666;
+}
+
+/* Chips */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+  background: #f0f3ff;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.pill--neutral { border-color: #d0d5dd; color: #344054; background: #f8fafc; }
+.pill--success { border-color: #16a34a; color: #166534; background: #ecfdf5; }
+.pill--warning { border-color: #eab308; color: #92400e; background: #fffbeb; }
+.pill--danger  { border-color: #ef4444; color: #7f1d1d; background: #fef2f2; }
+
+/* Secciones genéricas */
+.section {
+  background: var(--color-white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.section__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px 0;
+  font-size: 18px;
+  color: var(--color-primary);
+}
+
+.section__title::before {
+  content: "";
+  width: 6px;
+  height: 18px;
+  border-radius: 3px;
+  background: var(--color-secondary);
+}
+
+/* Secciones de media (dos tarjetas lado a lado) */
+.section_media {
+  background: var(--color-white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  padding: 20px;
+  margin-bottom: 20px;
+  max-width: 48%;
+  min-width: 48%;
+  min-height: 300px;
+}
+
+.sections-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 20px;
+  width: 100%;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+/* Responsive: en móvil apilar */
+@media (max-width: 768px) {
+  .sections-row {
+    flex-wrap: wrap;
+  }
+  .sections-row > .section_media {
+    max-width: 100%;
+    min-width: 100%;
+  }
+}
+
+/* Estados vacíos */
+.empty-state {
+  text-align: center;
+  color: #667085;
+  background: #f9fafb;
+  border: 1px dashed #e5e7eb;
+  border-radius: var(--radius-small);
+  padding: 18px;
+}
+
+/* ---------------------------- */
+/* TARJETAS DE MEDIA */
+/* ---------------------------- */
+
+/* Grid responsivo: 1 columna móvil, 2 columnas en desktop */
+.media-grid {
+  display: grid;
+  grid-template-columns: 1fr; /* Móvil */
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .media-grid {
+    grid-template-columns: repeat(2, 1fr); /* Mitad de pantalla */
+  }
+}
+
+/* Grid reducido: solo 2 columnas (preview) */
+.media-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  height: 250px;
+}
+
+/* Tarjeta de imagen/vídeo */
+.media-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-small);
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  background: var(--color-white);
+  box-shadow: var(--shadow-soft);
+}
+
+/* Contenedor visual con tamaño controlado (con overlay) */
+.media-card__visual {
+  position: relative;           /* necesario para overlay */
+  width: 100%;
+  aspect-ratio: 16 / 9;         /* tamaño elegante y uniforme */
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;          /* centra vertical */
+  justify-content: center;      /* centra horizontal */
+  overflow: hidden;
+}
+
+/* Imágenes: miniaturas llenas (recorte estético) */
+.media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media--image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;        /* no recorta */
+  background: #f3f4f6;        /* fondo suave si hay bandas */
+}
+
+/* Vídeo: centrado y sin deformar (no afecta a imágenes) */
+.media--video {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+/* Pie de la tarjeta */
+.media-card__body {
+  padding: 10px 12px;
+  color: #475467;
+  font-size: 12px;
+  border-top: 1px solid #eef2f7;
+}
+
+/* Overlay para el “+N” */
+.overlay-more {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background: rgba(0,0,0,0.55);
+  color: white;
+  font-size: 20px;
+  font-weight: 700;
+  padding: 8px 12px;
+  cursor: pointer;
+  user-select: none;
+  border-top-left-radius: 6px;  /* mejora la estética del ángulo */
+}
+
+/* Comentarios */
+.comment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.comment {
+  border: 1px solid #eef2f7;
+  border-left: 4px solid var(--color-primary);
+  border-radius: var(--radius-small);
+  padding: 12px 14px;
+  background: var(--color-white);
+  box-shadow: var(--shadow-soft);
+}
+
+.comment__content { margin: 0 0 8px 0; }
+
+.comment__reply {
+  margin-top: 6px;
+  color: #475467;
+  font-size: 12px;
+}
+
+/* Acordeón anidado (respuestas) */
+.comment-list.replies {
+  margin-top: 8px;
+  margin-left: 16px;
+  padding-left: 12px;
+  border-left: 2px solid #eef2f7;
+}
+
+.toggle-replies {
+  padding: 6px 10px;
+  font-size: 12px;
+  border-radius: var(--radius-small);
+}
+.toggle-replies::after { content: " ▾"; }
+.toggle-replies[aria-expanded="true"]::after { content: " ▴"; }
+
+/* Alertas */
+.alert {
+  padding: 12px 14px;
+  border-radius: var(--radius-small);
+  margin-bottom: 14px;
+}
+
+.alert--error {
+  background: #fff1f2;
+  color: #7f1d1d;
+  border: 1px solid #fecaca;
+}
+
+.alert--loading {
+  background: #eff6ff;
+  color: #1e3a8a;
+  border: 1px solid #bfdbfe;
+}
+
+/* Utilidades */
+.m-0 { margin: 0; }
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mt-20 { margin-top: 20px; }
+.mb-12 { margin-bottom: 12px; }
+.text-muted { color: #667085; }
+.text-right { text-align: right; }
+
+@media (min-width: 768px) {
+  .detail-page { padding: 32px 20px; }
+  .detail__header { padding: 28px; }
+  .section { padding: 22px; }
+}
+
+.media--image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: transparent;
+  display: block;
+}
+
+.media-card__visual:has(> .media--image) {
+  background: transparent;
+  aspect-ratio: initial;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-grid {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  gap: 16px;
+  height: 250px;
+}
+
+.media-card--video {
+  width: 80%;
+  max-width: 350px;
+  margin: 0 auto;
+  max-height: 200px;
+}
+
+/* Contenedor visual del vídeo */
+.media-card--video .media-card__visual {
+  background: transparent;
+  aspect-ratio: auto;
+  height: 350px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.media--video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .media-card--video {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .media-card--video .media-card__visual {
+    height: 220px;
+  }
+}
+
+.comment__footer {
+  margin-top: 10px;
+  display: flex;
+  justify-content: space-between;   /* autor a la izq — botón a la der */
+  align-items: center;
+}
+
+/* Ajustes del botón para que no se vea enorme */
+.comment__footer .toggle-replies {
+  padding: 6px 12px;
+  white-space: nowrap;
+}
+
+/* Mantén tus estilos previos del meta */
+.comment__meta {
+  display: flex;
+  gap: 12px;
+  color: #667085;
+  font-size: 12px;
+  flex-wrap: wrap;
+}

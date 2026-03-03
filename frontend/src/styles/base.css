@@ -67,9 +67,16 @@ html, body, #root {
   box-shadow: var(--shadow-soft);
 }
 
+
 * {
-
   box-sizing: border-box;
-  max-width: 100%;
+}
 
+img,
+video,
+canvas,
+svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
 }

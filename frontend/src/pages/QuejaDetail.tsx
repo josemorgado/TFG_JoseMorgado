@@ -1,68 +1,125 @@
-import { useEffect, useState } from "react";
-import axiosInstance from "../utils/axios"
-import axios from "axios"
+import { useEffect, useMemo, useState } from "react";
+import axiosInstance from "../utils/axios";
+import axios from "axios";
 import { useParams } from "react-router-dom";
 import type { Queja } from "../types/queja";
 import type { Comentario } from "../types/comentario";
 import type { Imagen } from "../types/imagen";
 import type { Video } from "../types/video";
 import { mediaUrl } from "../utils/media";
+import "../styles/detail.css"; // <-- importa el CSS reutilizable
+
+function formatDate(d: string | Date) {
+  try {
+    return new Date(d).toLocaleString("es-ES", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    });
+  } catch {
+    return String(d);
+  }
+}
+
+/** ---- Comentarios: árbol + tipos ---- */
+type CommentNode = Comentario & { children: CommentNode[] };
+
+function buildCommentTree(comments: Comentario[]): CommentNode[] {
+  const map = new Map<number, CommentNode>();
+  const roots: CommentNode[] = [];
+
+  // Crear nodos
+  comments.forEach((c) => map.set(c.id, { ...c, children: [] }));
+
+  // Enlazar hijos
+  map.forEach((node) => {
+    if (node.parent) {
+      const parent = map.get(node.parent);
+      if (parent) parent.children.push(node);
+      else roots.push(node); // fallback si no existe el parent
+    } else {
+      roots.push(node);
+    }
+  });
+
+  // Orden por fecha (opcional)
+  const sortByDate = (arr: CommentNode[]) => {
+    arr.sort(
+      (a, b) =>
+        new Date(a.fecha_creacion).getTime() -
+        new Date(b.fecha_creacion).getTime()
+    );
+    arr.forEach((n) => sortByDate(n.children));
+  };
+  sortByDate(roots);
+
+  return roots;
+}
 
 function QuejaDetail() {
-    const { id } = useParams();
-    const [queja, setQueja] = useState<Queja | null>(null);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
-    const [imagenes, setImagenes] = useState<Imagen[]>([]);
-    const [videos, setVideos] = useState<Video[]>([]);
-    const [comentarios, setComentarios] = useState<Comentario[]>([]);
-    imagenes.forEach(img => console.log("IMG URL =", img.imagen));
+  const { id } = useParams();
+  const [queja, setQueja] = useState<Queja | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [imagenes, setImagenes] = useState<Imagen[]>([]);
+  const [videos, setVideos] = useState<Video[]>([]);
+  const [comentarios, setComentarios] = useState<Comentario[]>([]);
 
+  // Imágenes: preview + desplegable
+  const [showAllImages, setShowAllImages] = useState(false);
+  const firstTwo = imagenes.slice(0, 2);
+  const rest = imagenes.slice(2);
+  const remaining = rest.length;
+
+  // Estado completo del estado :)
+  const estadoCompleto: Record<string, string> = {
+    PEN: "Pendiente",
+    ENP: "En Progreso",
+    RES: "Resuelta",
+    REC: "Rechazada",
+  };
+
+  // Comentarios: árbol + toggles por id
+  const tree = useMemo(() => buildCommentTree(comentarios), [comentarios]);
+  const [expanded, setExpanded] = useState<Set<number>>(new Set());
+  const toggleReplies = (id: number) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
 
   useEffect(() => {
     if (!id) return;
-
     let cancel = false;
 
-
     async function fetchAll() {
-    try {
+      try {
         setLoading(true);
         setError(null);
 
-        // 1. Queja
-        const quejaRes = await axiosInstance.get<Queja>(`/quejas/${id}/`);
-        if (!cancel) setQueja(quejaRes.data);
+        const [quejaRes, imagenesRes, videosRes, comentarioRes] =
+          await Promise.all([
+            axiosInstance.get<Queja>(`/quejas/${id}/`),
+            axiosInstance.get<Imagen[]>(`/imagenes/queja/${id}/`),
+            axiosInstance.get<Video[]>(`/videos/queja/${id}/`),
+            axiosInstance.get<Comentario[]>(`/comentarios/queja/${id}/`),
+          ]);
 
-        // 2. Imágenes
-        const imagenesRes = await axiosInstance.get<Imagen[]>(`/imagenes/queja/${id}/`);
-        if (!cancel) setImagenes(imagenesRes.data);
-
-        // 3. Videos
-        const videosRes = await axiosInstance.get<Video[]>(`/videos/queja/${id}/`);
-        if (!cancel) setVideos(videosRes.data);
-
-        // 4. Comentarios
-        const comentarioRes = await axiosInstance.get<Comentario[]>(`/comentarios/queja/${id}/`);
-        if (!cancel) setComentarios(comentarioRes.data);
-
-        console.log("QUEJA:", quejaRes.data);
-
-
-        console.log("IMAGENES:", imagenesRes.data);
-        console.log("VIDEOS:", videosRes.data);
-        console.log("COMENTARIOS:", comentarioRes.data);
-
-
-    } catch (err) {
-        if (axios.isAxiosError(err)) {
-        setError("Error cargando los datos de la queja.");
-        } else {
-        setError("Error inesperado");
+        if (!cancel) {
+          setQueja(quejaRes.data);
+          setImagenes(imagenesRes.data);
+          setVideos(videosRes.data);
+          setComentarios(comentarioRes.data);
         }
-    } finally {
+      } catch (err) {
+        if (axios.isAxiosError(err)) {
+          setError("Error cargando los datos de la queja.");
+        } else {
+          setError("Error inesperado");
+        }
+      } finally {
         if (!cancel) setLoading(false);
-    }
+      }
     }
 
     fetchAll();
@@ -71,80 +128,202 @@ function QuejaDetail() {
     };
   }, [id]);
 
-  if (loading) return <p>Cargando…</p>;
-  if (error) return <p style={{ color: "crimson" }}>{error}</p>;
-  if (!queja) return <p>No hay datos.</p>;
+  if (loading) {
+    return (
+      <div className="detail-page">
+        <div className="detail">
+          <div className="alert alert--loading" role="status">
+            Cargando…
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="detail-page">
+        <div className="detail">
+          <div className="alert alert--error">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!queja) {
+    return (
+      <div className="detail-page">
+        <div className="detail">
+          <div className="empty-state">No hay datos.</div>
+        </div>
+      </div>
+    );
+  }
+
+  /** --- Componente recursivo para un comentario --- */
+  function CommentItem({ node, level = 0 }: { node: CommentNode; level?: number }) {
+    const isOpen = expanded.has(node.id);
+    const repliesCount = node.children.length;
+
+    return (
+      <li className="comment" style={{ marginLeft: level ? 16 : 0 }}>
+        <p className="comment__content">{node.contenido}</p>
+
+
+        <div className="comment__footer">
+        <div className="comment__meta">
+            <span>ID autor: {node.autor}</span>
+            <span>Fecha: {formatDate(node.fecha_creacion)}</span>
+            <span>Votos: {node.num_votos}</span>
+        </div>
+
+        {repliesCount > 0 && (
+            <button
+            type="button"
+            className="toggle-replies btn btn-secondary"
+            onClick={() => toggleReplies(node.id)}
+            aria-expanded={isOpen}
+            >
+            {isOpen ? "Ocultar" : "Ver"} {repliesCount} respuesta{repliesCount !== 1 ? "s" : ""}
+            </button>
+        )}
+        </div>
+
+
+
+        {isOpen && repliesCount > 0 && (
+          <ul id={`replies-${node.id}`} className="comment-list replies">
+            {node.children.map((child) => (
+              <CommentItem key={child.id} node={child} level={level + 1} />
+            ))}
+          </ul>
+        )}
+      </li>
+    );
+  }
 
   return (
-    <div>
-        <h1>{queja.titulo}</h1>
-        <p>{queja.descripcion}</p>
-        <small>
-            Estado: {queja.estado} · Categoría: {queja.categoria_nombre} · Distrito: {queja.distrito_nombre} · Imágenes: {imagenes.length} · Videos: {videos.length} · Comentarios: {comentarios.length}
-        </small>
+    <main className="detail-page">
+      <div className="detail">
+        {/* Header */}
+        <header className="detail__header card">
+          <h1 className="detail__title">{queja.titulo}</h1>
+          {queja.descripcion && (
+            <p className="detail__desc">{queja.descripcion}</p>
+          )}
 
-        <div style={{ marginTop: 16 }}>
-        <h2>Imágenes</h2>
+          <div className="detail__meta">
+            <span className="pill" title="User">
+              <strong>Autor:</strong> {queja.autor_nombre}
+            </span>
 
-        {imagenes.length === 0 ? (
-            <p>No hay imágenes.</p>
-        ) : (
-            <div>
-            {imagenes.map((img) => (
-                <div key={img.id} style={{ marginBottom: 12 }}>
-                <img
-                    src={mediaUrl(img.imagen)}
-                    alt={`Imagen ${img.id}`}
-                    style={{ maxWidth: "300px", display: "block" }}
-                />
-                <small>Subida: {img.fecha_creacion}</small>
+            <span className="meta__group">
+              <span className="meta__label">Estado:</span>
+              <span className="pill pill--neutral">
+                {estadoCompleto[queja.estado] || queja.estado}
+              </span>
+            </span>
+
+            <span className="meta__group">
+              <span className="meta__label">Categoría:</span>
+              <span className="pill pill--neutral">
+                {queja.categoria_nombre}
+              </span>
+            </span>
+
+            <span className="meta__group">
+              <span className="meta__label">Distrito:</span>
+              <span className="pill pill--neutral">
+                {queja.distrito_nombre}
+              </span>
+            </span>
+          </div>
+        </header>
+
+        <div className="sections-row">
+          {/* Imágenes */}
+          <section className="section_media">
+            <h2 className="section__title">Imágenes ({imagenes.length})</h2>
+
+            {imagenes.length > 0 ? (
+              <>
+                <div className="media-grid-2">
+                  {firstTwo.map((img, index) => (
+                    <div key={img.id} className="media-card">
+                      <div className="media-card__visual">
+                        <img className="media media--image" src={mediaUrl(img.imagen)} alt="" />
+                        {index === 1 && remaining > 0 && (
+                          <div
+                            className="overlay-more"
+                            onClick={() => setShowAllImages(!showAllImages)}
+                          >
+                            +{remaining}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-            ))}
-            </div>
-        )}
+
+                {/* DESPLEGABLE: solo resto (sin duplicar) */}
+                {showAllImages && remaining > 0 && (
+                  <div className="media-grid">
+                    {rest.map((img, i) => (
+                      <div key={i} className="media-card">
+                        <div className="media-card__visual">
+                          <img className="media media--image" src={mediaUrl(img.imagen)} alt="" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <p className="empty-state">No hay imágenes.</p>
+            )}
+          </section>
+
+          {/* Videos */}
+          <section className="section_media">
+            <h2 className="section__title">Videos</h2>
+
+            {videos.length === 0 ? (
+              <div className="empty-state">No hay videos.</div>
+            ) : (
+              <div className="video-grid">
+                {videos.map((v) => (
+                    <figure key={v.id} className="media-card media-card--video">
+                        <div className="media-card__visual">
+                      {/* Clase específica para centrar y ajustar video */}
+                      <video
+                        className="media media--video"
+                        src={mediaUrl(v.video)}
+                        controls
+                      />
+                    </div>
+                  </figure>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
 
+        {/* Comentarios */}
+        <section className="section">
+          <h2 className="section__title">Comentarios ({comentarios.length})</h2>
 
-        <div style={{ marginTop: 16 }}>
-        <h2>Videos</h2>
-
-        {videos.length === 0 ? (
-            <p>No hay videos.</p>
-        ) : (
-            <div>
-            {videos.map((v) => (
-                <div key={v.id} style={{ marginBottom: 12 }}>
-                <video
-                    src={mediaUrl(v.video)}
-                    controls
-                    style={{ maxWidth: "320px", display: "block" }}
-                />
-                <small>Subido: {v.fecha_creacion}</small>
-                </div>
-            ))}
-            </div>
-        )}
-        </div>
-        <div style={{ marginTop: 16 }}>
-        <h2>Comentarios</h2>
-        {comentarios.length === 0 ? (
-            <p>No hay comentarios.</p>
-        ) : (
-            <ul>
-            {comentarios.map((c) => (
-                <li key={c.id}>
-                <p>{c.contenido}</p>
-                <small>
-                    ID autor: {c.autor} · Fecha: {c.fecha_creacion} · Votos: {c.num_votos}
-                </small>
-                {c.parent && <div><small>Respuesta a #{c.parent}</small></div>}
-                </li>
-            ))}
+          {tree.length === 0 ? (
+            <div className="empty-state">No hay comentarios.</div>
+          ) : (
+            <ul className="comment-list">
+              {tree.map((root) => (
+                <CommentItem key={root.id} node={root} />
+              ))}
             </ul>
-        )}
-        </div>
-
-    </div>
+          )}
+        </section>
+      </div>
+    </main>
   );
 }
 
