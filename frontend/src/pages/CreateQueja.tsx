@@ -4,6 +4,7 @@ import AuthLayout from "../components/AuthLayout";
 import { createQuejaRequest } from "../api/quejas";
 import { useCategorias, useDistritos } from "../modules/catalogos/catalogos.queries";
 import { crearImagenQueja } from "../api/imagenes";
+import { crearVideoQueja } from "../api/videos";
 
 const CreateQueja: React.FC = () => {
   const navigate = useNavigate();
@@ -24,6 +25,7 @@ const CreateQueja: React.FC = () => {
 
   const [error, setError] = useState<string | null>(null);
   const [errorImagenes, setErrorImagenes] = useState<string | null>(null);
+  const [errorVideos, setErrorVideos] = useState<string | null>(null);
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -49,6 +51,11 @@ const CreateQueja: React.FC = () => {
       setError("Solo puedes subir un máximo de 5 imágenes.");
       return;
     }
+    if (form.videos.length > 1) {
+      setError("Solo puedes subir un máximo de 1 video.");
+      return;
+    }
+
 
 
     // Construir FormData (conversión a number -> string)
@@ -68,12 +75,12 @@ const CreateQueja: React.FC = () => {
       const id = res?.data?.id;
       const ctId = res?.data?.content_type;
 
-
-
       for (const file of form.imagenes) {
         await crearImagenQueja(ctId,id,file)
       }
-
+      for (const file of form.videos) {
+        await crearVideoQueja(ctId,id,file)
+      }
       if (id) {
         navigate(`/quejas/${id}`);
       } else {
@@ -221,18 +228,23 @@ const CreateQueja: React.FC = () => {
             const files = Array.from(e.target.files || []);
             const MAX = 1;
             if (files.length > MAX) {
-              setError("El maximo de videos es 1.");
-              setForm({...form, imagenes: []});
+              setErrorVideos("Solo se permite 1 video por queja.");
               return;
             }
+            setErrorVideos(null)
             setForm({
               ...form,
               videos: Array.from(e.target.files || []),
-            })
+            });
           }}
         />
+        {errorVideos && (
+          <p style={{ color: "crimson", fontSize: "0.9rem" }}>
+            {errorVideos}
+          </p>
+        )}
 
-        <button className="submit-button" style={{ marginTop: 12 }} disabled={errorImagenes!=null}>
+        <button className="submit-button" style={{ marginTop: 12 }} disabled={errorImagenes!=null || errorVideos!=null}>
           Crear Queja
         </button>
 
