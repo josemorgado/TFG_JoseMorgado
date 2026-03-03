@@ -232,7 +232,7 @@ const CreateQueja: React.FC = () => {
           }}
         />
 
-        <button className="submit-button" style={{ marginTop: 12 }} disabled={errorImagenes}>
+        <button className="submit-button" style={{ marginTop: 12 }} disabled={errorImagenes!=null}>
           Crear Queja
         </button>
 
