@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { registerRequest, loginRequest, fetchMe } from "../api/auth";
+import { registerRequest, loginRequest } from "../api/auth";
 import { storage } from "../utils/storage";
 import AuthLayout from "../components/AuthLayout";
 import { useAuth } from "../context/AuthContext";

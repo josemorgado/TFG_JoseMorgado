@@ -1,16 +1,19 @@
+/* Reset correcto sin margen extra */
 html, body, #root {
   height: 100%;
   margin: 0;
+  padding: 0;
 }
 
+/* Contenedor general con navbar arriba y contenido debajo */
 .layout {
   min-height: 100vh;
-  min-width: 100vh;
   display: flex;
   flex-direction: column;
 }
 
+/* Este padding separa el contenido de la navbar */
 .content {
   flex: 1;
-  padding-top: 50px;
+  padding-top: 80px; /* Ajusta a la altura de tu navbar */
 }
