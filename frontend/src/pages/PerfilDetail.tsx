@@ -18,6 +18,12 @@ export default function PerfilDetail() {
     const [quejas, setQuejas] = useState<Queja[]>([]);
     const {user: userActivo} =useAuth();
 
+    const estadoCompleto: Record<string, string> = {
+        PEN: "Pendiente",
+        ENP: "En Progreso",
+        RES: "Resuelta",
+        REC: "Rechazada",
+    };
     useEffect(() => {
         if (!id) {
             setError("Falta la ID en la URL.");
@@ -134,7 +140,7 @@ export default function PerfilDetail() {
                             >
                                 <h4 className="queja-title">{q.titulo}</h4>
                                 <p className="queja-meta">
-                                    Estado: {q.estado} · Fecha: {q.fecha_creacion}
+                                    Estado: {estadoCompleto[q.estado] || q.estado} · Fecha: {q.fecha_creacion}
                                 </p>
                             </div>
                         ))}
