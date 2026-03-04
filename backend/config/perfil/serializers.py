@@ -214,3 +214,21 @@ class UserPerfilSerializer(serializers.ModelSerializer):
             perfil_serializer.save()
 
         return instance
+
+class UserWithPerfilSerializer(serializers.ModelSerializer):
+    perfil = PerfilSerializer(read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "is_active",
+            "date_joined",
+            "last_login",
+            "perfil",
+        ]
+        read_only_fields = fields

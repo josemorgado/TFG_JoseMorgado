@@ -34,7 +34,7 @@ from drf_spectacular.utils import (
     OpenApiExample
 )
 
-from .serializers import UserLiteSerializer, UserPerfilSerializer
+from .serializers import UserPerfilSerializer, UserWithPerfilSerializer
 from .models import Perfil
 
 User = get_user_model()
@@ -86,7 +86,7 @@ def usuario_list(request):
 @permission_classes([AllowAny])
 def usuario_detail(request, pk):
     user = get_object_or_404(User.objects.select_related('perfil'), pk=pk)
-    serializer = UserPerfilSerializer(user, context={'request': request})
+    serializer = UserWithPerfilSerializer(user, context={'request': request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
