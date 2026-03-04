@@ -8,6 +8,7 @@ import type { Imagen } from "../types/imagen";
 import type { Video } from "../types/video";
 import { mediaUrl } from "../utils/media";
 import "../styles/detail.css"; // <-- importa el CSS reutilizable
+import LikeButton from "../components/LikeButton";
 
 /** ---- Comentarios: árbol + tipos ---- */
 type CommentNode = Comentario & { children: CommentNode[] };
@@ -196,7 +197,10 @@ function QuejaDetail() {
       <div className="detail">
         {/* Header */}
         <header className="detail__header card">
+          <div className="header_grid">
+          <LikeButton/>
           <h1 className="detail__title">{queja.titulo}</h1>
+          </div>
           {queja.descripcion && (
             <p className="detail__desc">{queja.descripcion}</p>
           )}

@@ -389,3 +389,34 @@
   font-size: 12px;
   flex-wrap: wrap;
 }
+
+
+.heart-btn {
+  all: unset;
+  stroke: var(--color-primary);       /* azul oscuro */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 6px;
+  border-radius: var(--radius-small);
+}
+
+.heart-btn:focus,
+.heart-btn:focus-visible {
+  outline: none !important;
+}
+
+.heart-icon {
+  stroke: var(--color-primary);
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke-width: 2.2;
+  transition: 0.25s;
+}
+
+.heart-btn.active .heart-icon {
+  stroke: var(--color-primary);       /* azul oscuro */
+  fill: var(--color-primary);
+}
