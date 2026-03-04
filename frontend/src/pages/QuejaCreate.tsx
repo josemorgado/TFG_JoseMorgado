@@ -6,17 +6,17 @@ import { useCategorias, useDistritos } from "../modules/catalogos/catalogos.quer
 import { crearImagenQueja } from "../api/imagenes";
 import { crearVideoQueja } from "../api/videos";
 
-const CreateQueja: React.FC = () => {
+const QuejaCreate: React.FC = () => {
   const navigate = useNavigate();
 
-  // Cargar catálogos (IMPORTANTE: hooks dentro del componente)
+  // Cargar catálogos
   const { data: categorias, isLoading: catLoading, error: catError } = useCategorias();
   const { data: distritos,  isLoading: disLoading, error: disError } = useDistritos();
 
   const [form, setForm] = useState({
     titulo: "",
     descripcion: "",
-    categoria: "", // select guarda string; luego convertimos a number al enviar
+    categoria: "",
     distrito: "",
     ubicacion: "",
     imagenes: [] as File[],
@@ -254,4 +254,4 @@ const CreateQueja: React.FC = () => {
   );
 };
 
-export default CreateQueja;
+export default QuejaCreate;
