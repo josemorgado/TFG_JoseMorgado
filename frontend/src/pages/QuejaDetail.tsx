@@ -9,17 +9,6 @@ import type { Video } from "../types/video";
 import { mediaUrl } from "../utils/media";
 import "../styles/detail.css"; // <-- importa el CSS reutilizable
 
-function formatDate(d: string | Date) {
-  try {
-    return new Date(d).toLocaleString("es-ES", {
-      dateStyle: "medium",
-      timeStyle: "short",
-    });
-  } catch {
-    return String(d);
-  }
-}
-
 /** ---- Comentarios: árbol + tipos ---- */
 type CommentNode = Comentario & { children: CommentNode[] };
 
@@ -173,7 +162,7 @@ function QuejaDetail() {
         <div className="comment__footer">
         <div className="comment__meta">
             <span>ID autor: {node.autor}</span>
-            <span>Fecha: {formatDate(node.fecha_creacion)}</span>
+            <span>Fecha: {node.fecha_creacion}</span>
             <span>Votos: {node.num_votos}</span>
         </div>
 
