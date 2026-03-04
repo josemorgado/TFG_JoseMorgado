@@ -4,6 +4,7 @@ import LoginButton from "./LoginButton";
 import LogoutButton from "./LogoutButton";
 import CreateAccountButton from "./CreateAccountButton";
 import CreateQuejaButton from "./CreateQuejaButton";
+import MiPerfilButton from "./MiPerfilButton";
 import { useAuth } from "../context/AuthContext";
 
 const Navbar: React.FC = () => {
@@ -19,10 +20,6 @@ const Navbar: React.FC = () => {
       </div>
 
       <ul className="nav-links">
-        <li>
-          <Link to="/">Inicio</Link>
-        </li>
-
         <CreateQuejaButton />
 
         {user ? (
@@ -38,6 +35,8 @@ const Navbar: React.FC = () => {
             )}
           </li>
         )}
+        {user && <MiPerfilButton/>}
+
       </ul>
     </nav>
   );
