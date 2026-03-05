@@ -140,20 +140,18 @@
 /* TARJETAS DE MEDIA */
 /* ---------------------------- */
 
-/* Grid responsivo: 1 columna móvil, 2 columnas en desktop */
 .media-grid {
   display: grid;
-  grid-template-columns: 1fr; /* Móvil */
+  grid-template-columns: 1fr;
   gap: 16px;
 }
 
 @media (min-width: 768px) {
   .media-grid {
-    grid-template-columns: repeat(2, 1fr); /* Mitad de pantalla */
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* Grid reducido: solo 2 columnas (preview) */
 .media-grid-2 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -172,19 +170,17 @@
   box-shadow: var(--shadow-soft);
 }
 
-/* Contenedor visual con tamaño controlado (con overlay) */
 .media-card__visual {
-  position: relative;           /* necesario para overlay */
+  position: relative;
   width: 100%;
-  aspect-ratio: 16 / 9;         /* tamaño elegante y uniforme */
+  aspect-ratio: 16 / 9;
   background: #f3f4f6;
   display: flex;
-  align-items: center;          /* centra vertical */
-  justify-content: center;      /* centra horizontal */
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
 }
 
-/* Imágenes: miniaturas llenas (recorte estético) */
 .media {
   width: 100%;
   height: 100%;
@@ -194,11 +190,10 @@
 .media--image {
   width: 100%;
   height: 100%;
-  object-fit: contain;        /* no recorta */
-  background: #f3f4f6;        /* fondo suave si hay bandas */
+  object-fit: contain;
+  background: #f3f4f6;
 }
 
-/* Vídeo: centrado y sin deformar (no afecta a imágenes) */
 .media--video {
   max-width: 100%;
   max-height: 100%;
@@ -228,7 +223,7 @@
   padding: 8px 12px;
   cursor: pointer;
   user-select: none;
-  border-top-left-radius: 6px;  /* mejora la estética del ángulo */
+  border-top-left-radius: 6px;
 }
 
 /* Comentarios */
@@ -371,7 +366,7 @@
 .comment__footer {
   margin-top: 10px;
   display: flex;
-  justify-content: space-between;   /* autor a la izq — botón a la der */
+  justify-content: space-between;
   align-items: center;
 }
 
@@ -393,7 +388,7 @@
 
 .heart-btn {
   all: unset;
-  stroke: var(--color-primary);       /* azul oscuro */
+  stroke: var(--color-primary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -417,6 +412,6 @@
 }
 
 .heart-btn.active .heart-icon {
-  stroke: var(--color-primary);       /* azul oscuro */
+  stroke: var(--color-primary);
   fill: var(--color-primary);
 }

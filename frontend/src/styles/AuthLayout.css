@@ -1,15 +1,10 @@
 
 .auth-container {
-  /* Que el contenedor ocupe todo el ancho de la pantalla */
   width: 100%;
   min-height: calc(100vh - 60px);
-
-  /* Centrado del contenido (la card) */
   display: flex;
   justify-content: center;
   align-items: center;
-
-  /* Separaciones y fondo */
   background-color: var(--color-bg);
   padding: 24px;
 }
