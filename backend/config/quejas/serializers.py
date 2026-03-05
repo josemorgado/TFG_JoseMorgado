@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from rest_framework.fields import SerializerMethodField
 from django.contrib.contenttypes.models import ContentType
 from quejas.models import Queja
+from megusta.models import MeGusta
 
 
 class QuejaSerializer(serializers.ModelSerializer):
@@ -20,6 +21,7 @@ class QuejaSerializer(serializers.ModelSerializer):
     distrito_nombre  = SerializerMethodField(read_only=True, help_text="Nombre legible del distrito.")
     autor_nombre     = SerializerMethodField(read_only=True, help_text="Nombre completo o username del autor.")
     content_type     = SerializerMethodField(read_only=True, help_text="Id del content type de queja")
+    is_liked = SerializerMethodField(read_only= True, help_text= "Si el usuario autenticado ha dado megusta")
     # Campos relacionados (en producción el autor vendrá del request)
     autor = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
@@ -57,6 +59,7 @@ class QuejaSerializer(serializers.ModelSerializer):
             'num_comentarios',
             'num_comentarios_top_level',
             'content_type',
+            'is_liked',
         ]
         read_only_fields = [
             'id',
@@ -67,6 +70,7 @@ class QuejaSerializer(serializers.ModelSerializer):
             'num_comentarios',
             'num_comentarios_top_level',
             'content_type',
+            'is_liked',
         ]
         extra_kwargs = {
             "titulo": {
@@ -182,3 +186,8 @@ class QuejaSerializer(serializers.ModelSerializer):
             return None
         nombre = f"{obj.autor.first_name} {obj.autor.last_name}".strip()
         return nombre if nombre else obj.autor.username
+
+    def get_is_liked(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        return MeGusta.objects.is_liked_by(obj, user)

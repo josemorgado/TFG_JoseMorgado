@@ -41,11 +41,10 @@ def _enforce_object_permissions(request, obj):
     }
 )
 @api_view(['GET'])
-@authentication_classes([])  # Sin autenticación
 @permission_classes([AllowAny])  # Cualquiera puede acceder
 def quejas_list(request):
     qs = Queja.objects.all().order_by('id')
-    serializer = QuejaSerializer(qs, many=True)  # salida: no hace falta context
+    serializer = QuejaSerializer(qs, many=True, context={'request': request})  # salida: no hace falta context
     return Response(serializer.data)
 
 
@@ -69,11 +68,10 @@ def quejas_list(request):
     }
 )
 @api_view(['GET'])
-@authentication_classes([])  # Sin autenticación
 @permission_classes([AllowAny])  # Cualquiera puede acceder
 def queja_detail(request, pk):
     queja = get_object_or_404(Queja, pk=pk)
-    serializer = QuejaSerializer(queja)  # salida: no hace falta context
+    serializer = QuejaSerializer(queja, context={'request': request})  # salida: no hace falta context
     return Response(serializer.data)
 
 
@@ -96,11 +94,10 @@ def queja_detail(request, pk):
     }
 )
 @api_view(['GET'])
-@authentication_classes([])  # Sin autenticación
 @permission_classes([AllowAny])  # Cualquiera puede acceder
 def quejas_por_categoria(request, categoria_id):
     qs = Queja.objects.filter(categoria_id=categoria_id).order_by('id')
-    serializer = QuejaSerializer(qs, many=True)
+    serializer = QuejaSerializer(qs, many=True, context={'request': request})
     return Response(serializer.data)
 
 
@@ -123,11 +120,10 @@ def quejas_por_categoria(request, categoria_id):
     }
 )
 @api_view(['GET'])
-@authentication_classes([])  # Sin autenticación
 @permission_classes([AllowAny])  # Cualquiera puede acceder
 def quejas_por_distrito(request, distrito_id):
     qs = Queja.objects.filter(distrito_id=distrito_id).order_by('id')
-    serializer = QuejaSerializer(qs, many=True)
+    serializer = QuejaSerializer(qs, many=True, context={'request': request})
     return Response(serializer.data)
 
 
@@ -254,11 +250,10 @@ def queja_delete(request, pk):
     }
 )
 @api_view(['GET'])
-@authentication_classes([])  # Sin autenticación
 @permission_classes([AllowAny])  # Cualquiera puede acceder
 def quejas_por_autor(request, autor_id):
     qs = Queja.objects.filter(autor_id=autor_id).order_by('id')
-    serializer = QuejaSerializer(qs, many=True)
+    serializer = QuejaSerializer(qs, many=True, context={'request': request})
     return Response(serializer.data)
 
 

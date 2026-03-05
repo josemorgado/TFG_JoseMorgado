@@ -197,7 +197,12 @@ function QuejaDetail() {
         {/* Header */}
         <header className="detail__header card">
           <div className="header_grid">
-          <LikeButton/>
+          <LikeButton
+            initialLiked={queja.is_liked}
+            initialCount={queja.num_votos}
+            objectId={queja.id}
+            contentType={Number(queja.content_type)}
+          />
           <h1 className="detail__title">{queja.titulo}</h1>
           </div>
           {queja.descripcion && (
