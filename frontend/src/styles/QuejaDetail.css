@@ -244,7 +244,7 @@
   box-shadow: var(--shadow-soft);
 }
 
-.comment__content { margin: 0 0 8px 0; }
+.comment__content { margin: 0 0 0 0; }
 
 .comment__reply {
   margin-top: 6px;
@@ -263,10 +263,23 @@
 .toggle-replies {
   padding: 6px 10px;
   font-size: 12px;
-  border-radius: var(--radius-small);
 }
 .toggle-replies::after { content: " ▾"; }
 .toggle-replies[aria-expanded="true"]::after { content: " ▴"; }
+
+
+
+.comment__actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.comment__footer .reply-btn {
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+}
+
 
 /* Alertas */
 .alert {
@@ -364,7 +377,6 @@
 }
 
 .comment__footer {
-  margin-top: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;

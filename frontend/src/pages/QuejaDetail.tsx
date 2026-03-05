@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axiosInstance from "../utils/axios";
 import axios from "axios";
 import { useParams } from "react-router-dom";
@@ -7,7 +7,7 @@ import type { Comentario } from "../types/comentario";
 import type { Imagen } from "../types/imagen";
 import type { Video } from "../types/video";
 import { mediaUrl } from "../utils/media";
-import "../styles/QuejaDetail.css"; // <-- importa el CSS reutilizable
+import "../styles/QuejaDetail.css";
 import LikeButton from "../components/LikeButton";
 
 /** ---- Comentarios: árbol + tipos ---- */
@@ -17,21 +17,18 @@ function buildCommentTree(comments: Comentario[]): CommentNode[] {
   const map = new Map<number, CommentNode>();
   const roots: CommentNode[] = [];
 
-  // Crear nodos
   comments.forEach((c) => map.set(c.id, { ...c, children: [] }));
 
-  // Enlazar hijos
   map.forEach((node) => {
     if (node.parent) {
       const parent = map.get(node.parent);
       if (parent) parent.children.push(node);
-      else roots.push(node); // fallback si no existe el parent
+      else roots.push(node);
     } else {
       roots.push(node);
     }
   });
 
-  // Orden por fecha (opcional)
   const sortByDate = (arr: CommentNode[]) => {
     arr.sort(
       (a, b) =>
@@ -60,7 +57,7 @@ function QuejaDetail() {
   const rest = imagenes.slice(2);
   const remaining = rest.length;
 
-  // Estado completo del estado :)
+  // Estado legible del estado
   const estadoCompleto: Record<string, string> = {
     PEN: "Pendiente",
     ENP: "En Progreso",
@@ -71,12 +68,13 @@ function QuejaDetail() {
   // Comentarios: árbol + toggles por id
   const tree = useMemo(() => buildCommentTree(comentarios), [comentarios]);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
-  const toggleReplies = (id: number) =>
+  const toggleReplies = useCallback((cid: number) => {
     setExpanded((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      next.has(cid) ? next.delete(cid) : next.add(cid);
       return next;
     });
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -118,6 +116,16 @@ function QuejaDetail() {
     };
   }, [id]);
 
+  const handleQuejaLikeChange = useCallback((liked: boolean, count: number) => {
+    setQueja((prev) => (prev ? { ...prev, is_liked: liked, num_votos: count } : prev));
+  }, []);
+
+  const handleComentarioLikeChange = useCallback((comentarioId: number, liked: boolean, count: number) => {
+    setComentarios((prev) =>
+      prev.map((c) => (c.id === comentarioId ? { ...c, is_liked: liked, num_votos: count } : c))
+    );
+  }, []);
+
   if (loading) {
     return (
       <div className="detail-page">
@@ -154,31 +162,48 @@ function QuejaDetail() {
   function CommentItem({ node, level = 0 }: { node: CommentNode; level?: number }) {
     const isOpen = expanded.has(node.id);
     const repliesCount = node.children.length;
-    console.log("Comentario recibido:", node);
+
     return (
       <li className="comment" style={{ marginLeft: level ? 16 : 0 }}>
-        <p className="comment__content"><strong>{node.autor_nombre}: </strong>{node.contenido}</p>
-
+        <p className="comment__content">
+          <strong>{node.autor_nombre}: </strong>{node.contenido}
+        </p>
 
         <div className="comment__footer">
-        <div className="comment__meta">
+          <div className="comment__meta">
             <span>{node.fecha_creacion}</span>
             <span>Votos: {node.num_votos}</span>
-        </div>
+          </div>
 
-        {repliesCount > 0 && (
+          <div className="comment__actions">
+            {repliesCount > 0 && (
+              <button
+                type="button"
+                className="toggle-replies btn btn-secondary"
+                onClick={() => toggleReplies(node.id)}
+                aria-expanded={isOpen}
+              >
+                {isOpen ? "Ocultar" : "Ver"} {repliesCount} respuesta{repliesCount !== 1 ? "s" : ""}
+              </button>
+            )}
+
             <button
-            type="button"
-            className="toggle-replies btn btn-secondary"
-            onClick={() => toggleReplies(node.id)}
-            aria-expanded={isOpen}
+              type="button"
+              className="reply-btn btn btn-secondary"
+              onClick={() => console.log("Responder a comentario:", node.id)}
             >
-            {isOpen ? "Ocultar" : "Ver"} {repliesCount} respuesta{repliesCount !== 1 ? "s" : ""}
+              Responder
             </button>
-        )}
+
+            <LikeButton
+              initialLiked={!!node.is_liked}
+              initialCount={node.num_votos ?? 0}
+              objectId={node.id}
+              contentType={Number(node.content_type)}
+              onChange={(liked, count) => handleComentarioLikeChange(node.id, liked, count)}
+            />
+          </div>
         </div>
-
-
 
         {isOpen && repliesCount > 0 && (
           <ul id={`replies-${node.id}`} className="comment-list replies">
@@ -197,19 +222,21 @@ function QuejaDetail() {
         {/* Header */}
         <header className="detail__header card">
           <div className="header_grid">
-          <LikeButton
-            initialLiked={queja.is_liked}
-            initialCount={queja.num_votos}
-            objectId={queja.id}
-            contentType={Number(queja.content_type)}
-          />
-          <h1 className="detail__title">{queja.titulo}</h1>
+            <LikeButton
+              initialLiked={!!queja.is_liked}
+              initialCount={queja.num_votos ?? 0}
+              objectId={queja.id}
+              contentType={Number(queja.content_type)}
+              onChange={handleQuejaLikeChange}
+            />
+            <h1 className="detail__title">{queja.titulo}</h1>
           </div>
+
           {queja.descripcion && (
-            <p className="detail__desc"><strong>Descripcion:  </strong>{queja.descripcion}</p>
+            <p className="detail__desc"><strong>Descripcion: </strong>{queja.descripcion}</p>
           )}
           {queja.ubicacion && (
-            <p className="detail__desc"><strong>Ubicacion:  </strong>{queja.ubicacion}</p>
+            <p className="detail__desc"><strong>Ubicacion: </strong>{queja.ubicacion}</p>
           )}
 
           <div className="detail__meta">
@@ -226,16 +253,12 @@ function QuejaDetail() {
 
             <span className="meta__group">
               <span className="meta__label">Categoría:</span>
-              <span className="pill pill--neutral">
-                {queja.categoria_nombre}
-              </span>
+              <span className="pill pill--neutral">{queja.categoria_nombre}</span>
             </span>
 
             <span className="meta__group">
               <span className="meta__label">Distrito:</span>
-              <span className="pill pill--neutral">
-                {queja.distrito_nombre}
-              </span>
+              <span className="pill pill--neutral">{queja.distrito_nombre}</span>
             </span>
           </div>
         </header>
@@ -265,7 +288,6 @@ function QuejaDetail() {
                   ))}
                 </div>
 
-                {/* DESPLEGABLE: solo resto (sin duplicar) */}
                 {showAllImages && remaining > 0 && (
                   <div className="media-grid">
                     {rest.map((img, i) => (
@@ -292,14 +314,9 @@ function QuejaDetail() {
             ) : (
               <div className="video-grid">
                 {videos.map((v) => (
-                    <figure key={v.id} className="media-card media-card--video">
-                        <div className="media-card__visual">
-                      {/* Clase específica para centrar y ajustar video */}
-                      <video
-                        className="media media--video"
-                        src={mediaUrl(v.video)}
-                        controls
-                      />
+                  <figure key={v.id} className="media-card media-card--video">
+                    <div className="media-card__visual">
+                      <video className="media media--video" src={mediaUrl(v.video)} controls />
                     </div>
                   </figure>
                 ))}

@@ -1,3 +1,5 @@
+from multiprocessing import context
+
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
@@ -30,11 +32,10 @@ from comentario.serializers import ComentarioSerializer
     }
 )
 @api_view(['GET'])
-@authentication_classes([])
 @permission_classes([AllowAny])
 def comentario_list(request):
     qs = Comentario.objects.all().order_by('fecha_creacion')
-    serializer = ComentarioSerializer(qs, many=True)
+    serializer = ComentarioSerializer(qs, many=True, context={'request': request})
     return Response(serializer.data)
 
 
@@ -60,11 +61,10 @@ def comentario_list(request):
     }
 )
 @api_view(['GET'])
-@authentication_classes([])
 @permission_classes([AllowAny])
 def comentario_detail(request, pk):
     comentario = get_object_or_404(Comentario, pk=pk)
-    serializer = ComentarioSerializer(comentario)
+    serializer = ComentarioSerializer(comentario, context={'request': request})
     return Response(serializer.data)
 
 
@@ -89,11 +89,10 @@ def comentario_detail(request, pk):
     }
 )
 @api_view(['GET'])
-@authentication_classes([])
 @permission_classes([AllowAny])
 def comentarios_por_queja(request, queja_id):
     qs = Comentario.objects.filter(queja_id=queja_id).order_by('fecha_creacion')
-    serializer = ComentarioSerializer(qs, many=True)
+    serializer = ComentarioSerializer(qs, many=True, context={'request': request})
     return Response(serializer.data)
 
 
@@ -119,12 +118,11 @@ def comentarios_por_queja(request, queja_id):
     }
 )
 @api_view(['GET'])
-@authentication_classes([])
 @permission_classes([AllowAny])
 def comentarios_por_usuario(request, user_id):
     get_object_or_404(User, pk=user_id)
     qs = Comentario.objects.filter(autor_id=user_id).order_by('fecha_creacion')
-    serializer = ComentarioSerializer(qs, many=True)
+    serializer = ComentarioSerializer(qs, many=True, context={'request': request})
     return Response(serializer.data)
 
 

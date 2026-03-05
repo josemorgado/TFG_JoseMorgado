@@ -1,5 +1,5 @@
 // src/components/LikeButton.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toggleLike } from "../api/megusta";
 
 interface Props {
@@ -7,6 +7,7 @@ interface Props {
   initialCount: number;
   objectId: number;
   contentType: number;
+  onChange?: (liked: boolean, count: number) => void;
 }
 
 export default function LikeButton({
@@ -14,10 +15,14 @@ export default function LikeButton({
   initialCount,
   objectId,
   contentType,
+  onChange,
 }: Props) {
-  const [liked, setLiked] = useState<boolean>(initialLiked);
-  const [count, setCount] = useState<number>(initialCount);
+  const [liked, setLiked] = useState<boolean>(!!initialLiked);
+  const [count, setCount] = useState<number>(initialCount ?? 0);
   const [loading, setLoading] = useState<boolean>(false);
+
+  useEffect(() => setLiked(!!initialLiked), [initialLiked]);
+  useEffect(() => setCount(initialCount ?? 0), [initialCount]);
 
   const handleToggle = async () => {
     if (loading) return;
@@ -25,16 +30,27 @@ export default function LikeButton({
 
     const prevLiked = liked;
     const prevCount = count;
-    setLiked(!prevLiked);
-    setCount(prevCount + (prevLiked ? -1 : 1));
+
+    const optimisticLiked = !prevLiked;
+    const optimisticCount = prevCount + (prevLiked ? -1 : 1);
+    setLiked(optimisticLiked);
+    setCount(optimisticCount);
+    onChange?.(optimisticLiked, optimisticCount);
 
     try {
       const res = await toggleLike(objectId, contentType);
-      setLiked(res.liked);
-      if (typeof res.count === "number") setCount(res.count);
-    } catch (e) {
+      const serverLiked = !!res.liked;
+      const serverCount =
+        typeof res.count === "number" ? res.count : optimisticCount;
+
+      setLiked(serverLiked);
+      setCount(serverCount);
+      onChange?.(serverLiked, serverCount);
+    } catch {
+      // Revertir si falla
       setLiked(prevLiked);
       setCount(prevCount);
+      onChange?.(prevLiked, prevCount);
     } finally {
       setLoading(false);
     }
@@ -53,8 +69,7 @@ export default function LikeButton({
                  5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5
                  5.5 0 000-7.78z"/>
       </svg>
-      <span className="like-count">{count}</span>
+      <span className="like-count" style={{ marginLeft: 6 }}>{count}</span>
     </button>
   );
 }
-``

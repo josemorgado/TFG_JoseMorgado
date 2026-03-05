@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import Comentario
+from megusta.models import MeGusta
 from rest_framework.fields import SerializerMethodField
+from django.contrib.contenttypes.models import ContentType
 
 long_minima_contenido = 3
 
@@ -16,6 +18,8 @@ class ComentarioSerializer(serializers.ModelSerializer):
         help_text="Número total de votos recibidos por este comentario."
     )
     autor_nombre     = SerializerMethodField(read_only=True, help_text="Nombre completo o username del autor.")
+    is_liked = SerializerMethodField(read_only= True, help_text="Indica si el usuario autenticado ha dado like al comentario")
+    content_type= SerializerMethodField(read_only= True, help_text="Indica la id del tipo de contenido del comentario")
 
     class Meta:
         model = Comentario
@@ -28,8 +32,10 @@ class ComentarioSerializer(serializers.ModelSerializer):
             'fecha_creacion',
             'num_votos',
             'parent',
+            'is_liked',
+            'content_type',
         ]
-        read_only_fields = ['id', 'fecha_creacion', 'num_votos', 'autor','autor_nombre']
+        read_only_fields = ['id', 'fecha_creacion', 'num_votos', 'autor','autor_nombre','is_liked','content_type']
         extra_kwargs = {
             "queja": {
                 "help_text": "ID de la queja a la que pertenece este comentario."
@@ -84,3 +90,12 @@ class ComentarioSerializer(serializers.ModelSerializer):
             return None
         nombre = f"{obj.autor.first_name} {obj.autor.last_name}".strip()
         return nombre if nombre else obj.autor.username
+
+    def get_is_liked(self,obj):
+        request = self.context.get('request')
+        user= getattr(request, 'user', None)
+        return MeGusta.objects.is_liked_by(obj, user)
+
+    def get_content_type(self,obj):
+        ct = ContentType.objects.get_for_model(obj)
+        return ct.id
