@@ -7,7 +7,7 @@ import type { Comentario } from "../types/comentario";
 import type { Imagen } from "../types/imagen";
 import type { Video } from "../types/video";
 import { mediaUrl } from "../utils/media";
-import "../styles/detail.css"; // <-- importa el CSS reutilizable
+import "../styles/QuejaDetail.css"; // <-- importa el CSS reutilizable
 import LikeButton from "../components/LikeButton";
 
 /** ---- Comentarios: árbol + tipos ---- */
