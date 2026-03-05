@@ -415,3 +415,7 @@
   stroke: var(--color-primary);
   fill: var(--color-primary);
 }
+
+.header_grid {
+  display: flex;
+}
