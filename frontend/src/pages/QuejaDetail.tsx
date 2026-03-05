@@ -202,7 +202,10 @@ function QuejaDetail() {
           <h1 className="detail__title">{queja.titulo}</h1>
           </div>
           {queja.descripcion && (
-            <p className="detail__desc">{queja.descripcion}</p>
+            <p className="detail__desc"><strong>Descripcion:  </strong>{queja.descripcion}</p>
+          )}
+          {queja.ubicacion && (
+            <p className="detail__desc"><strong>Ubicacion:  </strong>{queja.ubicacion}</p>
           )}
 
           <div className="detail__meta">
