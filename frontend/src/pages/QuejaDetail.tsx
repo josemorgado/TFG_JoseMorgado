@@ -9,6 +9,7 @@ import type { Video } from "../types/video";
 import { mediaUrl } from "../utils/media";
 import "../styles/QuejaDetail.css";
 import LikeButton from "../components/LikeButton";
+import CommentButton from "../components/CommentButton";
 
 /** ---- Comentarios: árbol + tipos ---- */
 type CommentNode = Comentario & { children: CommentNode[] };
@@ -327,8 +328,10 @@ function QuejaDetail() {
 
         {/* Comentarios */}
         <section className="section">
+          <div className="section_title_header">
           <h2 className="section__title">Comentarios ({comentarios.length})</h2>
-
+          <CommentButton/>
+          </div>
           {tree.length === 0 ? (
             <div className="empty-state">No hay comentarios.</div>
           ) : (

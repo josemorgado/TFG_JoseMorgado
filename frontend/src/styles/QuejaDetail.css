@@ -431,3 +431,7 @@
 .header_grid {
   display: flex;
 }
+.section_title_header {
+  display: flex;
+  justify-content: space-between ;
+}
