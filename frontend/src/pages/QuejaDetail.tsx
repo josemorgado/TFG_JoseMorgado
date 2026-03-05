@@ -154,16 +154,15 @@ function QuejaDetail() {
   function CommentItem({ node, level = 0 }: { node: CommentNode; level?: number }) {
     const isOpen = expanded.has(node.id);
     const repliesCount = node.children.length;
-
+    console.log("Comentario recibido:", node);
     return (
       <li className="comment" style={{ marginLeft: level ? 16 : 0 }}>
-        <p className="comment__content">{node.contenido}</p>
+        <p className="comment__content"><strong>{node.autor_nombre}: </strong>{node.contenido}</p>
 
 
         <div className="comment__footer">
         <div className="comment__meta">
-            <span>ID autor: {node.autor}</span>
-            <span>Fecha: {node.fecha_creacion}</span>
+            <span>{node.fecha_creacion}</span>
             <span>Votos: {node.num_votos}</span>
         </div>
 

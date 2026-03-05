@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Comentario
+from rest_framework.fields import SerializerMethodField
 
 long_minima_contenido = 3
 
@@ -14,6 +15,7 @@ class ComentarioSerializer(serializers.ModelSerializer):
     num_votos = serializers.ReadOnlyField(
         help_text="Número total de votos recibidos por este comentario."
     )
+    autor_nombre     = SerializerMethodField(read_only=True, help_text="Nombre completo o username del autor.")
 
     class Meta:
         model = Comentario
@@ -21,12 +23,13 @@ class ComentarioSerializer(serializers.ModelSerializer):
             'id',
             'queja',
             'autor',
+            'autor_nombre',
             'contenido',
             'fecha_creacion',
             'num_votos',
             'parent',
         ]
-        read_only_fields = ['id', 'fecha_creacion', 'num_votos', 'autor']
+        read_only_fields = ['id', 'fecha_creacion', 'num_votos', 'autor','autor_nombre']
         extra_kwargs = {
             "queja": {
                 "help_text": "ID de la queja a la que pertenece este comentario."
@@ -75,3 +78,9 @@ class ComentarioSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data['autor'] = self.context['request'].user
         return super().create(validated_data)
+
+    def get_autor_nombre(self, obj):
+        if not obj.autor:
+            return None
+        nombre = f"{obj.autor.first_name} {obj.autor.last_name}".strip()
+        return nombre if nombre else obj.autor.username
