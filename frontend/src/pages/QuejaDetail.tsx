@@ -77,6 +77,16 @@ function QuejaDetail() {
     });
   }, []);
 
+  const [commentText, setCommentText] = useState("");
+  const [showCommentBox, setShowCommentBox] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+
+  const [replyOpen, setReplyOpen] = useState<number | null>(null);
+  const [replyTexts, setReplyTexts] = useState<Record<number, string>>({});
+  const [sendingReply, setSendingReply] = useState(false);
+
+
   useEffect(() => {
     if (!id) return;
     let cancel = false;
@@ -120,7 +130,58 @@ function QuejaDetail() {
   const handleQuejaLikeChange = useCallback((liked: boolean, count: number) => {
     setQueja((prev) => (prev ? { ...prev, is_liked: liked, num_votos: count } : prev));
   }, []);
+  const handleSubmitComment = async () => {
+    if (!commentText.trim() || !id) return;
 
+    try {
+      setSubmitting(true);
+
+      const response = await axiosInstance.post("/comentarios/create/", {
+        queja: Number(id),
+        contenido: commentText.trim(),
+      });
+
+      // Añadir comentario nuevo a la lista:
+      setComentarios((prev) => [...prev, response.data]);
+
+      // Limpiar el formulario
+      setCommentText("");
+      setShowCommentBox(false);
+
+    } catch (err) {
+      console.error("Error al enviar comentario", err);
+      alert("Error al enviar el comentario");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  const handleSubmitReply = async (parentId: number) => {
+    const text = replyTexts[parentId]?.trim();
+    if (!text || !id) return;
+
+    try {
+      setSendingReply(true);
+
+      const response = await axiosInstance.post("/comentarios/create/", {
+        queja: Number(id),
+        contenido: text,
+        parent: parentId,
+      });
+
+      // Añadir respuesta a la lista
+      setComentarios((prev) => [...prev, response.data]);
+
+      // Limpiar solo ese comentario
+      setReplyTexts((prev) => ({ ...prev, [parentId]: "" }));
+      setReplyOpen(null);
+
+    } catch (err) {
+      console.error("Error al responder comentario", err);
+      alert("Error al enviar la respuesta");
+    } finally {
+      setSendingReply(false);
+    }
+  };
   const handleComentarioLikeChange = useCallback((comentarioId: number, liked: boolean, count: number) => {
     setComentarios((prev) =>
       prev.map((c) => (c.id === comentarioId ? { ...c, is_liked: liked, num_votos: count } : c))
@@ -165,55 +226,97 @@ function QuejaDetail() {
     const repliesCount = node.children.length;
 
     return (
-      <li className="comment" style={{ marginLeft: level ? 16 : 0 }}>
-        <p className="comment__content">
-          <strong>{node.autor_nombre}: </strong>{node.contenido}
-        </p>
 
-        <div className="comment__footer">
-          <div className="comment__meta">
-            <span>{node.fecha_creacion}</span>
-            <span>Votos: {node.num_votos}</span>
-          </div>
+<li className="comment" style={{ marginLeft: level ? 16 : 0 }}>
 
-          <div className="comment__actions">
-            {repliesCount > 0 && (
-              <button
-                type="button"
-                className="toggle-replies btn btn-secondary"
-                onClick={() => toggleReplies(node.id)}
-                aria-expanded={isOpen}
-              >
-                {isOpen ? "Ocultar" : "Ver"} {repliesCount} respuesta{repliesCount !== 1 ? "s" : ""}
-              </button>
-            )}
+  <p className="comment__content">
+    <strong>{node.autor_nombre}: </strong>{node.contenido}
+  </p>
 
-            <button
-              type="button"
-              className="reply-btn btn btn-secondary"
-              onClick={() => console.log("Responder a comentario:", node.id)}
-            >
-              Responder
-            </button>
+  <div className="comment__footer">
+    <div className="comment__meta">
+      <span>{node.fecha_creacion}</span>
+    </div>
 
-            <LikeButton
-              initialLiked={!!node.is_liked}
-              initialCount={node.num_votos ?? 0}
-              objectId={node.id}
-              contentType={Number(node.content_type)}
-              onChange={(liked, count) => handleComentarioLikeChange(node.id, liked, count)}
-            />
-          </div>
-        </div>
+    <div className="comment__actions">
+      {repliesCount > 0 && (
+        <button
+          type="button"
+          className="toggle-replies btn btn-secondary"
+          onClick={() => toggleReplies(node.id)}
+          aria-expanded={isOpen}
+        >
+          {isOpen ? "Ocultar" : "Ver"} {repliesCount} respuesta{repliesCount !== 1 ? "s" : ""}
+        </button>
+      )}
 
-        {isOpen && repliesCount > 0 && (
-          <ul id={`replies-${node.id}`} className="comment-list replies">
-            {node.children.map((child) => (
-              <CommentItem key={child.id} node={child} level={level + 1} />
-            ))}
-          </ul>
-        )}
-      </li>
+      <button
+        type="button"
+        className="reply-btn btn btn-secondary"
+        onClick={() => {
+          setReplyOpen(node.id);
+          setShowCommentBox(false);
+        }}
+      >
+        Responder
+      </button>
+
+      <LikeButton
+        initialLiked={!!node.is_liked}
+        initialCount={node.num_votos ?? 0}
+        objectId={node.id}
+        contentType={Number(node.content_type)}
+        onChange={(liked, count) => handleComentarioLikeChange(node.id, liked, count)}
+      />
+    </div>
+  </div>
+
+  {/* BLOQUE CORRECTO: el formulario va AQUÍ */}
+{replyOpen === node.id && (
+  <div key={`reply-${node.id}`} className="reply-form">
+    <div className="reply-form__row">
+      <textarea
+        value={replyTexts[node.id] ?? ""}
+        onChange={(e) =>
+          setReplyTexts(prev => ({
+            ...prev,
+            [node.id]: e.target.value
+          }))
+        }
+        placeholder={`Responder a ${node.autor_nombre}…`}
+        className="reply-textarea"
+      />
+
+      <div className="reply-form__buttons">
+        <button
+          className="btn btn-primary btn-small"
+          disabled={sendingReply || (replyTexts[node.id]?.trim().length ?? 0) < 3}
+          onClick={() => handleSubmitReply(node.id)}
+        >
+          {sendingReply ? "..." : "Enviar"}
+        </button>
+
+        <button
+          className="btn btn-secondary btn-small"
+          onClick={() => {
+            setReplyOpen(null);
+          }}
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+  </div>
+)}  {isOpen && repliesCount > 0 && (
+    <ul id={`replies-${node.id}`} className="comment-list replies">
+      {node.children.map((child) => (
+        <CommentItem key={child.id} node={child} level={level + 1} />
+      ))}
+    </ul>
+  )}
+
+</li>
+
     );
   }
 
@@ -232,14 +335,6 @@ function QuejaDetail() {
             />
             <h1 className="detail__title">{queja.titulo}</h1>
           </div>
-
-          {queja.descripcion && (
-            <p className="detail__desc"><strong>Descripcion: </strong>{queja.descripcion}</p>
-          )}
-          {queja.ubicacion && (
-            <p className="detail__desc"><strong>Ubicacion: </strong>{queja.ubicacion}</p>
-          )}
-
           <div className="detail__meta">
             <span className="pill" title="User">
               <strong>Autor:</strong> {queja.autor_nombre}
@@ -262,6 +357,16 @@ function QuejaDetail() {
               <span className="pill pill--neutral">{queja.distrito_nombre}</span>
             </span>
           </div>
+          <div className="detail_content">
+          {queja.descripcion && (
+            <p className="detail__desc"><strong>Descripcion: </strong>{queja.descripcion}</p>
+          )}
+          {queja.ubicacion && (
+            <p className="detail__desc"><strong>Ubicacion: </strong>{queja.ubicacion}</p>
+          )}
+</div>
+
+
         </header>
 
         <div className="sections-row">
@@ -330,9 +435,51 @@ function QuejaDetail() {
         <section className="section">
           <div className="section_title_header">
           <h2 className="section__title">Comentarios ({comentarios.length})</h2>
-          <CommentButton/>
+          <CommentButton onClick={()=> {
+            setShowCommentBox(true);
+            setReplyingTo(null);
+          }}
+          />
           </div>
-          {tree.length === 0 ? (
+
+          {showCommentBox && (
+            <div className="comment-form">
+              <div className="comment-form__row">
+
+                {/* TEXTAREA */}
+                <textarea
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Escribe tu comentario…"
+                  className="comment-textarea"
+                />
+
+                {/* BOTONES VERTICALES */}
+                <div className="comment-form__buttons">
+                  <button
+                    className="btn btn-primary btn-small"
+                    disabled={submitting || commentText.trim().length < 3}
+                    onClick={handleSubmitComment}
+                  >
+                    {submitting ? "..." : "Enviar"}
+                  </button>
+
+                  <button
+                    className="btn btn-secondary btn-small"
+                    onClick={() => {
+                      setShowCommentBox(false);
+                      setCommentText("");
+                    }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+
+              </div>
+            </div>
+
+        )}
+                  {tree.length === 0 ? (
             <div className="empty-state">No hay comentarios.</div>
           ) : (
             <ul className="comment-list">

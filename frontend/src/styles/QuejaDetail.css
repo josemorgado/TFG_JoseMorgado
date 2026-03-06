@@ -435,3 +435,84 @@
   display: flex;
   justify-content: space-between ;
 }
+.detail_content {
+  margin-top: 10px;
+}
+
+/* --- Caja de comentario --- */
+.comment-form {
+  margin-top: 16px;
+}
+
+/* Fila con textarea + columna botones */
+.comment-form__row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+/* Textarea con tamaño fijo */
+.comment-textarea {
+  width: 100%;
+  min-height: 70px;
+  max-height: 70px;
+  resize: none;
+  padding: 12px;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-small);
+  background: var(--color-bg);
+  font-family: var(--font-main);
+  font-size: 14px;
+}
+
+/* Columna de botones */
+.comment-form__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Botones más pequeños */
+.btn-small {
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  border-radius: var(--radius-small);
+  white-space: nowrap;
+}
+
+.reply-form {
+  margin-top: 12px;
+  margin-left: 20px; /* indentación visual */
+}
+
+.reply-form__row {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.reply-textarea {
+  width: 100%;
+  min-height: 90px;
+  max-height: 90px;
+  resize: none;
+  padding: 10px;
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-small);
+  background: var(--color-bg);
+  font-family: var(--font-main);
+  font-size: 14px;
+}
+
+.reply-form__buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.btn-small {
+  padding: 6px 10px !important;
+  font-size: 12px !important;
+  border-radius: var(--radius-small);
+  white-space: nowrap;
+}

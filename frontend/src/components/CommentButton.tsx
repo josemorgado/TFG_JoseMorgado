@@ -1,6 +1,6 @@
 // src/components/CommentButton.tsx
 
-export default function CommentButton() {
+export default function CommentButton({onClick}:{onClick: ()=>void}) {
   return (
     <button
       type="button"
@@ -8,6 +8,7 @@ export default function CommentButton() {
       aria-label="Responder comentario"
       onClick={() => {
         console.log("Click en CommentButton (sin funcionalidad)");
+        onClick();
       }}
     >
       <svg
