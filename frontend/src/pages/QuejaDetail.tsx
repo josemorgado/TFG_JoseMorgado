@@ -437,7 +437,7 @@ function QuejaDetail() {
           <h2 className="section__title">Comentarios ({comentarios.length})</h2>
           <CommentButton onClick={()=> {
             setShowCommentBox(true);
-            setReplyingTo(null);
+            setReplyOpen(null);
           }}
           />
           </div>
