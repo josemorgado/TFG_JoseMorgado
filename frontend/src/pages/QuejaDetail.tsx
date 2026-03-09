@@ -34,7 +34,7 @@ function buildCommentTree(comments: Comentario[]): CommentNode[] {
     arr.sort(
       (a, b) =>
         new Date(a.fecha_creacion).getTime() -
-        new Date(b.fecha_creacion).getTime()
+        new Date(b.fecha_creacion).getTime(),
     );
     arr.forEach((n) => sortByDate(n.children));
   };
@@ -81,12 +81,6 @@ function QuejaDetail() {
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-
-  const [replyOpen, setReplyOpen] = useState<number | null>(null);
-  const [replyTexts, setReplyTexts] = useState<Record<number, string>>({});
-  const [sendingReply, setSendingReply] = useState(false);
-
-
   useEffect(() => {
     if (!id) return;
     let cancel = false;
@@ -128,7 +122,9 @@ function QuejaDetail() {
   }, [id]);
 
   const handleQuejaLikeChange = useCallback((liked: boolean, count: number) => {
-    setQueja((prev) => (prev ? { ...prev, is_liked: liked, num_votos: count } : prev));
+    setQueja((prev) =>
+      prev ? { ...prev, is_liked: liked, num_votos: count } : prev,
+    );
   }, []);
   const handleSubmitComment = async () => {
     if (!commentText.trim() || !id) return;
@@ -147,7 +143,6 @@ function QuejaDetail() {
       // Limpiar el formulario
       setCommentText("");
       setShowCommentBox(false);
-
     } catch (err) {
       console.error("Error al enviar comentario", err);
       alert("Error al enviar el comentario");
@@ -155,12 +150,10 @@ function QuejaDetail() {
       setSubmitting(false);
     }
   };
-  const handleSubmitReply = async (parentId: number) => {
-    const text = replyTexts[parentId]?.trim();
+  const handleSubmitReply = async (parentId: number, text: string) => {
     if (!text || !id) return;
 
     try {
-      setSendingReply(true);
 
       const response = await axiosInstance.post("/comentarios/create/", {
         queja: Number(id),
@@ -170,23 +163,23 @@ function QuejaDetail() {
 
       // Añadir respuesta a la lista
       setComentarios((prev) => [...prev, response.data]);
-
-      // Limpiar solo ese comentario
-      setReplyTexts((prev) => ({ ...prev, [parentId]: "" }));
-      setReplyOpen(null);
-
     } catch (err) {
       console.error("Error al responder comentario", err);
       alert("Error al enviar la respuesta");
-    } finally {
-      setSendingReply(false);
     }
   };
-  const handleComentarioLikeChange = useCallback((comentarioId: number, liked: boolean, count: number) => {
-    setComentarios((prev) =>
-      prev.map((c) => (c.id === comentarioId ? { ...c, is_liked: liked, num_votos: count } : c))
-    );
-  }, []);
+  const handleComentarioLikeChange = useCallback(
+    (comentarioId: number, liked: boolean, count: number) => {
+      setComentarios((prev) =>
+        prev.map((c) =>
+          c.id === comentarioId
+            ? { ...c, is_liked: liked, num_votos: count }
+            : c,
+        ),
+      );
+    },
+    [],
+  );
 
   if (loading) {
     return (
@@ -220,103 +213,104 @@ function QuejaDetail() {
     );
   }
 
-  /** --- Componente recursivo para un comentario --- */
-  function CommentItem({ node, level = 0 }: { node: CommentNode; level?: number }) {
+  function CommentItem({ node, level = 0 }: {node: CommentNode, level?: number}) {
+    const [isReplying, setIsReplying] = useState(false);
+    const [replyText, setReplyText] = useState("");
+
     const isOpen = expanded.has(node.id);
     const repliesCount = node.children.length;
 
+    const handleSendReply = () => {
+      handleSubmitReply(node.id, replyText);
+      setReplyText("");
+      setIsReplying(false);
+    };
+
     return (
+      <li className="comment" style={{ marginLeft: level ? 16 : 0 }}>
+        <p className="comment__content">
+          <strong>{node.autor_nombre}: </strong>
+          {node.contenido}
+        </p>
 
-<li className="comment" style={{ marginLeft: level ? 16 : 0 }}>
+        <div className="comment__footer">
+          <div className="comment__meta">
+            <span>{node.fecha_creacion}</span>
+          </div>
 
-  <p className="comment__content">
-    <strong>{node.autor_nombre}: </strong>{node.contenido}
-  </p>
+          <div className="comment__actions">
+            {repliesCount > 0 && (
+              <button
+                type="button"
+                className="toggle-replies btn btn-secondary"
+                onClick={() => toggleReplies(node.id)}
+                aria-expanded={isOpen}
+              >
+                {isOpen ? "Ocultar" : "Ver"} {repliesCount} respuesta
+                {repliesCount !== 1 ? "s" : ""}
+              </button>
+            )}
 
-  <div className="comment__footer">
-    <div className="comment__meta">
-      <span>{node.fecha_creacion}</span>
-    </div>
+            <button
+              type="button"
+              className="reply-btn btn btn-secondary"
+              onClick={() => setIsReplying(!isReplying)}
+            >
+              Responder
+            </button>
 
-    <div className="comment__actions">
-      {repliesCount > 0 && (
-        <button
-          type="button"
-          className="toggle-replies btn btn-secondary"
-          onClick={() => toggleReplies(node.id)}
-          aria-expanded={isOpen}
-        >
-          {isOpen ? "Ocultar" : "Ver"} {repliesCount} respuesta{repliesCount !== 1 ? "s" : ""}
-        </button>
-      )}
+            <LikeButton
+              initialLiked={!!node.is_liked}
+              initialCount={node.num_votos ?? 0}
+              objectId={node.id}
+              contentType={Number(node.content_type)}
+              onChange={(liked, count) =>
+                handleComentarioLikeChange(node.id, liked, count)
+              }
+            />
+          </div>
+        </div>
 
-      <button
-        type="button"
-        className="reply-btn btn btn-secondary"
-        onClick={() => {
-          setReplyOpen(node.id);
-          setShowCommentBox(false);
-        }}
-      >
-        Responder
-      </button>
+        {/* FORMULARIO LOCAL - NO PIERDE EL FOCO */}
+        {isReplying && (
+          <div className="reply-form">
+            <div className="reply-form__row">
+              <textarea
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                placeholder={`Responder a ${node.autor_nombre}…`}
+                className="reply-textarea"
+              />
 
-      <LikeButton
-        initialLiked={!!node.is_liked}
-        initialCount={node.num_votos ?? 0}
-        objectId={node.id}
-        contentType={Number(node.content_type)}
-        onChange={(liked, count) => handleComentarioLikeChange(node.id, liked, count)}
-      />
-    </div>
-  </div>
+              <div className="reply-form__buttons">
+                <button
+                  className="btn btn-primary btn-small"
+                  disabled={replyText.trim().length < 3}
+                  onClick={handleSendReply}
+                >
+                  Enviar
+                </button>
 
-  {/* BLOQUE CORRECTO: el formulario va AQUÍ */}
-{replyOpen === node.id && (
-  <div key={`reply-${node.id}`} className="reply-form">
-    <div className="reply-form__row">
-      <textarea
-        value={replyTexts[node.id] ?? ""}
-        onChange={(e) =>
-          setReplyTexts(prev => ({
-            ...prev,
-            [node.id]: e.target.value
-          }))
-        }
-        placeholder={`Responder a ${node.autor_nombre}…`}
-        className="reply-textarea"
-      />
+                <button
+                  className="btn btn-secondary btn-small"
+                  onClick={() => setIsReplying(false)}
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
-      <div className="reply-form__buttons">
-        <button
-          className="btn btn-primary btn-small"
-          disabled={sendingReply || (replyTexts[node.id]?.trim().length ?? 0) < 3}
-          onClick={() => handleSubmitReply(node.id)}
-        >
-          {sendingReply ? "..." : "Enviar"}
-        </button>
-
-        <button
-          className="btn btn-secondary btn-small"
-          onClick={() => {
-            setReplyOpen(null);
-          }}
-        >
-          Cancelar
-        </button>
-      </div>
-    </div>
-  </div>
-)}  {isOpen && repliesCount > 0 && (
-    <ul id={`replies-${node.id}`} className="comment-list replies">
-      {node.children.map((child) => (
-        <CommentItem key={child.id} node={child} level={level + 1} />
-      ))}
-    </ul>
-  )}
-
-</li>
-
+        {/* HIJOS */}
+        {isOpen && repliesCount > 0 && (
+          <ul className="comment-list replies">
+            {node.children.map((child:CommentNode) => (
+              <CommentItem key={child.id} node={child} level={level + 1} />
+            ))}
+          </ul>
+        )}
+      </li>
     );
   }
 
@@ -349,24 +343,32 @@ function QuejaDetail() {
 
             <span className="meta__group">
               <span className="meta__label">Categoría:</span>
-              <span className="pill pill--neutral">{queja.categoria_nombre}</span>
+              <span className="pill pill--neutral">
+                {queja.categoria_nombre}
+              </span>
             </span>
 
             <span className="meta__group">
               <span className="meta__label">Distrito:</span>
-              <span className="pill pill--neutral">{queja.distrito_nombre}</span>
+              <span className="pill pill--neutral">
+                {queja.distrito_nombre}
+              </span>
             </span>
           </div>
           <div className="detail_content">
-          {queja.descripcion && (
-            <p className="detail__desc"><strong>Descripcion: </strong>{queja.descripcion}</p>
-          )}
-          {queja.ubicacion && (
-            <p className="detail__desc"><strong>Ubicacion: </strong>{queja.ubicacion}</p>
-          )}
-</div>
-
-
+            {queja.descripcion && (
+              <p className="detail__desc">
+                <strong>Descripcion: </strong>
+                {queja.descripcion}
+              </p>
+            )}
+            {queja.ubicacion && (
+              <p className="detail__desc">
+                <strong>Ubicacion: </strong>
+                {queja.ubicacion}
+              </p>
+            )}
+          </div>
         </header>
 
         <div className="sections-row">
@@ -380,7 +382,11 @@ function QuejaDetail() {
                   {firstTwo.map((img, index) => (
                     <div key={img.id} className="media-card">
                       <div className="media-card__visual">
-                        <img className="media media--image" src={mediaUrl(img.imagen)} alt="" />
+                        <img
+                          className="media media--image"
+                          src={mediaUrl(img.imagen)}
+                          alt=""
+                        />
                         {index === 1 && remaining > 0 && (
                           <div
                             className="overlay-more"
@@ -399,7 +405,11 @@ function QuejaDetail() {
                     {rest.map((img, i) => (
                       <div key={i} className="media-card">
                         <div className="media-card__visual">
-                          <img className="media media--image" src={mediaUrl(img.imagen)} alt="" />
+                          <img
+                            className="media media--image"
+                            src={mediaUrl(img.imagen)}
+                            alt=""
+                          />
                         </div>
                       </div>
                     ))}
@@ -422,7 +432,11 @@ function QuejaDetail() {
                 {videos.map((v) => (
                   <figure key={v.id} className="media-card media-card--video">
                     <div className="media-card__visual">
-                      <video className="media media--video" src={mediaUrl(v.video)} controls />
+                      <video
+                        className="media media--video"
+                        src={mediaUrl(v.video)}
+                        controls
+                      />
                     </div>
                   </figure>
                 ))}
@@ -434,18 +448,19 @@ function QuejaDetail() {
         {/* Comentarios */}
         <section className="section">
           <div className="section_title_header">
-          <h2 className="section__title">Comentarios ({comentarios.length})</h2>
-          <CommentButton onClick={()=> {
-            setShowCommentBox(true);
-            setReplyOpen(null);
-          }}
-          />
+            <h2 className="section__title">
+              Comentarios ({comentarios.length})
+            </h2>
+            <CommentButton
+              onClick={() => {
+                setShowCommentBox(true);
+              }}
+            />
           </div>
 
           {showCommentBox && (
             <div className="comment-form">
               <div className="comment-form__row">
-
                 {/* TEXTAREA */}
                 <textarea
                   value={commentText}
@@ -474,12 +489,10 @@ function QuejaDetail() {
                     Cancelar
                   </button>
                 </div>
-
               </div>
             </div>
-
-        )}
-                  {tree.length === 0 ? (
+          )}
+          {tree.length === 0 ? (
             <div className="empty-state">No hay comentarios.</div>
           ) : (
             <ul className="comment-list">
