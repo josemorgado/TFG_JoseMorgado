@@ -9,6 +9,8 @@ import PrivateRouteCrearQueja from './PrivateRouteCrearQueja';
 import QuejaDetail from '../pages/QuejaDetail';
 import PerfilDetail from '../pages/PerfilDetail';
 import PerfilUpdate from '../pages/PerfilUpdate';
+import PrivateRoute from './PrivateRoute';
+import RutaProhibida from '../pages/RutaProhibida';
 
 const AppRouter: React.FC = () => (
   <BrowserRouter>
@@ -21,10 +23,13 @@ const AppRouter: React.FC = () => (
         <Route path="/register" element={<Register />} />
         <Route path="/quejas/:id" element={<QuejaDetail />} />
         <Route path="/perfil/:id" element={<PerfilDetail />} />
+        <Route path="/ruta-prohibida" element={<RutaProhibida />} />
 
         {/* Rutas privadas */}
         <Route element={<PrivateRouteCrearQueja />}>
           <Route path="/create-queja" element={<QuejaCreate />} />
+        </Route>
+        <Route element={<PrivateRoute/>}>
           <Route path="perfil/:id/update/"element={<PerfilUpdate/>}/>
         </Route>
 

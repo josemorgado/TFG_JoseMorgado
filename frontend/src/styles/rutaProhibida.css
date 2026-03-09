@@ -1,0 +1,32 @@
+.ruta-prohibida-page {
+  display: flex;
+  justify-content: center;
+  padding: 40px 20px;
+}
+
+.ruta-prohibida-card {
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+}
+
+.ruta-prohibida-title {
+  color: var(--color-primary);
+  margin-bottom: 10px;
+}
+
+.ruta-prohibida-msg {
+  font-size: 1.1rem;
+  margin-bottom: 8px;
+}
+
+.ruta-prohibida-sub {
+  color: var(--color-primary-light);
+  font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+
+.ruta-prohibida-btn {
+  width: 100%;
+  margin-top: 10px;
+}
