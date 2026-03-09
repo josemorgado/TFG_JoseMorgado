@@ -129,6 +129,7 @@
 }
 .perfil-data-fields {
     margin: 5px;
+    max-width: 600px;
 }
 
 

@@ -18,6 +18,7 @@ export default function PerfilDetail() {
   const [quejas, setQuejas] = useState<Queja[]>([]);
   const { user: userActivo } = useAuth();
 
+
   const estadoCompleto: Record<string, string> = {
     PEN: "Pendiente",
     ENP: "En Progreso",
