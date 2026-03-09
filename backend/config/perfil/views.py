@@ -8,12 +8,24 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from video.serializers import VideoSerializer
 from video.models import Video
-from core.permissions import IsAnonymousOrModerator, IsAuthorOrModerator, IsModerator, IsAnonymousUser
+from core.permissions import (
+    IsAnonymousOrModerator,
+    IsAuthorOrModerator,
+    IsModerator,
+    IsAnonymousUser,
+)
 from rest_framework.decorators import (
-    api_view, parser_classes, permission_classes, authentication_classes
+    api_view,
+    parser_classes,
+    permission_classes,
+    authentication_classes,
 )
 
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+    authentication_classes,
+)
 from rest_framework.permissions import AllowAny
 from rest_framework import status
 from rest_framework.response import Response
@@ -31,7 +43,7 @@ from drf_spectacular.utils import (
     extend_schema,
     OpenApiParameter,
     OpenApiResponse,
-    OpenApiExample
+    OpenApiExample,
 )
 
 from .serializers import UserPerfilSerializer, UserWithPerfilSerializer
@@ -49,14 +61,14 @@ User = get_user_model()
     tags=["Usuarios"],
     responses={
         200: OpenApiResponse(response=UserPerfilSerializer(many=True)),
-    }
+    },
 )
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def usuario_list(request):
-    qs = User.objects.select_related('perfil').all().order_by('id')
-    serializer = UserPerfilSerializer(qs, many=True, context={'request': request})
+    qs = User.objects.select_related("perfil").all().order_by("id")
+    serializer = UserPerfilSerializer(qs, many=True, context={"request": request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -73,20 +85,20 @@ def usuario_list(request):
             type=int,
             description="ID del usuario",
             required=True,
-            location=OpenApiParameter.PATH
+            location=OpenApiParameter.PATH,
         )
     ],
     responses={
         200: OpenApiResponse(response=UserPerfilSerializer),
         404: OpenApiResponse(description="Usuario no encontrado"),
-    }
+    },
 )
-@api_view(['GET'])
+@api_view(["GET"])
 @authentication_classes([])
 @permission_classes([AllowAny])
 def usuario_detail(request, pk):
-    user = get_object_or_404(User.objects.select_related('perfil'), pk=pk)
-    serializer = UserWithPerfilSerializer(user, context={'request': request})
+    user = get_object_or_404(User.objects.select_related("perfil"), pk=pk)
+    serializer = UserWithPerfilSerializer(user, context={"request": request})
     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
@@ -114,26 +126,26 @@ def usuario_detail(request, pk):
                 "email": "juan@example.com",
                 "password": "MiPass1234",
                 "telefono": "666777888",
-                "bio": "Vecino del distrito centro"
+                "bio": "Vecino del distrito centro",
             },
-            request_only=True
+            request_only=True,
         )
-    ]
+    ],
 )
-@api_view(['POST'])
+@api_view(["POST"])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAnonymousOrModerator])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def usuario_create(request):
-    serializer = UserPerfilSerializer(data=request.data, context={'request': request})
+    serializer = UserPerfilSerializer(data=request.data, context={"request": request})
     serializer.is_valid(raise_exception=True)
     user = serializer.save()
 
-    user = User.objects.select_related('perfil').get(pk=user.pk)
+    user = User.objects.select_related("perfil").get(pk=user.pk)
 
     return Response(
-        UserPerfilSerializer(user, context={'request': request}).data,
-        status=status.HTTP_201_CREATED
+        UserPerfilSerializer(user, context={"request": request}).data,
+        status=status.HTTP_201_CREATED,
     )
 
 
@@ -151,7 +163,7 @@ def usuario_create(request):
             type=int,
             description="ID del usuario a actualizar",
             required=True,
-            location=OpenApiParameter.PATH
+            location=OpenApiParameter.PATH,
         )
     ],
     responses={
@@ -160,36 +172,45 @@ def usuario_create(request):
         401: OpenApiResponse(description="No autenticado"),
         403: OpenApiResponse(description="Permisos insuficientes"),
         404: OpenApiResponse(description="Usuario no encontrado"),
-    }
+    },
 )
-@api_view(['PUT'])
+@api_view(["PUT"])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated, IsAuthorOrModerator])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def usuario_update(request, pk):
     # ---- Early 403: si no es moderador y no es su propio pk, corta aquí
-    is_moderator = getattr(getattr(request.user, 'perfil', None), 'moderator', False)
+    is_moderator = getattr(getattr(request.user, "perfil", None), "moderator", False)
     try:
         target_pk = int(pk)
     except (TypeError, ValueError):
-        return Response({"detail": "Parámetro pk inválido."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "Parámetro pk inválido."}, status=status.HTTP_400_BAD_REQUEST
+        )
 
     if not is_moderator and request.user.id != target_pk:
-        return Response({"detail": IsAuthorOrModerator.message}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {"detail": IsAuthorOrModerator.message}, status=status.HTTP_403_FORBIDDEN
+        )
 
     # ---- A partir de aquí, ya puede buscar el objeto
-    user = get_object_or_404(User.objects.select_related('perfil'), pk=pk)
+    user = get_object_or_404(User.objects.select_related("perfil"), pk=pk)
 
     # Check de objeto (por consistencia y seguridad)
     perm = IsAuthorOrModerator()
     if not perm.has_object_permission(request, None, user):
         return Response({"detail": perm.message}, status=status.HTTP_403_FORBIDDEN)
 
-    serializer = UserPerfilSerializer(user, data=request.data, context={'request': request})
+    serializer = UserPerfilSerializer(
+        user, data=request.data, context={"request": request}
+    )
     serializer.is_valid(raise_exception=True)
     user = serializer.save()
-    user = User.objects.select_related('perfil').get(pk=user.pk)
-    return Response(UserPerfilSerializer(user, context={'request': request}).data, status=status.HTTP_200_OK)
+    user = User.objects.select_related("perfil").get(pk=user.pk)
+    return Response(
+        UserPerfilSerializer(user, context={"request": request}).data,
+        status=status.HTTP_200_OK,
+    )
 
 
 # ============================================================
@@ -206,7 +227,7 @@ def usuario_update(request, pk):
             type=int,
             description="ID del usuario a actualizar",
             required=True,
-            location=OpenApiParameter.PATH
+            location=OpenApiParameter.PATH,
         )
     ],
     responses={
@@ -215,33 +236,42 @@ def usuario_update(request, pk):
         401: OpenApiResponse(description="No autenticado"),
         403: OpenApiResponse(description="Permisos insuficientes"),
         404: OpenApiResponse(description="Usuario no encontrado"),
-    }
+    },
 )
-@api_view(['PATCH'])
+@api_view(["PATCH"])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated, IsAuthorOrModerator])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def usuario_partial_update(request, pk):
-    is_moderator = getattr(getattr(request.user, 'perfil', None), 'moderator', False)
+    is_moderator = getattr(getattr(request.user, "perfil", None), "moderator", False)
     try:
         target_pk = int(pk)
     except (TypeError, ValueError):
-        return Response({"detail": "Parámetro pk inválido."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "Parámetro pk inválido."}, status=status.HTTP_400_BAD_REQUEST
+        )
 
     if not is_moderator and request.user.id != target_pk:
-        return Response({"detail": IsAuthorOrModerator.message}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {"detail": IsAuthorOrModerator.message}, status=status.HTTP_403_FORBIDDEN
+        )
 
-    user = get_object_or_404(User.objects.select_related('perfil'), pk=pk)
+    user = get_object_or_404(User.objects.select_related("perfil"), pk=pk)
 
     perm = IsAuthorOrModerator()
     if not perm.has_object_permission(request, None, user):
         return Response({"detail": perm.message}, status=status.HTTP_403_FORBIDDEN)
 
-    serializer = UserPerfilSerializer(user, data=request.data, partial=True, context={'request': request})
+    serializer = UserPerfilSerializer(
+        user, data=request.data, partial=True, context={"request": request}
+    )
     serializer.is_valid(raise_exception=True)
     user = serializer.save()
-    user = User.objects.select_related('perfil').get(pk=user.pk)
-    return Response(UserPerfilSerializer(user, context={'request': request}).data, status=status.HTTP_200_OK)
+    user = User.objects.select_related("perfil").get(pk=user.pk)
+    return Response(
+        UserPerfilSerializer(user, context={"request": request}).data,
+        status=status.HTTP_200_OK,
+    )
 
 
 # ============================================================
@@ -257,7 +287,7 @@ def usuario_partial_update(request, pk):
             type=int,
             description="ID del usuario a eliminar",
             required=True,
-            location=OpenApiParameter.PATH
+            location=OpenApiParameter.PATH,
         )
     ],
     responses={
@@ -265,20 +295,24 @@ def usuario_partial_update(request, pk):
         401: OpenApiResponse(description="No autenticado"),
         403: OpenApiResponse(description="Permisos insuficientes"),
         404: OpenApiResponse(description="Usuario no encontrado"),
-    }
+    },
 )
-@api_view(['DELETE'])
+@api_view(["DELETE"])
 @authentication_classes([JWTAuthentication])
 @permission_classes([IsAuthenticated, IsAuthorOrModerator])
 def usuario_delete(request, pk):
-    is_moderator = getattr(getattr(request.user, 'perfil', None), 'moderator', False)
+    is_moderator = getattr(getattr(request.user, "perfil", None), "moderator", False)
     try:
         target_pk = int(pk)
     except (TypeError, ValueError):
-        return Response({"detail": "Parámetro pk inválido."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"detail": "Parámetro pk inválido."}, status=status.HTTP_400_BAD_REQUEST
+        )
 
     if not is_moderator and request.user.id != target_pk:
-        return Response({"detail": IsAuthorOrModerator.message}, status=status.HTTP_403_FORBIDDEN)
+        return Response(
+            {"detail": IsAuthorOrModerator.message}, status=status.HTTP_403_FORBIDDEN
+        )
 
     user = get_object_or_404(User, pk=pk)
 
@@ -289,32 +323,35 @@ def usuario_delete(request, pk):
     user.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
+
 # GET/PATCH/PUT /usuarios/me/ → Permite al usuario autenticado leer/actualizar su propio perfil
-@api_view(['GET', 'PATCH', 'PUT'])
+@api_view(["GET", "PATCH", "PUT"])
 @authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])  # Solo el propio usuario o moderadores pueden acceder a esta vista
+@permission_classes(
+    [IsAuthenticated]
+)  # Solo el propio usuario o moderadores pueden acceder a esta vista
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def usuario_me(request):
     # Carga el user con su perfil para evitar N+1
-    user = User.objects.select_related('perfil').get(pk=request.user.pk)
+    user = User.objects.select_related("perfil").get(pk=request.user.pk)
 
-    if request.method == 'GET':
-        serializer = UserPerfilSerializer(user, context={'request': request})
+    if request.method == "GET":
+        serializer = UserPerfilSerializer(user, context={"request": request})
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-    partial = (request.method == 'PATCH')
+    partial = request.method == "PATCH"
     serializer = UserPerfilSerializer(
-        instance=user,
-        data=request.data,
-        partial=partial,
-        context={'request': request}
+        instance=user, data=request.data, partial=partial, context={"request": request}
     )
     serializer.is_valid(raise_exception=True)
     serializer.save()
 
     # Recarga para asegurar consistencia y perfil actualizado
-    user = User.objects.select_related('perfil').get(pk=request.user.pk)
-    return Response(UserPerfilSerializer(user, context={'request': request}).data, status=status.HTTP_200_OK)
+    user = User.objects.select_related("perfil").get(pk=request.user.pk)
+    return Response(
+        UserPerfilSerializer(user, context={"request": request}).data,
+        status=status.HTTP_200_OK,
+    )
 
 
 # ============================================================
@@ -352,8 +389,10 @@ def usuario_me(request):
     ],
     responses={
         200: OpenApiResponse(response=ImagenSerializer(many=True)),
-        404: OpenApiResponse(description="Usuario sin quejas o inexistente (si aplicas verificación previa)"),
-    }
+        404: OpenApiResponse(
+            description="Usuario sin quejas o inexistente (si aplicas verificación previa)"
+        ),
+    },
 )
 @api_view(["GET"])
 @authentication_classes([])
@@ -364,7 +403,9 @@ def imagenes_de_usuario(request, user_id: int):
     Orden: orden -> fecha_creacion -> id
     Paginación simple por query params.
     """
-    user= get_object_or_404(User, pk=user_id)  # Verifica que el usuario existe, si no devuelve 404
+    user = get_object_or_404(
+        User, pk=user_id
+    )  # Verifica que el usuario existe, si no devuelve 404
     # 1) Obtener ids de quejas del usuario
     queja_ids = list(
         Queja.objects.filter(autor_id=user_id).values_list("id", flat=True)
@@ -375,10 +416,8 @@ def imagenes_de_usuario(request, user_id: int):
     # 2) Filtrar Imagen por ContentType de Queja + object_id in ids
     queja_ct = ContentType.objects.get_for_model(Queja, for_concrete_model=False)
 
-    qs = (
-        Imagen.objects
-        .filter(content_type=queja_ct, object_id__in=queja_ids)
-        .order_by("orden", "fecha_creacion", "id")
+    qs = Imagen.objects.filter(content_type=queja_ct, object_id__in=queja_ids).order_by(
+        "orden", "fecha_creacion", "id"
     )
 
     # --- Paginación simple
@@ -392,12 +431,15 @@ def imagenes_de_usuario(request, user_id: int):
 
     serializer = ImagenSerializer(page_obj, many=True, context={"request": request})
 
-    return Response({
-        "count": paginator.count if hasattr(paginator, "count") else len(qs),
-        "page": page,
-        "page_size": page_size,
-        "results": serializer.data
-    }, status=status.HTTP_200_OK)
+    return Response(
+        {
+            "count": paginator.count if hasattr(paginator, "count") else len(qs),
+            "page": page,
+            "page_size": page_size,
+            "results": serializer.data,
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 # ============================================================
@@ -426,7 +468,7 @@ def imagenes_de_usuario(request, user_id: int):
     responses={
         200: OpenApiResponse(response=ImagenSerializer(many=True)),
         401: OpenApiResponse(description="No autenticado"),
-    }
+    },
 )
 @api_view(["GET"])
 @authentication_classes([JWTAuthentication])
@@ -447,10 +489,8 @@ def mis_imagenes(request):
 
     queja_ct = ContentType.objects.get_for_model(Queja, for_concrete_model=False)
 
-    qs = (
-        Imagen.objects
-        .filter(content_type=queja_ct, object_id__in=queja_ids)
-        .order_by("orden", "fecha_creacion", "id")
+    qs = Imagen.objects.filter(content_type=queja_ct, object_id__in=queja_ids).order_by(
+        "orden", "fecha_creacion", "id"
     )
 
     page = int(request.query_params.get("page", 1))
@@ -463,12 +503,15 @@ def mis_imagenes(request):
 
     serializer = ImagenSerializer(page_obj, many=True, context={"request": request})
 
-    return Response({
-        "count": paginator.count if hasattr(paginator, "count") else len(qs),
-        "page": page,
-        "page_size": page_size,
-        "results": serializer.data
-    }, status=status.HTTP_200_OK)
+    return Response(
+        {
+            "count": paginator.count if hasattr(paginator, "count") else len(qs),
+            "page": page,
+            "page_size": page_size,
+            "results": serializer.data,
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 # ============================================================
@@ -506,8 +549,10 @@ def mis_imagenes(request):
     ],
     responses={
         200: OpenApiResponse(response=VideoSerializer(many=True)),
-        404: OpenApiResponse(description="Usuario sin quejas o inexistente (si aplicas verificación previa)"),
-    }
+        404: OpenApiResponse(
+            description="Usuario sin quejas o inexistente (si aplicas verificación previa)"
+        ),
+    },
 )
 @api_view(["GET"])
 @authentication_classes([])
@@ -518,7 +563,9 @@ def videos_de_usuario(request, user_id: int):
     Orden: orden -> fecha_creacion -> id
     Paginación simple por query params.
     """
-    user= get_object_or_404(User, pk=user_id)  # Verifica que el usuario existe, si no devuelve 404
+    user = get_object_or_404(
+        User, pk=user_id
+    )  # Verifica que el usuario existe, si no devuelve 404
     # 1) Obtener ids de quejas del usuario
     queja_ids = list(
         Queja.objects.filter(autor_id=user_id).values_list("id", flat=True)
@@ -529,10 +576,8 @@ def videos_de_usuario(request, user_id: int):
     # 2) Filtrar Video por ContentType de Queja + object_id in ids
     queja_ct = ContentType.objects.get_for_model(Queja, for_concrete_model=False)
 
-    qs = (
-        Video.objects
-        .filter(content_type=queja_ct, object_id__in=queja_ids)
-        .order_by("orden", "fecha_creacion", "id")
+    qs = Video.objects.filter(content_type=queja_ct, object_id__in=queja_ids).order_by(
+        "orden", "fecha_creacion", "id"
     )
 
     # --- Paginación simple
@@ -546,12 +591,15 @@ def videos_de_usuario(request, user_id: int):
 
     serializer = VideoSerializer(page_obj, many=True, context={"request": request})
 
-    return Response({
-        "count": paginator.count if hasattr(paginator, "count") else len(qs),
-        "page": page,
-        "page_size": page_size,
-        "results": serializer.data
-    }, status=status.HTTP_200_OK)
+    return Response(
+        {
+            "count": paginator.count if hasattr(paginator, "count") else len(qs),
+            "page": page,
+            "page_size": page_size,
+            "results": serializer.data,
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 # ============================================================
@@ -580,7 +628,7 @@ def videos_de_usuario(request, user_id: int):
     responses={
         200: OpenApiResponse(response=VideoSerializer(many=True)),
         401: OpenApiResponse(description="No autenticado"),
-    }
+    },
 )
 @api_view(["GET"])
 @authentication_classes([JWTAuthentication])
@@ -601,10 +649,8 @@ def mis_videos(request):
 
     queja_ct = ContentType.objects.get_for_model(Queja, for_concrete_model=False)
 
-    qs = (
-        Video.objects
-        .filter(content_type=queja_ct, object_id__in=queja_ids)
-        .order_by("orden", "fecha_creacion", "id")
+    qs = Video.objects.filter(content_type=queja_ct, object_id__in=queja_ids).order_by(
+        "orden", "fecha_creacion", "id"
     )
 
     page = int(request.query_params.get("page", 1))
@@ -617,17 +663,21 @@ def mis_videos(request):
 
     serializer = VideoSerializer(page_obj, many=True, context={"request": request})
 
-    return Response({
-        "count": paginator.count if hasattr(paginator, "count") else len(qs),
-        "page": page,
-        "page_size": page_size,
-        "results": serializer.data
-    }, status=status.HTTP_200_OK)
+    return Response(
+        {
+            "count": paginator.count if hasattr(paginator, "count") else len(qs),
+            "page": page,
+            "page_size": page_size,
+            "results": serializer.data,
+        },
+        status=status.HTTP_200_OK,
+    )
 
 
 # ============================================================
 # POST /api/perfil/logout/ — Logout con blacklist del refresh
 # ============================================================
+
 
 @extend_schema(
     summary="Logout con blacklist",
@@ -670,5 +720,3 @@ def logout_view(request):
 
     # 205 Reset Content: indica que el cliente debe resetear el estado (borrar storage/cookies)
     return Response(status=status.HTTP_205_RESET_CONTENT)
-
-

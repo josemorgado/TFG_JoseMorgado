@@ -1,0 +1,41 @@
+.perfil-update-page {
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.perfil-update-card {
+    width: 100%;
+    max-width: 700px;
+}
+
+.perfil-update-title {
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--color-primary);
+}
+
+.perfil-update-form label {
+    font-weight: 600;
+    margin-top: 14px;
+    display: block;
+    color: var(--color-primary);
+}
+
+.form-section-title {
+    margin-top: 28px;
+    margin-bottom: 6px;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--color-primary-light);
+}
+
+.change-password-btn {
+    margin-top: 20px;
+    width: 100%;
+}
+
+.btn-primary {
+    margin-top: 16px;
+    width: 100%;
+}
