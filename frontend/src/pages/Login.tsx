@@ -49,79 +49,72 @@ const Login: React.FC = () => {
   };
 
   return (
-
-      <div className="form-page">
-        <div className="form-card">
-
+    <div className="form-page">
+      <div className="form-card">
           {reason === "create-queja" && (
             <p className="form-error" style={{ marginBottom: 12 }}>
               Debes iniciar sesión para poder crear una queja.
             </p>
           )}
+        <h1 className="form-title">Iniciar sesión</h1>
 
-          <h1 className="form-title">Iniciar sesión</h1>
+        <form onSubmit={onSubmit} noValidate className="form-container">
+          <label className="form-label">Username</label>
+          <input
+            className="form-input"
+            value={form.username}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, username: e.target.value }))
+            }
+            required
+            disabled={loading}
+          />
 
-          <form onSubmit={onSubmit} noValidate className="form-container">
+          <label className="form-label">Password</label>
+          <input
+            className="form-input"
+            type="password"
+            value={form.password}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, password: e.target.value }))
+            }
+            required
+            disabled={loading}
+          />
 
-            <label className="form-label">Username</label>
-            <input
-              className="form-input"
-              value={form.username}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, username: e.target.value }))
-              }
-              required
-              disabled={loading}
-            />
-
-            <label className="form-label">Password</label>
-            <input
-              className="form-input"
-              type="password"
-              value={form.password}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, password: e.target.value }))
-              }
-              required
-              disabled={loading}
-            />
-
-            <p style={{ marginTop: 8 }}>
-              <button
-                type="button"
-                className="link"
-                onClick={() => navigate("/forgot-password")}
-              >
-                ¿Has olvidado tu contraseña?
-              </button>
-            </p>
-
-            <button
-              type="submit"
-              className="btn btn-primary form-button"
-              disabled={loading}
-            >
-              {loading ? "Entrando..." : "Entrar"}
-            </button>
-
-            {error && <p className="form-error">{error}</p>}
-
-          </form>
-
-          <p className="form-link-center"style={{ marginTop: 12 }}>
-            ¿No tienes cuenta?{" "}
+          <p style={{ marginTop: 8 }}>
             <button
               type="button"
               className="link"
-              onClick={() => navigate("/register")}
+              onClick={() => navigate("/forgot-password")}
             >
-              Crear cuenta
+              ¿Has olvidado tu contraseña?
             </button>
           </p>
 
-        </div>
-      </div>
+          <button
+            type="submit"
+            className="btn btn-primary form-button"
+            disabled={loading}
+          >
+            {loading ? "Entrando..." : "Entrar"}
+          </button>
 
+          {error && <p className="form-error">{error}</p>}
+        </form>
+
+        <p className="form-link-center" style={{ marginTop: 12 }}>
+          ¿No tienes cuenta?{" "}
+          <button
+            type="button"
+            className="link"
+            onClick={() => navigate("/register")}
+          >
+            Crear cuenta
+          </button>
+        </p>
+      </div>
+    </div>
   );
 };
 

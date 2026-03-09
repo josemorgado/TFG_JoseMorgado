@@ -162,10 +162,10 @@ export default function PerfilUpdate() {
             )}
             <button
               type="button"
-              className="avatar-edit-btn avatar-edit-btn--icon"
+              className="avatar-delete-btn avatar-delete-btn--icon"
               onClick={handleDeletePhoto}
               style={{ backgroundImage: `url(${deleteIcon})` }}
-              aria-label="Editar perfil"
+              aria-label="Eliminar perfil"
             />
           </div>
 

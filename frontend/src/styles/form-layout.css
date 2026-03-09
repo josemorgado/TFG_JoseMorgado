@@ -5,127 +5,146 @@
 
 /* Página envolvente */
 .form-page {
-    padding: 40px 20px;
-    display: flex;
-    justify-content: center;
+  padding: 40px 20px;
+  display: flex;
+  justify-content: center;
 }
 
 /* Tarjeta principal del formulario */
 .form-card {
-    width: 100%;
-    max-width: 700px;
-    background: var(--color-white);
-    padding: 24px;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow-soft);
+  width: 100%;
+  max-width: 700px;
+  background: var(--color-white);
+  padding: 24px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* Título */
 .form-title {
-    text-align: center;
-    margin-bottom: 20px;
-    color: var(--color-primary);
+  text-align: center;
+  margin-bottom: 20px;
+  color: var(--color-primary);
 }
 
 /* Contenedor del formulario */
 .form-container {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  min-width: 600px;
 }
 
 /* Etiquetas */
 .form-label {
-    font-weight: 600;
-    margin-top: 10px;
-    display: block;
-    color: var(--color-primary);
-    max-width: 600px;
-    width: 100%;
+  font-weight: 600;
+  margin-top: 10px;
+  display: block;
+  color: var(--color-primary);
+  max-width: 600px;
+  width: 100%;
 }
 
 /* Inputs, selects, textarea */
 .form-input {
-    margin-top: 4px;
-    display: block;
-    color: var(--color-primary);
-    max-width: 600px;
-    width: 100%;
-    padding: 10px;
-    border: 2px solid var(--color-primary-light);
-    border-radius: var(--radius-small);
-    background: var(--color-bg);
-    height: auto;
+  margin-top: 4px;
+  display: block;
+  color: var(--color-primary);
+  max-width: 600px;
+  width: 100%;
+  padding: 10px;
+  border: 2px solid var(--color-primary-light);
+  border-radius: var(--radius-small);
+  background: var(--color-bg);
+  height: auto;
 }
 
 /* Textarea comportamiento */
 .form-input[type="textarea"],
 textarea.form-input {
-    resize: none;
-    overflow: hidden;
+  resize: none;
+  overflow: hidden;
 }
 
 /* Secciones */
 .form-section-title {
-    margin-top: 20px;
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--color-primary-light);
-    width: 100%;
-    max-width: 600px;
+  margin-top: 20px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-primary-light);
+  width: 100%;
+  max-width: 600px;
 }
 
 /* Botones principales */
 .form-button {
-    margin-top: 16px;
-    width: 100%;
-    max-width: 600px;
+  margin-top: 16px;
+  width: 100%;
+  max-width: 600px;
 }
 
 /* Errores */
 .form-error {
-    color: crimson;
-    font-size: 0.9rem;
-    max-width: 600px;
-    width: 100%;
+  color: crimson;
+  font-size: 0.9rem;
+  max-width: 600px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 
 .form-link-center {
-    text-align: center;
-    width: 100%;
-    max-width: 600px;
-    margin-top: 8px;
+  text-align: center;
+  width: 100%;
+  max-width: 600px;
+  margin-top: 8px;
 }
+
 .file-hidden {
   display: none;
 }
 
+/* Wrapper del avatar */
 .profile-photo-wrapper {
+  position: relative;
+  /* necesario para posicionar el botón */
   width: 150px;
   height: 150px;
   border-radius: 50%;
-  overflow: hidden;
+  overflow: visible;
+  /* ← permite que el botón se vea fuera */
   cursor: pointer;
-  border: 3px solid var(--color-primary-light);
+  border: 4px solid var(--color-primary);
+  /* borde principal como en la referencia */
   transition: 0.25s;
 }
 
 .profile-photo-wrapper:hover {
-  opacity: 0.85;
+  opacity: 0.9;
 }
 
-.profile-photo {
+/* Imagen dentro del avatar */
+.profile-photo,
+.perfil-avatar__img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+  border-radius: 50%;
 }
 
-.profile-photo-fallback {
+/* Fallback con iniciales */
+.profile-photo-fallback,
+.perfil-avatar__fallback {
   width: 100%;
   height: 100%;
-  border-radius: 999px;
+  border-radius: 50%;
   background: linear-gradient(135deg, #f1f5ff 0%, #e6ecff 100%);
   color: var(--color-primary);
   display: grid;
@@ -134,48 +153,55 @@ textarea.form-input {
   font-size: 36px;
 }
 
-
+/* Icono si lo incluyeras como <img> */
 .avatar-delete-icon {
   width: 22px;
   height: 22px;
   display: block !important;
   object-fit: contain;
   pointer-events: none;
-
-  opacity: 1 !important;
-  visibility: visible !important;
-  filter: none !important;
-  mix-blend-mode: normal !important;
-  transform: none !important;
 }
 
-
+/* Botón flotante: fuera del borde, con aro blanco y sombra */
 .avatar-delete-btn {
   position: absolute;
-  bottom: -5px;
-  right: -5px;
-
-  width: 42px;
-  height: 42px;
+  bottom: -18px;
+  /* saca el botón fuera */
+  right: -18px;
+  /* separa del borde */
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
 
-  background: var(--color-primary);
-  border: 3px solid var(--color-white);
+  background-color: var(--color-primary);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 22px;
+
+  border: 4px solid var(--color-white);
+  /* aro blanco */
   box-shadow: var(--shadow-medium);
+  /* sombra consistente con tu sistema */
 
   display: flex;
   justify-content: center;
   align-items: center;
 
-  z-index: 9999;
   cursor: pointer;
-  transition: 0.2s ease;
-  overflow: visible;
-  pointer-events: auto;
+  z-index: 10;
+  transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
+/* Clase que pone el icono como background (si usas sprite/png) */
 .avatar-delete-btn--icon {
+  /* si prefieres SVG inline, puedes omitir esto */
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 22px 22px;
+  background-size: 72px 42px;
+}
+
+/* Hover bonito */
+.avatar-delete-btn:hover {
+  transform: scale(1.08);
+  opacity: 0.95;
 }
