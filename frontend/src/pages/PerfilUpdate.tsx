@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getUsuarioById, updateUsuario } from "../api/perfil";
-import "../styles/perfilUpdate.css";
+import "../styles/form-layout.css";
 
 export default function PerfilUpdate() {
   const { id } = useParams();
@@ -10,6 +10,8 @@ export default function PerfilUpdate() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const bioRef = useRef<HTMLTextAreaElement | null>(null);
 
   const [form, setForm] = useState({
     username: "",
@@ -24,12 +26,10 @@ export default function PerfilUpdate() {
     foto_perfil: null as File | null,
   });
 
-  // ---------------- CARGAR DATOS DEL USUARIO ----------------
   useEffect(() => {
     (async () => {
       try {
         const data = await getUsuarioById(Number(id));
-
         setForm({
           username: data.username,
           email: data.email,
@@ -42,7 +42,7 @@ export default function PerfilUpdate() {
           biografia: data.perfil.biografia,
           foto_perfil: null,
         });
-      } catch (e) {
+      } catch {
         setError("No se pudieron cargar los datos.");
       } finally {
         setLoading(false);
@@ -50,15 +50,24 @@ export default function PerfilUpdate() {
     })();
   }, [id]);
 
-  // ---------------- HANDLERS ----------------
+  const autoResize = (el: HTMLTextAreaElement | null) => {
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  };
+
+  useLayoutEffect(() => {
+    if (!loading) autoResize(bioRef.current);
+  }, [loading, form.biografia]);
+
   const handleChange = (e: any) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+    if (e.target.name === "biografia") autoResize(bioRef.current);
   };
 
   const handleFile = (e: any) =>
     setForm({ ...form, foto_perfil: e.target.files?.[0] || null });
 
-  // ---------------- ENVIAR FORMULARIO ----------------
   const handleSubmit = async (e: any) => {
     e.preventDefault();
     setSaving(true);
@@ -81,118 +90,70 @@ export default function PerfilUpdate() {
     try {
       await updateUsuario(Number(id), payload, form.foto_perfil);
       navigate(`/perfil/${id}`);
-    } catch (err) {
-      console.log(err);
+    } catch {
       setError("Error al guardar los cambios.");
     } finally {
       setSaving(false);
     }
   };
 
-  if (loading) return <p className="loading">Cargando...</p>;
-  if (error) return <p className="error">{error}</p>;
+  if (loading) return <p>Cargando...</p>;
+  if (error) return <p>{error}</p>;
 
   return (
-    <div className="perfil-update-page">
-      <div className="card perfil-update-card">
-        <h1 className="perfil-update-title">Actualizar Perfil</h1>
+    <div className="form-page">
+      <div className="form-card">
+        <h1 className="form-title">Actualizar Perfil</h1>
 
-        <form onSubmit={handleSubmit} className="perfil-update-form">
+        <form onSubmit={handleSubmit} className="form-container">
+
           <h3 className="form-section-title">Información del Usuario</h3>
 
-          <label>Nombre de usuario</label>
-          <input
-            className="input"
-            name="username"
-            value={form.username}
-            onChange={handleChange}
-          />
+          <label className="form-label">Nombre de usuario</label>
+          <input className="form-input" name="username" value={form.username} onChange={handleChange} />
 
-          <label>Email</label>
-          <input
-            className="input"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-          />
+          <label className="form-label">Email</label>
+          <input className="form-input" name="email" value={form.email} onChange={handleChange} />
 
-          <label>Nombre</label>
-          <input
-            className="input"
-            name="first_name"
-            value={form.first_name}
-            onChange={handleChange}
-          />
+          <label className="form-label">Nombre</label>
+          <input className="form-input" name="first_name" value={form.first_name} onChange={handleChange} />
 
-          <label>Apellidos</label>
-          <input
-            className="input"
-            name="last_name"
-            value={form.last_name}
-            onChange={handleChange}
-          />
+          <label className="form-label">Apellidos</label>
+          <input className="form-input" name="last_name" value={form.last_name} onChange={handleChange} />
 
           <h3 className="form-section-title">Datos del Perfil</h3>
 
-          <label>Teléfono</label>
-          <input
-            className="input"
-            name="telefono"
-            value={form.telefono}
-            onChange={handleChange}
-          />
+          <label className="form-label">Teléfono</label>
+          <input className="form-input" name="telefono" value={form.telefono} onChange={handleChange} />
 
-          <label>Dirección</label>
-          <input
-            className="input"
-            name="direccion"
-            value={form.direccion}
-            onChange={handleChange}
-          />
+          <label className="form-label">Dirección</label>
+          <input className="form-input" name="direccion" value={form.direccion} onChange={handleChange} />
 
-          <label>Fecha de nacimiento</label>
-          <input
-            type="date"
-            className="input"
-            name="fecha_nacimiento"
-            value={form.fecha_nacimiento}
-            onChange={handleChange}
-          />
+          <label className="form-label">Fecha de nacimiento</label>
+          <input type="date" className="form-input" name="fecha_nacimiento" value={form.fecha_nacimiento} onChange={handleChange} />
 
-          <label>Género</label>
-          <select
-            className="input"
-            name="genero"
-            value={form.genero}
-            onChange={handleChange}
-          >
+          <label className="form-label">Género</label>
+          <select className="form-input" name="genero" value={form.genero} onChange={handleChange}>
             <option value="M">Masculino</option>
             <option value="F">Femenino</option>
             <option value="O">Otro</option>
           </select>
 
-          <label>Biografía</label>
-          <textarea
-            className="input"
-            name="biografia"
-            value={form.biografia}
-            onChange={handleChange}
-          />
+          <label className="form-label">Biografía</label>
+          <textarea ref={bioRef} className="form-input" name="biografia" value={form.biografia} onChange={handleChange} />
 
-          <label>Foto de perfil</label>
-          <input type="file" className="input" onChange={handleFile} />
+          <label className="form-label">Foto de perfil</label>
+          <input type="file" className="form-input" onChange={handleFile} />
 
-          <button
-            type="button"
-            className="btn btn-secondary change-password-btn"
-            onClick={() => navigate(`/perfil/${id}/cambiar-password`)}
-          >
+          <button type="button" className="btn btn-secondary form-button" onClick={() => navigate(`/perfil/${id}/cambiar-password`)}>
             Cambiar contraseña
           </button>
 
-          <button type="submit" className="btn btn-primary" disabled={saving}>
+          <button type="submit" className="btn btn-primary form-button" disabled={saving}>
             {saving ? "Guardando..." : "Guardar cambios"}
           </button>
+
+          {error && <p className="form-error">{error}</p>}
         </form>
       </div>
     </div>

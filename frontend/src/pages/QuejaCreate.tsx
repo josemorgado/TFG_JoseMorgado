@@ -1,17 +1,28 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import AuthLayout from "../components/AuthLayout";
-import { createQuejaRequest } from "../api/quejas";
-import { useCategorias, useDistritos } from "../modules/catalogos/catalogos.queries";
 import { crearImagenQueja } from "../api/imagenes";
+import { createQuejaRequest } from "../api/quejas";
 import { crearVideoQueja } from "../api/videos";
+import {
+  useCategorias,
+  useDistritos,
+} from "../modules/catalogos/catalogos.queries";
+
+import "../styles/form-layout.css";
 
 const QuejaCreate: React.FC = () => {
   const navigate = useNavigate();
 
-  // Cargar catálogos
-  const { data: categorias, isLoading: catLoading, error: catError } = useCategorias();
-  const { data: distritos,  isLoading: disLoading, error: disError } = useDistritos();
+  const {
+    data: categorias,
+    isLoading: catLoading,
+    error: catError,
+  } = useCategorias();
+  const {
+    data: distritos,
+    isLoading: disLoading,
+    error: disError,
+  } = useDistritos();
 
   const [form, setForm] = useState({
     titulo: "",
@@ -26,11 +37,12 @@ const QuejaCreate: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [errorImagenes, setErrorImagenes] = useState<string | null>(null);
   const [errorVideos, setErrorVideos] = useState<string | null>(null);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
-    // Validaciones rápidas en cliente
+    // Validaciones
     if (!form.titulo.trim() || form.titulo.trim().length < 5) {
       setError("El título debe tener mínimo 5 caracteres");
       return;
@@ -56,9 +68,6 @@ const QuejaCreate: React.FC = () => {
       return;
     }
 
-
-
-    // Construir FormData (conversión a number -> string)
     const formData = new FormData();
     formData.append("titulo", form.titulo.trim());
     formData.append("descripcion", form.descripcion.trim());
@@ -70,28 +79,21 @@ const QuejaCreate: React.FC = () => {
     }
 
     try {
-      const res = await createQuejaRequest(formData); // POST /quejas/create/ (multipart)
-      // Si el backend devuelve el objeto con id:
+      const res = await createQuejaRequest(formData);
       const id = res?.data?.id;
       const ctId = res?.data?.content_type;
 
       for (const file of form.imagenes) {
-        await crearImagenQueja(ctId,id,file)
+        await crearImagenQueja(ctId, id, file);
       }
       for (const file of form.videos) {
-        await crearVideoQueja(ctId,id,file)
+        await crearVideoQueja(ctId, id, file);
       }
-      if (id) {
-        navigate(`/quejas/${id}`);
-      } else {
-        // Fallback si no llega id
-        navigate("/quejas");
-      }
+
+      navigate(id ? `/quejas/${id}` : "/quejas");
     } catch (err: any) {
       if (err.response?.data) {
         const data = err.response.data;
-        console.log("error response", data);
-
         const messages: string[] = [];
 
         if (typeof data === "string") {
@@ -99,11 +101,15 @@ const QuejaCreate: React.FC = () => {
           return;
         }
 
-        if (data.titulo) messages.push(`Título: ${Array.isArray(data.titulo) ? data.titulo.join(" ") : String(data.titulo)}`);
-        if (data.descripcion) messages.push(`Descripción: ${Array.isArray(data.descripcion) ? data.descripcion.join(" ") : String(data.descripcion)}`);
-        if (data.categoria) messages.push(`Categoría: ${Array.isArray(data.categoria) ? data.categoria.join(" ") : String(data.categoria)}`);
-        if (data.distrito) messages.push(`Distrito: ${Array.isArray(data.distrito) ? data.distrito.join(" ") : String(data.distrito)}`);
-        if (data.ubicacion) messages.push(`Ubicación: ${Array.isArray(data.ubicacion) ? data.ubicacion.join(" ") : String(data.ubicacion)}`);
+        if (data.titulo) messages.push(`Título: ${data.titulo.join(" ")}`);
+        if (data.descripcion)
+          messages.push(`Descripción: ${data.descripcion.join(" ")}`);
+        if (data.categoria)
+          messages.push(`Categoría: ${data.categoria.join(" ")}`);
+        if (data.distrito)
+          messages.push(`Distrito: ${data.distrito.join(" ")}`);
+        if (data.ubicacion)
+          messages.push(`Ubicación: ${data.ubicacion.join(" ")}`);
 
         setError(messages.join(" • ") || "Error al crear la queja");
       } else {
@@ -113,144 +119,127 @@ const QuejaCreate: React.FC = () => {
   };
 
   return (
-    <AuthLayout title="Crear Queja">
-      <form onSubmit={handleSubmit} className="grid gap-3">
-        {/* Título */}
-        <label htmlFor="titulo">Título</label>
-        <input
-          id="titulo"
-          className="auth-field"
-          type="text"
-          value={form.titulo}
-          onChange={(e) => setForm({ ...form, titulo: e.target.value })}
-          required
-        />
+    <div className="form-page">
+      <div className="form-card">
+        <h1 className="form-title">Crear Queja</h1>
 
-        {/* Descripción */}
-        <label htmlFor="descripcion">Descripción</label>
-        <textarea
-          id="descripcion"
-          className="auth-field"
-          value={form.descripcion}
-          onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-          rows={4}
-          required
-        />
+        <form onSubmit={handleSubmit} className="form-container">
+          {/* TÍTULO */}
+          <label className="form-label">Título</label>
+          <input
+            className="form-input"
+            type="text"
+            value={form.titulo}
+            onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+          />
 
-        {/* Categoría */}
-        <label htmlFor="categoria">Categoría</label>
-        <select
-          id="categoria"
-          className="auth-field"
-          value={form.categoria}
-          onChange={(e) => setForm({ ...form, categoria: e.target.value })}
-          required
-          disabled={catLoading || !!catError}
-        >
-          <option value="" disabled>
-            {catLoading ? "Cargando categorías…" : "Selecciona una categoría"}
-          </option>
-          {catError && <option value="" disabled>⚠️ Error cargando categorías</option>}
-          {categorias?.map((c) => (
-            <option key={c.id} value={String(c.id)}>
-              {c.nombre}
+          {/* DESCRIPCIÓN */}
+          <label className="form-label">Descripción</label>
+          <textarea
+            className="form-input"
+            value={form.descripcion}
+            onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
+            rows={4}
+          />
+
+          {/* CATEGORÍA */}
+          <label className="form-label">Categoría</label>
+          <select
+            className="form-input"
+            value={form.categoria}
+            onChange={(e) => setForm({ ...form, categoria: e.target.value })}
+            disabled={catLoading || !!catError}
+          >
+            <option value="" disabled>
+              {catLoading ? "Cargando categorías…" : "Selecciona una categoría"}
             </option>
-          ))}
-        </select>
+            {catError && <option disabled>⚠️ Error cargando categorías</option>}
+            {categorias?.map((c) => (
+              <option key={c.id} value={String(c.id)}>
+                {c.nombre}
+              </option>
+            ))}
+          </select>
 
-        {/* Distrito */}
-        <label htmlFor="distrito">Distrito</label>
-        <select
-          id="distrito"
-          className="auth-field"
-          value={form.distrito}
-          onChange={(e) => setForm({ ...form, distrito: e.target.value })}
-          required
-          disabled={disLoading || !!disError}
-        >
-          <option value="" disabled>
-            {disLoading ? "Cargando distritos…" : "Selecciona un distrito"}
-          </option>
-          {disError && <option value="" disabled>⚠️ Error cargando distritos</option>}
-          {distritos?.map((d) => (
-            <option key={d.id} value={String(d.id)}>
-              {d.nombre}
+          {/* DISTRITO */}
+          <label className="form-label">Distrito</label>
+          <select
+            className="form-input"
+            value={form.distrito}
+            onChange={(e) => setForm({ ...form, distrito: e.target.value })}
+            disabled={disLoading || !!disError}
+          >
+            <option value="" disabled>
+              {disLoading ? "Cargando distritos…" : "Selecciona un distrito"}
             </option>
-          ))}
-        </select>
+            {disError && <option disabled>⚠️ Error cargando distritos</option>}
+            {distritos?.map((d) => (
+              <option key={d.id} value={String(d.id)}>
+                {d.nombre}
+              </option>
+            ))}
+          </select>
 
-        {/* Ubicación */}
-        <label htmlFor="ubicacion">Ubicación (opcional)</label>
-        <input
-          id="ubicacion"
-          className="auth-field"
-          type="text"
-          value={form.ubicacion}
-          onChange={(e) => setForm({ ...form, ubicacion: e.target.value })}
-        />
+          {/* UBICACIÓN */}
+          <label className="form-label">Ubicación (opcional)</label>
+          <input
+            className="form-input"
+            type="text"
+            value={form.ubicacion}
+            onChange={(e) => setForm({ ...form, ubicacion: e.target.value })}
+          />
 
-        {/* Imágenes */}
-        <label htmlFor="imagenes">Imágenes (opcional)</label>
-        <input
-          id="imagenes"
-          className="auth-field"
-          type="file"
-          accept="image/*"
-          multiple
-          onChange={(e) =>{
-            const files = Array.from(e.target.files || []);
-            const MAX = 5;
-            if (files.length > MAX) {
-              setErrorImagenes("El maximo de imagenes es 5.");
-              return;
-            }
-            setErrorImagenes(null)
-            setForm({
-              ...form,
-              imagenes: Array.from(e.target.files || []),
-            });
-          }}
-        />
-        {errorImagenes && (
-          <p style={{ color: "crimson", fontSize: "0.9rem" }}>
-            {errorImagenes}
-          </p>
-        )}
-        {/* Videos */}
-        <label htmlFor="videos">Videos (opcional)</label>
-        <input
-          id="videos"
-          className="auth-field"
-          type="file"
-          accept="video/*"
-          multiple
-          onChange={(e) =>{
-            const files = Array.from(e.target.files || []);
-            const MAX = 1;
-            if (files.length > MAX) {
-              setErrorVideos("Solo se permite 1 video por queja.");
-              return;
-            }
-            setErrorVideos(null)
-            setForm({
-              ...form,
-              videos: Array.from(e.target.files || []),
-            });
-          }}
-        />
-        {errorVideos && (
-          <p style={{ color: "crimson", fontSize: "0.9rem" }}>
-            {errorVideos}
-          </p>
-        )}
+          {/* IMÁGENES */}
+          <label className="form-label">Imágenes (máx 5)</label>
+          <input
+            className="form-input"
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              if (files.length > 5) {
+                setErrorImagenes("El máximo de imágenes es 5.");
+                return;
+              }
+              setErrorImagenes(null);
+              setForm({ ...form, imagenes: files });
+            }}
+          />
+          {errorImagenes && <p className="form-error">{errorImagenes}</p>}
 
-        <button className="submit-button" style={{ marginTop: 12 }} disabled={errorImagenes!=null || errorVideos!=null}>
-          Crear Queja
-        </button>
+          {/* VIDEOS */}
+          <label className="form-label">Video (máx 1)</label>
+          <input
+            className="form-input"
+            type="file"
+            accept="video/*"
+            multiple
+            onChange={(e) => {
+              const files = Array.from(e.target.files || []);
+              if (files.length > 1) {
+                setErrorVideos("Solo se permite 1 video.");
+                return;
+              }
+              setErrorVideos(null);
+              setForm({ ...form, videos: files });
+            }}
+          />
+          {errorVideos && <p className="form-error">{errorVideos}</p>}
 
-        {error && <p style={{ color: "crimson" }}>{error}</p>}
-      </form>
-    </AuthLayout>
+          {/* BOTÓN FINAL */}
+          <button
+            type="submit"
+            className="btn btn-primary form-button"
+            disabled={!!errorImagenes || !!errorVideos}
+          >
+            Crear Queja
+          </button>
+
+          {error && <p className="form-error">{error}</p>}
+        </form>
+      </div>
+    </div>
   );
 };
 

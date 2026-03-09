@@ -1,310 +1,249 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { registerRequest, loginRequest } from "../api/auth";
-import { storage } from "../utils/storage";
-import AuthLayout from "../components/AuthLayout";
+import { loginRequest, registerRequest } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
+import { storage } from "../utils/storage";
 
+import "../styles/form-layout.css";
 
 const Register: React.FC = () => {
-    const navigate = useNavigate();
-    const {login: authLogin} = useAuth()
+  const navigate = useNavigate();
+  const { login: authLogin } = useAuth();
 
-    const [form, setForm] = useState({
-        username: "",
-        password: "",
-        confirmPassword: "",
-        email: "",
-        firstName: "",
-        lastName: "",
-        genero: "",
-        fechaNacimiento: "",
-        biografia: "",
-        telefono: "",
-        direccion: "",
-        foto: null as File | null,
-});
+  const [form, setForm] = useState({
+    username: "",
+    password: "",
+    confirmPassword: "",
+    email: "",
+    firstName: "",
+    lastName: "",
+    genero: "",
+    fechaNacimiento: "",
+    biografia: "",
+    telefono: "",
+    direccion: "",
+    foto: null as File | null,
+  });
 
-const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
     if (form.password !== form.confirmPassword) {
-        setError("Las contraseñas no coinciden");
-        return;
+      setError("Las contraseñas no coinciden");
+      return;
     }
-
     if (!form.fechaNacimiento) {
-        setError("La fecha de nacimiento es obligatoria");
-        return;
+      setError("La fecha de nacimiento es obligatoria");
+      return;
     }
-
     if (!form.telefono.trim()) {
-        setError("El telefono es obligatorio");
-        return;
+      setError("El teléfono es obligatorio");
+      return;
     }
-
     if (!form.direccion.trim()) {
-        setError("La dirección es obligatoria.");
-        return;
+      setError("La dirección es obligatoria.");
+      return;
     }
 
-    console.log("Formulario válido. Datos preparados:");
+    const formData = new FormData();
+    formData.append("username", form.username.trim());
+    formData.append("email", form.email.trim());
+    formData.append("first_name", form.firstName.trim());
+    formData.append("last_name", form.lastName.trim());
+    formData.append("password", form.password.trim());
+    formData.append("telefono", form.telefono.trim());
+    formData.append("direccion", form.direccion.trim());
+    formData.append("fecha_nacimiento", form.fechaNacimiento.trim());
 
-  const formData = new FormData();
+    if (form.genero) formData.append("genero", form.genero);
+    if (form.biografia) formData.append("biografia", form.biografia.trim());
+    if (form.foto) formData.append("foto_perfil", form.foto);
 
-  formData.append("username", form.username.trim());
-  formData.append("email", form.email.trim());
-  formData.append("first_name", form.firstName.trim());
-  formData.append("last_name", form.lastName.trim());
-  formData.append("password", form.password.trim());
-  formData.append("telefono", form.telefono.trim());
-  formData.append("direccion", form.direccion.trim());
-  formData.append("fecha_nacimiento", form.fechaNacimiento.trim());
+    try {
+      await registerRequest(formData);
 
-  if (form.genero) {
-    formData.append("genero", form.genero);
-  }
+      const tokens = await loginRequest({
+        username: form.username,
+        password: form.password,
+      });
 
-  if (form.biografia) {
-    formData.append("biografia", form.biografia.trim());
-  }
+      if (tokens.refresh) storage.setRefresh(tokens.refresh);
+      storage.setAccess(tokens.access);
 
-  if (form.foto) {
-    formData.append("foto_perfil", form.foto);
-  }
-  try {
+      await authLogin({
+        username: form.username,
+        password: form.password,
+      });
 
-    console.log("[Register] calling registerRequest", formData);
-    await registerRequest(formData);
-    console.log("[Register] register OK, about to login");
-    const tokens = await loginRequest({username: form.username, password: form.password});
+      navigate("/");
+    } catch (err: any) {
+      if (err.response?.data) {
+        const data = err.response.data;
+        const messages: string[] = [];
 
-    if (tokens.refresh) storage.setRefresh(tokens.refresh);
-    storage.setAccess(tokens.access)
+        if (typeof data == "string") {
+          setError(data);
+          return;
+        }
 
-    // 🔥 Login usando el AuthContext (que hace fetchMe y setUser)
+        if (data.username) messages.push(`username: ${data.username.join(" ")}`);
+        if (data.email) messages.push(`email: ${data.email.join(" ")}`);
+        if (data.first_name) messages.push(`nombre: ${data.first_name.join(" ")}`);
+        if (data.last_name) messages.push(`apellidos: ${data.last_name.join(" ")}`);
+        if (data.password) messages.push(`password: ${data.password.join(" ")}`);
 
-    const user = await authLogin({
-      username: form.username,
-      password: form.password,
-    });
+        if (data.perfil) {
+          const p = data.perfil;
+          if (p.telefono) messages.push(`teléfono: ${p.telefono.join(" ")}`);
+          if (p.direccion) messages.push(`dirección: ${p.direccion.join(" ")}`);
+          if (p.fecha_nacimiento) messages.push(`fecha nacimiento: ${p.fecha_nacimiento.join(" ")}`);
+          if (p.genero) messages.push(`género: ${p.genero.join(" ")}`);
+          if (p.biografia) messages.push(`biografía: ${p.biografia.join(" ")}`);
+        }
 
-    // Ahora sí puedes navegar
-    navigate("/");
-
-
-  } catch (err: any) {
-    if (err.response?.data){
-      const data= err.response.data;
-
-      if (typeof data == "string") {
-        setError(data);
-        return;
+        setError(messages.join(" . ") || "No se puede crear la cuenta.");
+      } else {
+        setError("No se pudo conectar con el servidor.");
       }
-
-      const messages: string[] = [];
-      if (data.username) messages.push(`username: ${data.username.join(" ")}`);
-      if (data.email) messages.push(`email: ${data.email.join(" ")}`);
-      if (data.first_name) messages.push(`nombre: ${data.first_name.join(" ")}`);
-      if (data.last_name) messages.push(`apellidos: ${data.last_name.join(" ")}`);
-      if (data.password) messages.push(`password: ${data.password.join(" ")}`);
-
-      if (data.perfil) {
-        const p = data.perfil;
-        if (p.telefono) messages.push(`teléfono: ${p.telefono.join(" ")}`);
-        if (p.direccion) messages.push(`dirección: ${p.direccion.join(" ")}`);
-        if (p.fecha_nacimiento) messages.push(`fecha de nacimiento: ${p.fecha_nacimiento.join(" ")}`);
-        if (p.genero) messages.push(`género: ${p.genero.join(" ")}`);
-        if (p.biografia) messages.push(`biografía: ${p.biografia.join(" ")}`);
-      }
-
-      setError(messages.join(" . ") || "No se puede crear la cuenta o error de login.")
-    } else {
-      setError("No se pudo conectar con el servidor. Intentalo de nuevo mas tarde.")
     }
-  }
+  };
 
-  console.log(form);
+  return (
+      <div className="form-page">
+        <div className="form-card">
 
-};
+          <h1 className="form-title">Crear cuenta</h1>
 
-return (
-      <AuthLayout title="Crear cuenta">
-        <form onSubmit={handleSubmit}>
-          {/* Nombre */}
-          <label htmlFor="firstName">Nombre</label>
-          <input
-            id="firstName"
-            className="auth-field"
-            type="text"
-            placeholder="Tu nombre"
-            value={form.firstName}
-            onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-            autoComplete="given-name"
-            required
-          />
+          <form onSubmit={handleSubmit} className="form-container">
 
-          {/* Apellidos */}
-          <label htmlFor="lastName">Apellidos</label>
-          <input
-            id="lastName"
-            className="auth-field"
-            type="text"
-            placeholder="Tus apellidos"
-            value={form.lastName}
-            onChange={(e) => setForm({ ...form, lastName: e.target.value })}
-            autoComplete="family-name"
-            required
-          />
+            <label className="form-label">Nombre</label>
+            <input
+              className="form-input"
+              value={form.firstName}
+              onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+              required
+            />
 
-          {/* Username */}
-          <label htmlFor="username">Nombre de usuario</label>
-          <input
-            id="username"
-            className="auth-field"
-            type="text"
-            placeholder="Ej: josemaria"
-            value={form.username}
-            onChange={(e) => setForm({ ...form, username: e.target.value })}
-            autoComplete="username"
-            required
-          />
+            <label className="form-label">Apellidos</label>
+            <input
+              className="form-input"
+              value={form.lastName}
+              onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+              required
+            />
 
-          {/* Email */}
-          <label htmlFor="email">Correo electrónico</label>
-          <input
-            id="email"
-            className="auth-field"
-            type="email"
-            placeholder="correo@ejemplo.com"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            autoComplete="email"
-            required
-          />
+            <label className="form-label">Nombre de usuario</label>
+            <input
+              className="form-input"
+              value={form.username}
+              onChange={(e) => setForm({ ...form, username: e.target.value })}
+              required
+            />
 
-          {/* Género */}
-          <label htmlFor="genero">Género</label>
-          <select
-            id="genero"
-            className="auth-field"
-            value={form.genero}
-            onChange={(e) => setForm({ ...form, genero: e.target.value })}
-          >
-            <option value="">Selecciona una opción</option>
-            <option value="M">Hombre</option>
-            <option value="F">Mujer</option>
-            <option value="O">Otro</option>
-          </select>
+            <label className="form-label">Correo electrónico</label>
+            <input
+              className="form-input"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              required
+            />
 
-          {/* Fecha de nacimiento */}
-          <label htmlFor="fechaNacimiento">Fecha de nacimiento</label>
-          <input
-            id="fechaNacimiento"
-            className="auth-field"
-            type="date"
-            value={form.fechaNacimiento}
-            onChange={(e) => setForm({ ...form, fechaNacimiento: e.target.value })}
-            autoComplete="bday"
-            required
-          />
+            <label className="form-label">Género</label>
+            <select
+              className="form-input"
+              value={form.genero}
+              onChange={(e) => setForm({ ...form, genero: e.target.value })}
+            >
+              <option value="">Selecciona una opción</option>
+              <option value="M">Hombre</option>
+              <option value="F">Mujer</option>
+              <option value="O">Otro</option>
+            </select>
 
-          {/* Teléfono */}
-          <label htmlFor="telefono">Teléfono</label>
-          <input
-            id="telefono"
-            className="auth-field"
-            type="tel"
-            placeholder="+34 600 111 222"
-            value={form.telefono}
-            onChange={(e) => setForm({ ...form, telefono: e.target.value })}
-            autoComplete="tel"
-            pattern="^\+?\d{7,15}$"
-            required
-          />
+            <label className="form-label">Fecha de nacimiento</label>
+            <input
+              className="form-input"
+              type="date"
+              value={form.fechaNacimiento}
+              onChange={(e) => setForm({ ...form, fechaNacimiento: e.target.value })}
+              required
+            />
 
-          {/* Dirección */}
-          <label htmlFor="direccion">Dirección</label>
-          <input
-            id="direccion"
-            className="auth-field"
-            type="text"
-            placeholder="Calle, número, ciudad"
-            value={form.direccion}
-            onChange={(e) => setForm({ ...form, direccion: e.target.value })}
-            autoComplete="street-address"
-            required
-          />
+            <label className="form-label">Teléfono</label>
+            <input
+              className="form-input"
+              type="tel"
+              pattern="^\+?\d{7,15}$"
+              value={form.telefono}
+              onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+              required
+            />
 
-          {/* Biografía */}
-          <label htmlFor="biografia">Biografía (opcional)</label>
-          <textarea
-            id="biografia"
-            className="auth-field"
-            placeholder="Cuéntanos algo sobre ti..."
-            value={form.biografia}
-            onChange={(e) => setForm({ ...form, biografia: e.target.value })}
-            rows={4}
-          />
+            <label className="form-label">Dirección</label>
+            <input
+              className="form-input"
+              value={form.direccion}
+              onChange={(e) => setForm({ ...form, direccion: e.target.value })}
+              required
+            />
 
-          {/* Foto de perfil */}
-          <label htmlFor="foto">Foto de perfil (opcional)</label>
-          <input
-            id="foto"
-            className="auth-field"
-            type="file"
-            accept="image/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null;
-              setForm({ ...form, foto: file });
-            }}
-          />
+            <label className="form-label">Biografía (opcional)</label>
+            <textarea
+              className="form-input"
+              value={form.biografia}
+              onChange={(e) => setForm({ ...form, biografia: e.target.value })}
+              rows={4}
+            />
 
-          {/* Contraseña */}
-          <label htmlFor="password">Contraseña</label>
-          <input
-            id="password"
-            className="auth-field"
-            type="password"
-            placeholder="Mínimo 8 caracteres"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
-            autoComplete="new-password"
-            required
-          />
+            <label className="form-label">Foto de perfil (opcional)</label>
+            <input
+              className="form-input"
+              type="file"
+              accept="image/*"
+              onChange={(e) =>
+                setForm({ ...form, foto: e.target.files?.[0] || null })
+              }
+            />
 
-          {/* Confirmar contraseña */}
-          <label htmlFor="confirmPassword">Confirmar contraseña</label>
-          <input
-            id="confirmPassword"
-            className="auth-field"
-            type="password"
-            placeholder="Repite la contraseña"
-            value={form.confirmPassword}
-            onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })}
-            autoComplete="new-password"
-            required
-          />
+            <label className="form-label">Contraseña</label>
+            <input
+              className="form-input"
+              type="password"
+              value={form.password}
+              onChange={(e) => setForm({ ...form, password: e.target.value })}
+              required
+            />
 
-          <button className="submit-button" style={{ marginTop: 12 }}>
-            Crear cuenta
-          </button>
-          {error && <p style={{ color: "crimson" }}>{error}</p>}
-        </form>
-          <p style={{ marginTop: 12 }}>
-          ¿Ya tienes una cuenta?{" "}
-              <button
-              type="button"
-              className="link"
-              onClick={() => navigate("/login")}
-              >
-              Inicia sesion aqui
-              </button>
+            <label className="form-label">Confirmar contraseña</label>
+            <input
+              className="form-input"
+              type="password"
+              value={form.confirmPassword}
+              onChange={(e) =>
+                setForm({ ...form, confirmPassword: e.target.value })
+              }
+              required
+            />
+
+            <button className="btn btn-primary form-button">
+              Crear cuenta
+            </button>
+
+            {error && <p className="form-error">{error}</p>}
+          </form>
+
+          <p className="form-link-center"style={{ marginTop: 12 }}>
+            ¿Ya tienes una cuenta?{" "}
+            <button type="button" className="link" onClick={() => navigate("/login")}>
+              Inicia sesión aquí
+            </button>
           </p>
-        </AuthLayout>
+        </div>
+      </div>
   );
 };
 

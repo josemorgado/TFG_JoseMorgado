@@ -20,12 +20,28 @@
     margin-top: 14px;
     display: block;
     color: var(--color-primary);
+    max-width: 600px;
 }
+
+.perfil-update-form input {
+    margin-top: 14px;
+    display: block;
+    color: var(--color-primary);
+    max-width: 600px;
+    height: auto;
+}
+
+.perfil-update-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 
 .form-section-title {
     margin-top: 28px;
     margin-bottom: 6px;
-    font-size: 18px;
+    font-size: 20px;
     font-weight: 700;
     color: var(--color-primary-light);
 }
@@ -38,4 +54,10 @@
 .btn-primary {
     margin-top: 16px;
     width: 100%;
+}
+
+.input {
+    max-width: 600px;
+    resize: none;
+    height: auto;
 }

@@ -1,12 +1,8 @@
-// Login.tsx
 import React, { useState } from "react";
-import { useAuth } from "../context/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
-import AuthLayout from "../components/AuthLayout";
-import TextField from "../components/TextField";
-import PasswordField from "../components/PasswordField";
-import SubmitButton from "../components/SubmitButton";
-import ErrorMessage from "../components/ErrorMessage";
+import { useAuth } from "../context/AuthContext";
+
+import "../styles/form-layout.css";
 
 type LoginState = {
   reason?: "create-queja";
@@ -53,69 +49,79 @@ const Login: React.FC = () => {
   };
 
   return (
-    <AuthLayout title="Iniciar sesión">
-      {/* Mensaje especial si venía por crear queja */}
-      {reason === "create-queja" && (
-        <p style={{ color: "crimson", marginBottom: 12 }}>
-          Debes iniciar sesión para poder crear una queja.
-        </p>
-      )}
 
-      <form onSubmit={onSubmit} noValidate>
-        <label>
-          Username
-        </label>
-        <TextField
-          name="username"
-          className="auth-field"
-          placeholder="Username"
-          autoComplete="username"
-          value={form.username}
-          onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
-          required
-          disabled={loading}
-        />
-        <label>
-          Password
-        </label>
-        <PasswordField
-          name="password"
-          className="auth-field"
-          type="password"
-          placeholder="Password"
-          autoComplete="password"
-          value={form.password}
-          onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
-          required
-          disabled={loading}
-        />
+      <div className="form-page">
+        <div className="form-card">
 
-        <p style={{ marginTop: 8 }}>
-          <button
-            type="button"
-            className="link"
-            onClick={() => navigate("/forgot-password")}
-          >
-            ¿Has olvidado tu contraseña?
-          </button>
-        </p>
+          {reason === "create-queja" && (
+            <p className="form-error" style={{ marginBottom: 12 }}>
+              Debes iniciar sesión para poder crear una queja.
+            </p>
+          )}
 
-        <SubmitButton loading={loading}>Entrar</SubmitButton>
+          <h1 className="form-title">Iniciar sesión</h1>
 
-        <ErrorMessage message={error} />
-      </form>
+          <form onSubmit={onSubmit} noValidate className="form-container">
 
-      <p style={{ marginTop: 12 }}>
-        ¿No tienes cuenta?{" "}
-        <button
-          type="button"
-          className="link"
-          onClick={() => navigate("/register")}
-        >
-          Crear cuenta
-        </button>
-      </p>
-    </AuthLayout>
+            <label className="form-label">Username</label>
+            <input
+              className="form-input"
+              value={form.username}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, username: e.target.value }))
+              }
+              required
+              disabled={loading}
+            />
+
+            <label className="form-label">Password</label>
+            <input
+              className="form-input"
+              type="password"
+              value={form.password}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, password: e.target.value }))
+              }
+              required
+              disabled={loading}
+            />
+
+            <p style={{ marginTop: 8 }}>
+              <button
+                type="button"
+                className="link"
+                onClick={() => navigate("/forgot-password")}
+              >
+                ¿Has olvidado tu contraseña?
+              </button>
+            </p>
+
+            <button
+              type="submit"
+              className="btn btn-primary form-button"
+              disabled={loading}
+            >
+              {loading ? "Entrando..." : "Entrar"}
+            </button>
+
+            {error && <p className="form-error">{error}</p>}
+
+          </form>
+
+          <p className="form-link-center"style={{ marginTop: 12 }}>
+            ¿No tienes cuenta?{" "}
+            <button
+              type="button"
+              className="link"
+              onClick={() => navigate("/register")}
+            >
+              Crear cuenta
+            </button>
+          </p>
+
+        </div>
+      </div>
+
   );
 };
 

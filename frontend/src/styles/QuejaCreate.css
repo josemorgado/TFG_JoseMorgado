@@ -1,0 +1,80 @@
+/* --- Página principal --- */
+.queja-create-page {
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+}
+
+/* --- Tarjeta centrada --- */
+.queja-create-card {
+    width: 100%;
+    max-width: 700px;
+}
+
+/* --- Título --- */
+.queja-create-title {
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--color-primary);
+}
+
+/* --- Formulario general (mismo que perfil-update-form) --- */
+.queja-create-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px; /* separación vertical consistente */
+}
+
+/* --- Labels --- */
+.queja-create-form label {
+    font-weight: 600;
+    margin-top: 10px;
+    display: block;
+    color: var(--color-primary);
+    max-width: 600px;
+    width: 100%;
+}
+
+/* --- Inputs, textarea, select --- */
+.queja-create-form input,
+.queja-create-form textarea,
+.queja-create-form select {
+    margin-top: 4px;
+    display: block;
+    color: var(--color-primary);
+    max-width: 600px;
+    width: 100%;
+    height: auto;
+    padding: 10px;
+    border: 1px solid var(--color-primary-light);
+    border-radius: 6px;
+    background: #fff;
+    resize: none;        /* textarea no deformable */
+    overflow: hidden;    /* textarea sin scroll */
+}
+
+/* Secciones del formulario */
+.queja-section-title {
+    margin-top: 20px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-primary-light);
+    width: 100%;
+    max-width: 600px;
+}
+
+/* --- Botón principal --- */
+.queja-btn-primary {
+    margin-top: 16px;
+    width: 100%;
+    max-width: 600px;
+}
+
+/* --- Errores --- */
+.queja-error {
+    color: crimson;
+    font-size: 0.9rem;
+    max-width: 600px;
+    width: 100%;
+}
