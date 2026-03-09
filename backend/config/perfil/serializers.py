@@ -10,7 +10,6 @@ User = get_user_model()
 
 # --------- Perfil ---------
 
-
 class PerfilSerializer(serializers.ModelSerializer):
     edad = serializers.IntegerField(read_only=True)
 
@@ -41,20 +40,17 @@ class PerfilSerializer(serializers.ModelSerializer):
         return value
 
 
+# --------- User + Perfil ---------
+
 class UserPerfilSerializer(serializers.ModelSerializer):
     """
-    Serializer que sirve para:
-    - Crear usuario + perfil
-    - Actualizar usuario + perfil (PUT/PATCH)
-    Acepta:
-    - JSON con {"perfil": {...}}
-    - multipart/form-data con perfil="{}" y perfil.foto_perfil=archivo
+    Serializer para crear/actualizar usuario + perfil.
+    Maneja JSON y multipart/form-data.
     """
 
-    # password no obligatorio en update
     password = serializers.CharField(write_only=True, required=False)
 
-    # Datos del perfil (solo lectura en update)
+    # Perfil en solo lectura (ya lo manejamos manualmente en update)
     perfil = PerfilSerializer(read_only=True)
 
     class Meta:
@@ -68,6 +64,8 @@ class UserPerfilSerializer(serializers.ModelSerializer):
             "password",
             "perfil",
         ]
+
+    # --------- Validadores ---------
 
     def validate_email(self, value):
         value = value.strip()
@@ -96,12 +94,11 @@ class UserPerfilSerializer(serializers.ModelSerializer):
     # ============================================================
     # CREATE
     # ============================================================
+
     @transaction.atomic
     def create(self, validated_data):
         request = self.context.get("request")
 
-        # Extraer campos del perfil desde request.data
-        # (No vienen en validated_data por usar PerfilSerializer)
         telefono = request.data.get("telefono")
         direccion = request.data.get("direccion")
         fecha_nacimiento = request.data.get("fecha_nacimiento")
@@ -130,13 +127,12 @@ class UserPerfilSerializer(serializers.ModelSerializer):
     # ============================================================
     # UPDATE
     # ============================================================
+
     @transaction.atomic
     def update(self, instance, validated_data):
         request = self.context.get("request")
 
-        # -------------------------
-        # 1. Procesar datos simples del usuario
-        # -------------------------
+        # --------- 1. Actualizar datos del usuario ---------
         password = validated_data.pop("password", None)
 
         for field, value in validated_data.items():
@@ -147,17 +143,10 @@ class UserPerfilSerializer(serializers.ModelSerializer):
 
         instance.save()
 
-        # -------------------------
-        # 2. Procesar datos del perfil
-        # -------------------------
-
+        # --------- 2. Actualizar perfil ---------
         perfil_instance = instance.perfil
 
-        # perfil puede llegar:
-        # - como JSON anidado {perfil: {...}}
-        # - como string JSON en multipart: perfil="{...}"
         perfil_raw = request.data.get("perfil")
-
         perfil_data = {}
 
         if isinstance(perfil_raw, dict):
@@ -169,12 +158,24 @@ class UserPerfilSerializer(serializers.ModelSerializer):
             except json.JSONDecodeError:
                 perfil_data = {}
 
-        # Añadir foto subida
+        # -----------------------------------------
+        # 🔥 CAMBIO AÑADIDO: borrar foto si se pide
+        # -----------------------------------------
+        eliminar_foto = perfil_data.pop("eliminar_foto", False)
+
+        if eliminar_foto is True:
+            if perfil_instance.foto_perfil:
+                perfil_instance.foto_perfil.delete(save=False)
+            perfil_instance.foto_perfil = None
+
+        # -----------------------------------------
+        # Añadir nueva foto si viene en la petición
+        # -----------------------------------------
         foto = request.FILES.get("perfil.foto_perfil")
         if foto:
             perfil_data["foto_perfil"] = foto
 
-        # Construir serializer del perfil
+        # Guardar resto de campos del perfil
         perfil_serializer = PerfilSerializer(
             perfil_instance,
             data=perfil_data,
@@ -187,6 +188,7 @@ class UserPerfilSerializer(serializers.ModelSerializer):
 
 
 # --------- User Lite (para listar/mostrar) ---------
+
 class UserLiteSerializer(serializers.ModelSerializer):
     class Meta:
         model = User

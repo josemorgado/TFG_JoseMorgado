@@ -29,6 +29,7 @@ export default function PerfilUpdate() {
     biografia: "",
     foto_url: "" as string | null,
     foto_perfil: null as File | null,
+    eliminar_foto: false,
   });
 
   useEffect(() => {
@@ -47,6 +48,7 @@ export default function PerfilUpdate() {
           biografia: data.perfil.biografia,
           foto_url: data.perfil.foto_perfil,
           foto_perfil: null,
+          eliminar_foto:false,
         });
       } catch {
         setError("No se pudieron cargar los datos.");
@@ -85,6 +87,7 @@ export default function PerfilUpdate() {
       ...prev,
       foto_perfil: null,
       foto_url: null,
+      eliminar_foto:true,
     }));
   };
   const handleFile = (e: any) =>
@@ -126,6 +129,7 @@ export default function PerfilUpdate() {
         fecha_nacimiento: form.fecha_nacimiento,
         genero: form.genero,
         biografia: form.biografia,
+        eliminar_foto: form.eliminar_foto,
       },
     };
 
