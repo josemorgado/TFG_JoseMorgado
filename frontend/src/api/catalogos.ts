@@ -19,4 +19,3 @@ export async function fetchDistritos(): Promise<OpcionBasica[]> {
   const { data } = await api.get("/distritos/");
   return unwrap<OpcionBasica>(data);
 }
-``
