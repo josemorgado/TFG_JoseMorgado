@@ -12,11 +12,11 @@ import "../styles/QuejaDetail.css";
 import LikeButton from "../components/LikeButton";
 import CommentButton from "../components/CommentButton";
 import { useAuth } from "../context/AuthContext";
-
+import { config } from "../config";
 /** ---- Comentarios: árbol + tipos ---- */
 type CommentNode = Comentario & { children: CommentNode[] };
-//Limite de 5 minutos para actualizar una queja
-const LIMITE_UPDATE_TIME = 5;
+
+const LIMITE_UPDATE_TIME = config.LIMIT_TIME_UPDATE_QUEJA;//declarado en config.ts
 function buildCommentTree(comments: Comentario[]): CommentNode[] {
   const map = new Map<number, CommentNode>();
   const roots: CommentNode[] = [];
