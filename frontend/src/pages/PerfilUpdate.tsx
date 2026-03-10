@@ -272,6 +272,13 @@ export default function PerfilUpdate() {
           >
             Cambiar contraseña
           </button>
+          <button
+            type="button"
+            className="btn btn-secondary form-button"
+            onClick={() => navigate(`/perfil/${id}`)}
+          >
+            Descartar cambios
+          </button>
 
           <button
             type="submit"
