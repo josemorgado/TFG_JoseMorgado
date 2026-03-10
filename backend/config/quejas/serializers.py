@@ -17,107 +17,115 @@ class QuejaSerializer(serializers.ModelSerializer):
     """
 
     # Campos de solo lectura derivados
-    categoria_nombre = SerializerMethodField(read_only=True, help_text="Nombre legible de la categoría.")
-    distrito_nombre  = SerializerMethodField(read_only=True, help_text="Nombre legible del distrito.")
-    autor_nombre     = SerializerMethodField(read_only=True, help_text="Nombre completo o username del autor.")
-    content_type     = SerializerMethodField(read_only=True, help_text="Id del content type de queja")
-    is_liked = SerializerMethodField(read_only= True, help_text= "Si el usuario autenticado ha dado megusta")
+    categoria_nombre = SerializerMethodField(
+        read_only=True, help_text="Nombre legible de la categoría."
+    )
+    distrito_nombre = SerializerMethodField(
+        read_only=True, help_text="Nombre legible del distrito."
+    )
+    autor_nombre = SerializerMethodField(
+        read_only=True, help_text="Nombre completo o username del autor."
+    )
+    content_type = SerializerMethodField(
+        read_only=True, help_text="Id del content type de queja"
+    )
+    is_liked = SerializerMethodField(
+        read_only=True, help_text="Si el usuario autenticado ha dado megusta"
+    )
+    fecha_creacion_iso = serializers.DateTimeField(
+        source="fecha_creacion", format="%Y-%m-%dT%H:%M:%S%z", read_only=True
+    )
     # Campos relacionados (en producción el autor vendrá del request)
     autor = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
         required=False,
-        help_text="ID del usuario autor de la queja."
+        help_text="ID del usuario autor de la queja.",
     )
 
     # Querysets dinámicos para evitar import circular
     categoria = serializers.PrimaryKeyRelatedField(
-        queryset=Queja._meta.get_field('categoria').remote_field.model.objects.all(),
-        help_text="ID de la categoría asociada."
+        queryset=Queja._meta.get_field("categoria").remote_field.model.objects.all(),
+        help_text="ID de la categoría asociada.",
     )
     distrito = serializers.PrimaryKeyRelatedField(
-        queryset=Queja._meta.get_field('distrito').remote_field.model.objects.all(),
-        help_text="ID del distrito asociado."
+        queryset=Queja._meta.get_field("distrito").remote_field.model.objects.all(),
+        help_text="ID del distrito asociado.",
     )
 
     class Meta:
         model = Queja
         fields = [
-            'id',
-            'titulo',
-            'descripcion',
-            'categoria',
-            'categoria_nombre',
-            'distrito',
-            'distrito_nombre',
-            'estado',
-            'ubicacion',
-            'autor',
-            'autor_nombre',
-            'fecha_creacion',
-            'fecha_actualizacion',
-            'num_votos',
-            'num_comentarios',
-            'num_comentarios_top_level',
-            'content_type',
-            'is_liked',
+            "id",
+            "titulo",
+            "descripcion",
+            "categoria",
+            "categoria_nombre",
+            "distrito",
+            "distrito_nombre",
+            "estado",
+            "ubicacion",
+            "autor",
+            "autor_nombre",
+            "fecha_creacion",
+            "fecha_actualizacion",
+            "num_votos",
+            "num_comentarios",
+            "num_comentarios_top_level",
+            "content_type",
+            "is_liked",
+            "fecha_creacion_iso",
         ]
         read_only_fields = [
-            'id',
-            'estado',
-            'fecha_creacion',
-            'fecha_actualizacion',
-            'num_votos',
-            'num_comentarios',
-            'num_comentarios_top_level',
-            'content_type',
-            'is_liked',
+            "id",
+            "estado",
+            "fecha_creacion",
+            "fecha_actualizacion",
+            "num_votos",
+            "num_comentarios",
+            "num_comentarios_top_level",
+            "content_type",
+            "is_liked",
+            "fecha_creacion_iso",
         ]
         extra_kwargs = {
-            "titulo": {
-                "help_text": "Título breve y descriptivo (5–200 caracteres)."
-            },
+            "titulo": {"help_text": "Título breve y descriptivo (5–200 caracteres)."},
             "descripcion": {
                 "help_text": "Descripción detallada de la queja (10–5000 caracteres)."
             },
             "ubicacion": {
                 "help_text": "Ubicación relacionada con la incidencia (opcional)."
             },
-            "estado": {
-                "help_text": "Estado de la queja (solo lectura)."
-            },
-            "fecha_creacion": {
-                "help_text": "Fecha y hora de creación (solo lectura)."
-            },
+            "estado": {"help_text": "Estado de la queja (solo lectura)."},
+            "fecha_creacion": {"help_text": "Fecha y hora de creación (solo lectura)."},
             "fecha_actualizacion": {
                 "help_text": "Fecha y hora de última modificación (solo lectura)."
             },
         }
 
     # Obtener el content_type de queja para la creacion de comentarios, imagenes y videos
-    def get_content_type(selft,obj):
+    def get_content_type(selft, obj):
         ct = ContentType.objects.get_for_model(obj)
         return ct.id
 
     # CREACIÓN DE QUEJA
     def create(self, validated_data):
         # El autor se asigna automáticamente desde el request
-        request = self.context.get('request')
+        request = self.context.get("request")
         user = request.user
 
-        autor_enviado= validated_data.get('autor', None)
+        autor_enviado = validated_data.get("autor", None)
 
         if not user.perfil.moderator:
-            validated_data['autor'] = user
+            validated_data["autor"] = user
 
         else:
             if autor_enviado is None:
-                validated_data['autor'] = user
+                validated_data["autor"] = user
             else:
-                validated_data['autor'] = autor_enviado
+                validated_data["autor"] = autor_enviado
 
-        validated_data.setdefault('estado', "PEN")
+        validated_data.setdefault("estado", "PEN")
         return super().create(validated_data)
-
 
     def update(self, instance, validated_data):
         request = self.context["request"]
@@ -159,11 +167,11 @@ class QuejaSerializer(serializers.ModelSerializer):
     # VALIDACIONES CRUZADAS
     def validate(self, data):
         # Evita duplicar quejas con el mismo título en un distrito
-        request = self.context.get('request')
-        user = getattr(request, 'user', None)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
 
-        titulo = data.get('titulo', getattr(self.instance, 'titulo', None))
-        distrito = data.get('distrito', getattr(self.instance, 'distrito', None))
+        titulo = data.get("titulo", getattr(self.instance, "titulo", None))
+        distrito = data.get("distrito", getattr(self.instance, "distrito", None))
 
         qs = Queja.objects.filter(titulo__iexact=titulo, distrito=distrito)
         if self.instance:
@@ -176,10 +184,10 @@ class QuejaSerializer(serializers.ModelSerializer):
 
     # CAMPOS DERIVADOS
     def get_categoria_nombre(self, obj):
-        return getattr(obj.categoria, 'nombre', None)
+        return getattr(obj.categoria, "nombre", None)
 
     def get_distrito_nombre(self, obj):
-        return getattr(obj.distrito, 'nombre', None)
+        return getattr(obj.distrito, "nombre", None)
 
     def get_autor_nombre(self, obj):
         if not obj.autor:
@@ -188,6 +196,6 @@ class QuejaSerializer(serializers.ModelSerializer):
         return nombre if nombre else obj.autor.username
 
     def get_is_liked(self, obj):
-        request = self.context.get('request')
-        user = getattr(request, 'user', None)
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
         return MeGusta.objects.is_liked_by(obj, user)

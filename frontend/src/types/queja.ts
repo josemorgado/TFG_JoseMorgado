@@ -11,6 +11,7 @@ export interface Queja{
     autor: number | null;
     autor_nombre: string;
     fecha_creacion: string;
+    fecha_creacion_iso: string;
     fecha_actualizacion: string;
     num_votos: number;
     num_comentarios: number;

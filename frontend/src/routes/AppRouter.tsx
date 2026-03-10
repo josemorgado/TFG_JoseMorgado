@@ -5,6 +5,7 @@ import Home from '../pages/Home';
 import Register from '../pages/Register';
 import Layout from '../components/Layout';
 import QuejaCreate from '../pages/QuejaCreate';
+import QuejaUpdate from '../pages/QuejaUpdate';
 import PrivateRouteCrearQueja from './PrivateRouteCrearQueja';
 import QuejaDetail from '../pages/QuejaDetail';
 import PerfilDetail from '../pages/PerfilDetail';
@@ -24,6 +25,7 @@ const AppRouter: React.FC = () => (
         <Route path="/quejas/:id" element={<QuejaDetail />} />
         <Route path="/perfil/:id" element={<PerfilDetail />} />
         <Route path="/ruta-prohibida" element={<RutaProhibida />} />
+        <Route path="/quejas/:id/update" element={<QuejaUpdate />} />
 
         {/* Rutas privadas */}
         <Route element={<PrivateRouteCrearQueja />}>

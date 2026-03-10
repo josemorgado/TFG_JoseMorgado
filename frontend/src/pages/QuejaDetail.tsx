@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axiosInstance from "../utils/axios";
 import axios from "axios";
 import { useParams } from "react-router-dom";
@@ -14,7 +15,8 @@ import { useAuth } from "../context/AuthContext";
 
 /** ---- Comentarios: árbol + tipos ---- */
 type CommentNode = Comentario & { children: CommentNode[] };
-
+//Limite de 5 minutos para actualizar una queja
+const LIMITE_UPDATE_TIME = 5;
 function buildCommentTree(comments: Comentario[]): CommentNode[] {
   const map = new Map<number, CommentNode>();
   const roots: CommentNode[] = [];
@@ -53,6 +55,7 @@ function QuejaDetail() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const { user } = useAuth();
+  const navigate = useNavigate();
   // Imágenes: preview + desplegable
   const [showAllImages, setShowAllImages] = useState(false);
   const firstTwo = imagenes.slice(0, 2);
@@ -82,6 +85,17 @@ function QuejaDetail() {
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  const puedeActualizar = (() => {
+    if (!queja?.fecha_creacion_iso) return false;
+    if (!(user && queja.autor === user.id)) return false;
+
+    const fecha = new Date(queja.fecha_creacion_iso);
+    const ahora = new Date();
+
+    const diffMs = ahora.getTime() - fecha.getTime();
+    const diffMin = diffMs / 60000;
+    return diffMin <= LIMITE_UPDATE_TIME;
+  })();
   useEffect(() => {
     if (!id) return;
     let cancel = false;
@@ -335,10 +349,11 @@ function QuejaDetail() {
               <h1 className="detail__title">{queja.titulo}</h1>
             </div>
             <div>
-              {user && queja.autor === user.id && (
+              {puedeActualizar && (
                 <button
                   type="button"
                   className="update-btn btn btn-secondary btn-small"
+                  onClick={()=>navigate(`update`)}
                 >
                   Actualizar
                 </button>
