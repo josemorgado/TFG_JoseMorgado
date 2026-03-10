@@ -14,6 +14,9 @@ import CommentButton from "../components/CommentButton";
 import { useAuth } from "../context/AuthContext";
 import { config } from "../config";
 import { deleteQueja } from "../api/quejas";
+
+import { Link } from "react-router-dom";
+
 /** ---- Comentarios: árbol + tipos ---- */
 type CommentNode = Comentario & { children: CommentNode[] };
 
@@ -137,16 +140,16 @@ function QuejaDetail() {
     };
   }, [id]);
 
-function handleDelete() {
-  if (!window.confirm("¿Seguro que deseas eliminar esta queja?")) return;
+  function handleDelete() {
+    if (!window.confirm("¿Seguro que deseas eliminar esta queja?")) return;
 
-  deleteQueja(Number(id))
-    .then(() => navigate("/"))
-    .catch((err) => {
-      console.error(err);
-      alert("No se pudo eliminar la queja.");
-    });
-}
+    deleteQueja(Number(id))
+      .then(() => navigate("/"))
+      .catch((err) => {
+        console.error(err);
+        alert("No se pudo eliminar la queja.");
+      });
+  }
 
   const handleQuejaLikeChange = useCallback((liked: boolean, count: number) => {
     setQueja((prev) =>
@@ -258,11 +261,12 @@ function handleDelete() {
 
     return (
       <li className="comment" style={{ marginLeft: level ? 16 : 0 }}>
-        <p className="comment__content">
-          <strong>{node.autor_nombre}: </strong>
-          {node.contenido}
+        <p>
+          <strong>
+            <Link to={`/perfil/${node.autor}`}>{node.autor_nombre}</Link>
+          </strong>
+          :{node.contenido}
         </p>
-
         <div className="comment__footer">
           <div className="comment__meta">
             <span>{node.fecha_creacion}</span>
@@ -370,7 +374,7 @@ function handleDelete() {
                   Actualizar
                 </button>
               )}
-              {(user && queja.autor === user.id) && (
+              {user && queja.autor === user.id && (
                 <button
                   type="button"
                   className="delete-btn btn btn-primary btn-small"
