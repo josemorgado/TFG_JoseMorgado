@@ -430,6 +430,9 @@
 
 .header_grid {
   display: flex;
+  justify-content: space-between;
+  align-items: center;
+
 }
 .section_title_header {
   display: flex;
@@ -482,7 +485,7 @@
 
 .reply-form {
   margin-top: 12px;
-  margin-left: 20px; /* indentación visual */
+  margin-left: 20px;
 }
 
 .reply-form__row {
@@ -515,4 +518,7 @@
   font-size: 12px !important;
   border-radius: var(--radius-small);
   white-space: nowrap;
+}
+.like-title {
+  display: flex;
 }

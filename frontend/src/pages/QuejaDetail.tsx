@@ -10,6 +10,7 @@ import { mediaUrl } from "../utils/media";
 import "../styles/QuejaDetail.css";
 import LikeButton from "../components/LikeButton";
 import CommentButton from "../components/CommentButton";
+import { useAuth } from "../context/AuthContext";
 
 /** ---- Comentarios: árbol + tipos ---- */
 type CommentNode = Comentario & { children: CommentNode[] };
@@ -51,7 +52,7 @@ function QuejaDetail() {
   const [imagenes, setImagenes] = useState<Imagen[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
-
+  const { user } = useAuth();
   // Imágenes: preview + desplegable
   const [showAllImages, setShowAllImages] = useState(false);
   const firstTwo = imagenes.slice(0, 2);
@@ -137,10 +138,8 @@ function QuejaDetail() {
         contenido: commentText.trim(),
       });
 
-      // Añadir comentario nuevo a la lista:
       setComentarios((prev) => [...prev, response.data]);
 
-      // Limpiar el formulario
       setCommentText("");
       setShowCommentBox(false);
     } catch (err) {
@@ -154,7 +153,6 @@ function QuejaDetail() {
     if (!text || !id) return;
 
     try {
-
       const response = await axiosInstance.post("/comentarios/create/", {
         queja: Number(id),
         contenido: text,
@@ -213,7 +211,13 @@ function QuejaDetail() {
     );
   }
 
-  function CommentItem({ node, level = 0 }: {node: CommentNode, level?: number}) {
+  function CommentItem({
+    node,
+    level = 0,
+  }: {
+    node: CommentNode;
+    level?: number;
+  }) {
     const [isReplying, setIsReplying] = useState(false);
     const [replyText, setReplyText] = useState("");
 
@@ -305,7 +309,7 @@ function QuejaDetail() {
         {/* HIJOS */}
         {isOpen && repliesCount > 0 && (
           <ul className="comment-list replies">
-            {node.children.map((child:CommentNode) => (
+            {node.children.map((child: CommentNode) => (
               <CommentItem key={child.id} node={child} level={level + 1} />
             ))}
           </ul>
@@ -320,14 +324,26 @@ function QuejaDetail() {
         {/* Header */}
         <header className="detail__header card">
           <div className="header_grid">
-            <LikeButton
-              initialLiked={!!queja.is_liked}
-              initialCount={queja.num_votos ?? 0}
-              objectId={queja.id}
-              contentType={Number(queja.content_type)}
-              onChange={handleQuejaLikeChange}
-            />
-            <h1 className="detail__title">{queja.titulo}</h1>
+            <div className="like-title">
+              <LikeButton
+                initialLiked={!!queja.is_liked}
+                initialCount={queja.num_votos ?? 0}
+                objectId={queja.id}
+                contentType={Number(queja.content_type)}
+                onChange={handleQuejaLikeChange}
+              />
+              <h1 className="detail__title">{queja.titulo}</h1>
+            </div>
+            <div>
+              {user && queja.autor === user.id && (
+                <button
+                  type="button"
+                  className="update-btn btn btn-secondary btn-small"
+                >
+                  Actualizar
+                </button>
+              )}
+            </div>
           </div>
           <div className="detail__meta">
             <span className="pill" title="User">
