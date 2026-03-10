@@ -48,7 +48,7 @@ export default function PerfilUpdate() {
           biografia: data.perfil.biografia,
           foto_url: data.perfil.foto_perfil,
           foto_perfil: null,
-          eliminar_foto:false,
+          eliminar_foto: false,
         });
       } catch {
         setError("No se pudieron cargar los datos.");
@@ -87,7 +87,7 @@ export default function PerfilUpdate() {
       ...prev,
       foto_perfil: null,
       foto_url: null,
-      eliminar_foto:true,
+      eliminar_foto: true,
     }));
   };
   const handleFile = (e: any) =>
@@ -160,13 +160,17 @@ export default function PerfilUpdate() {
             ) : (
               <div className="perfil-avatar__fallback">{iniciales}</div>
             )}
-            <button
-              type="button"
-              className="avatar-delete-btn avatar-delete-btn--icon"
-              onClick={handleDeletePhoto}
-              style={{ backgroundImage: `url(${deleteIcon})` }}
-              aria-label="Eliminar perfil"
-            />
+            {fotoPerfil ? (
+              <button
+                type="button"
+                className="avatar-delete-btn avatar-delete-btn--icon"
+                onClick={handleDeletePhoto}
+                style={{ backgroundImage: `url(${deleteIcon})` }}
+                aria-label="Eliminar perfil"
+              />
+            ) : (
+              <div />
+            )}
           </div>
 
           <input
