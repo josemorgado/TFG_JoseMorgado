@@ -13,10 +13,11 @@ import LikeButton from "../components/LikeButton";
 import CommentButton from "../components/CommentButton";
 import { useAuth } from "../context/AuthContext";
 import { config } from "../config";
+import { deleteQueja } from "../api/quejas";
 /** ---- Comentarios: árbol + tipos ---- */
 type CommentNode = Comentario & { children: CommentNode[] };
 
-const LIMITE_UPDATE_TIME = config.LIMIT_TIME_UPDATE_QUEJA;//declarado en config.ts
+const LIMITE_UPDATE_TIME = config.LIMIT_TIME_UPDATE_QUEJA; //declarado en config.ts
 function buildCommentTree(comments: Comentario[]): CommentNode[] {
   const map = new Map<number, CommentNode>();
   const roots: CommentNode[] = [];
@@ -135,6 +136,17 @@ function QuejaDetail() {
       cancel = true;
     };
   }, [id]);
+
+function handleDelete() {
+  if (!window.confirm("¿Seguro que deseas eliminar esta queja?")) return;
+
+  deleteQueja(Number(id))
+    .then(() => navigate("/"))
+    .catch((err) => {
+      console.error(err);
+      alert("No se pudo eliminar la queja.");
+    });
+}
 
   const handleQuejaLikeChange = useCallback((liked: boolean, count: number) => {
     setQueja((prev) =>
@@ -353,9 +365,18 @@ function QuejaDetail() {
                 <button
                   type="button"
                   className="update-btn btn btn-secondary btn-small"
-                  onClick={()=>navigate(`update`)}
+                  onClick={() => navigate(`update`)}
                 >
                   Actualizar
+                </button>
+              )}
+              {(user && queja.autor === user.id) && (
+                <button
+                  type="button"
+                  className="delete-btn btn btn-primary btn-small"
+                  onClick={handleDelete}
+                >
+                  Eliminar
                 </button>
               )}
             </div>
