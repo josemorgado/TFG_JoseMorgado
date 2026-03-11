@@ -1,10 +1,67 @@
 /* src/styles/quejasList.css */
 
-.quejas-page {
-  padding: 24px;
-  max-width: 1100px;
-  margin: 0 auto;
+.quejas-layout {
+  display: flex;
+  gap: 20px;
+  padding: 20px;
 }
+
+/* ===== SIDEBAR ===== */
+
+.sidebar-filtros {
+  width: 340px; /* 🔥 Más ancha */
+  background: var(--color-white);
+  padding: 22px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.sidebar-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin-bottom: 12px;
+}
+
+/* ===== Items de filtro: label + input alineados ===== */
+
+.filtro-item {
+  display: flex;
+  flex-direction: column; /* móvil */
+  gap: 4px;
+}
+
+@media (min-width: 680px) {
+  .filtro-item {
+    flex-direction: row; /* escritorio */
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .filtro-item label {
+    width: 38%;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .filtro-item .input,
+  .filtro-item select {
+    width: 58%;
+    margin: 0;
+  }
+}
+
+/* ===== CONTENIDO ===== */
+
+.quejas-content {
+  flex: 1;
+}
+
+/* ===== Tarjetas ===== */
 
 .quejas-header {
   font-size: 28px;
