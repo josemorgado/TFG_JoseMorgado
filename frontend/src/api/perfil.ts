@@ -58,3 +58,33 @@ export const changePassword = async (
   });
 };
 
+
+export async function deleteUsuario(id: number | string) {
+  try {
+    // 1) Coger el refresh token
+    const refresh = localStorage.getItem("refresh");
+
+    // 2) Invalidar refresh token en backend
+    if (refresh) {
+      try {
+        await axios.post(`/usuarios/logout/`, { refresh });
+      } catch {
+        // aunque falle, seguimos; no bloquea el borrado
+      }
+    }
+
+    // 3) Borrar tokens locales
+    try {
+      localStorage.removeItem("access");
+      localStorage.removeItem("refresh");
+    } catch {}
+
+    // 4) Eliminar usuario definitivamente
+    const res = await axios.delete(`/usuarios/${id}/delete/`);
+    return res.data; // normalmente será undefined (204)
+
+  } catch (err: any) {
+    throw err.response?.data || err;
+  }
+}
+

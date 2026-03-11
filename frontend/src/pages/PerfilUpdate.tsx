@@ -1,15 +1,16 @@
 import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
-import { getUsuarioById, updateUsuario } from "../api/perfil";
+import { getUsuarioById, updateUsuario, deleteUsuario } from "../api/perfil";
 import "../styles/form-layout.css";
 import type { Usuario } from "../types/perfil";
 import deleteIcon from "../assets/icons/delete-icon.png";
+import { useAuth } from "../context/AuthContext";
 
 export default function PerfilUpdate() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [usuario, setUsuario] = useState<Usuario | null>(null);
-
+  const { logout } = useAuth();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -101,6 +102,47 @@ export default function PerfilUpdate() {
   const handleFile = (e: any) =>
     setForm({ ...form, foto_perfil: e.target.files?.[0] || null });
 
+  const handleDeleteAccount = async () => {
+    setError(null);
+    const username = form.username || usuario?.username || "";
+    if (!username) {
+      window.alert("No se pudo determinar el nombre de usuario.");
+      return;
+    }
+    const expected = `DELETE/${username}`;
+    const input = window.prompt(
+      `Esta accion eliminara definitivamente su cuenta.\n\n` +
+        `Para continuar,escribe exactamente${expected}`,
+    );
+
+    if (input !== expected) {
+      if (input !== null) {
+        window.alert("El texto no coincide. Operacion cancelada.");
+      }
+      return;
+    }
+    const confirmed = window.confirm(
+      "¿Seguro que quieres eliminar tu cuenta? Esta accion es irreversible",
+    );
+    if (!confirmed) return;
+
+    try {
+      setSaving(true);
+      logout();
+      await deleteUsuario(Number(id));
+
+      navigate("/", { replace: true });
+    } catch (e: any) {
+      const detail =
+        e?.detail ||
+        (typeof e === "string" ? e : null) ||
+        "No se pudo eliminar la cuenta.";
+      setError(detail);
+      window.alert(detail);
+    } finally {
+      setSaving(false);
+    }
+  };
   const iniciales = useMemo(() => {
     // Si no tenemos usuario (porque no hicimos GET), usamos los campos del form
     const firstName = usuario?.first_name ?? form.first_name ?? "";
@@ -298,6 +340,16 @@ export default function PerfilUpdate() {
             disabled={saving}
           >
             {saving ? "Guardando..." : "Guardar cambios"}
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-danger form-button"
+            onClick={handleDeleteAccount}
+            disabled={saving}
+            aria-label="Eliminar cuenta de usuario"
+          >
+            Eliminar cuenta
           </button>
 
           {error && <p className="form-error">{error}</p>}
