@@ -1,4 +1,6 @@
-/* src/styles/quejasList.css */
+/* =========================================
+   LAYOUT GENERAL
+   ========================================= */
 
 .quejas-layout {
   display: flex;
@@ -6,10 +8,12 @@
   padding: 20px;
 }
 
-/* ===== SIDEBAR ===== */
+/* =========================================
+   SIDEBAR (ORDENACIÓN + FILTROS)
+   ========================================= */
 
 .sidebar-filtros {
-  width: 340px; /* 🔥 Más ancha */
+  width: 340px;
   background: var(--color-white);
   padding: 22px;
   border-radius: var(--radius);
@@ -20,48 +24,217 @@
   gap: 16px;
 }
 
-.sidebar-title {
-  font-size: 22px;
+/* Tarjeta para cada bloque (Ordenar / Filtros) */
+.sidebar-section {
+  background: var(--color-white);
+  padding: 18px 16px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sidebar-section + .sidebar-section {
+  margin-top: 2px; /* separación suave entre tarjetas */
+}
+
+/* Header del bloque */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Botón-título (acordeón) */
+.sidebar-title-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--color-primary);
-  margin-bottom: 12px;
+  border: none !important;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  max-width: fit-content;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
-/* ===== Items de filtro: label + input alineados ===== */
+/* Chevron animado */
+.sidebar-title-btn .chevron {
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--color-primary);
+  border-bottom: 2px solid var(--color-primary);
+  display: inline-block;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease;
+}
+.sidebar-title-btn .chevron.up { transform: rotate(-135deg); }
+.sidebar-title-btn .chevron.down { transform: rotate(45deg); }
 
-.filtro-item {
+
+
+/* Panel del contenido colapsable */
+.filtros-panel {
   display: flex;
-  flex-direction: column; /* móvil */
-  gap: 4px;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 4px;
 }
 
-@media (min-width: 680px) {
+/* Botón secundario (Reiniciar …) */
+.btn-filter {
+  background: transparent;
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+  border-radius: var(--radius-small);
+  padding: 6px 12px;
+  font-weight: 600;
+  font-size: 12px;
+  line-height: 1;
+  transition: 0.2s;
+  white-space: nowrap;
+}
+.btn-filter:hover:not(:disabled) {
+  background: var(--color-primary);
+  color: var(--color-white);
+}
+.btn-filter:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   CAMPOS DE FILTROS (GRID CONSISTENTE)
+   ========================================= */
+
+/* Cada fila de filtro */
+.filtro-item {
+  display: grid;
+  grid-template-columns: 38% 1fr; /* label a la izquierda, control a la derecha */
+  align-items: center;
+  gap: 10px;
+}
+
+/* En móviles: columna */
+@media (max-width: 680px) {
   .filtro-item {
-    flex-direction: row; /* escritorio */
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .filtro-item label {
-    width: 38%;
-    font-size: 14px;
-    font-weight: 600;
-  }
-
-  .filtro-item .input,
-  .filtro-item select {
-    width: 58%;
-    margin: 0;
+    grid-template-columns: 1fr;
+    gap: 6px;
   }
 }
 
-/* ===== CONTENIDO ===== */
+.filtro-item label {
+  font-weight: 700;
+  color: var(--color-primary);
+  font-size: 14px;
+}
+
+/* Todos los controles comparten la misma estética y ancho */
+.filtro-item .input,
+.filtro-item select,
+.filtros-panel input[type="number"],
+.filtros-panel input[type="date"] {
+  width: 100%;
+  height: 44px;                    /* MISMA ALTURA para todo */
+  padding: 8px 12px;
+  border-radius: var(--radius-small);
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  font-size: 14px;
+  background: #fff;
+  transition: border-color 0.15s ease, background-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.filtro-item .input:focus,
+.filtro-item select:focus,
+.filtros-panel input[type="number"]:focus,
+.filtros-panel input[type="date"]:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: #fff;
+  box-shadow: 0 0 0 2px rgba(0, 41, 107, 0.08); /* halo sutil */
+}
+
+/* Placeholders coherentes */
+.filtro-item .input::placeholder {
+  color: #8a8f98;
+}
+
+/* =========================================
+   OPCIONES DE ORDENACIÓN (RADIOS)
+   ========================================= */
+
+.options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Cada opción se ve como un "input grande" */
+.option-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-small);
+  border: 2px solid rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  background: var(--color-white);
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.option-item:hover {
+  border-color: var(--color-primary);
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+/* Radio custom */
+.option-item input[type="radio"] {
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary);
+  display: grid;
+  place-content: center;
+  cursor: pointer;
+  background: #fff;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.option-item input[type="radio"]::after {
+  content: "";
+  width: 10px;
+  height: 10px;
+  background: var(--color-primary);
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.15s ease;
+}
+
+.option-item input[type="radio"]:checked::after {
+  transform: scale(1);
+}
+
+.option-item span {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+/* =========================================
+   CONTENIDO (LISTADO DE QUEJAS)
+   ========================================= */
 
 .quejas-content {
   flex: 1;
 }
-
-/* ===== Tarjetas ===== */
 
 .quejas-header {
   font-size: 28px;
@@ -89,7 +262,7 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow-soft);
   cursor: pointer;
-  transition: 0.25s;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-left-color 0.25s ease;
   border-left: 6px solid var(--color-primary);
 }
 
@@ -123,4 +296,17 @@
   text-align: center;
   font-size: 18px;
   color: #777;
+}
+
+/* =========================================
+   RESPONSIVE
+   ========================================= */
+
+@media (max-width: 960px) {
+  .quejas-layout {
+    flex-direction: column;
+  }
+  .sidebar-filtros {
+    width: 100%;
+  }
 }
