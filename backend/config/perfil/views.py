@@ -720,3 +720,51 @@ def logout_view(request):
 
     # 205 Reset Content: indica que el cliente debe resetear el estado (borrar storage/cookies)
     return Response(status=status.HTTP_205_RESET_CONTENT)
+
+# ============================================================
+# POST /usuarios/<pk>/change-password/
+# ============================================================
+@extend_schema(
+    summary="Cambiar la contraseña del usuario",
+    description="Permite al usuario autenticado cambiar su contraseña proporcionando la antigua y la nueva.",
+    tags=["Usuarios"],
+    request={
+        "application/json": {
+            "type": "object",
+            "properties": {
+                "old_password": {"type": "string"},
+                "new_password": {"type": "string"},
+            },
+            "required": ["old_password", "new_password"],
+        }
+    },
+    responses={
+        200: OpenApiResponse(description="Contraseña cambiada correctamente."),
+        400: OpenApiResponse(description="Contraseña actual incorrecta o datos inválidos."),
+        401: OpenApiResponse(description="No autenticado.")
+    }
+)
+@api_view(["POST"])
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated])
+def change_password(request, pk):
+    user = get_object_or_404(User, pk=pk)
+
+    # Seguridad: solo puede cambiar su propia contraseña (o moderador)
+    is_moderator = getattr(getattr(request.user, "perfil", None), "moderator", False)
+    if not is_moderator and request.user.id != user.id:
+        raise PermissionDenied("No tienes permisos para cambiar esta contraseña.")
+
+    old_password = request.data.get("old_password")
+    new_password = request.data.get("new_password")
+
+    if not user.check_password(old_password):
+        return Response(
+            {"detail": "La contraseña actual es incorrecta."},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    user.set_password(new_password)
+    user.save()
+
+    return Response({"detail": "Contraseña cambiada correctamente."}, status=status.HTTP_200_OK)

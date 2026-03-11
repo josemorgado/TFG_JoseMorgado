@@ -46,3 +46,15 @@ export async function updateUsuario(
     throw err.response?.data || err;
   }
 }
+
+export const changePassword = async (
+  userId: number | string,
+  oldPassword: string,
+  newPassword: string
+) => {
+  return axios.post(`/usuarios/${userId}/change-password/`, {
+    old_password: oldPassword,
+    new_password: newPassword
+  });
+};
+

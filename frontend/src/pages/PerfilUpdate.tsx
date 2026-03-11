@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { getUsuarioById, updateUsuario } from "../api/perfil";
 import "../styles/form-layout.css";
 import type { Usuario } from "../types/perfil";
@@ -16,6 +16,8 @@ export default function PerfilUpdate() {
 
   const bioRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const location = useLocation();
+  const stateFormData = location.state?.formData || null;
 
   const [form, setForm] = useState({
     username: "",
@@ -33,6 +35,12 @@ export default function PerfilUpdate() {
   });
 
   useEffect(() => {
+    if (stateFormData) {
+      setForm(stateFormData);
+      setLoading(false);
+      return;
+    }
+
     (async () => {
       try {
         const data = await getUsuarioById(Number(id));
@@ -66,7 +74,7 @@ export default function PerfilUpdate() {
         setLoading(false);
       }
     })();
-  }, [id]);
+  }, [id, stateFormData]);
 
   const autoResize = (el: HTMLTextAreaElement | null) => {
     if (!el) return;
@@ -94,19 +102,19 @@ export default function PerfilUpdate() {
     setForm({ ...form, foto_perfil: e.target.files?.[0] || null });
 
   const iniciales = useMemo(() => {
-    if (!usuario) return "";
-    const nombre =
-      `${usuario.first_name || ""} ${usuario.last_name || ""}`.trim();
+    // Si no tenemos usuario (porque no hicimos GET), usamos los campos del form
+    const firstName = usuario?.first_name ?? form.first_name ?? "";
+    const lastName = usuario?.last_name ?? form.last_name ?? "";
+    const username = usuario?.username ?? form.username ?? "";
+
+    const nombre = `${firstName} ${lastName}`.trim();
     if (nombre.length > 0) {
       const partes = nombre.split(/\s+/).filter(Boolean);
       const letras = partes.slice(0, 2).map((p) => p[0]?.toUpperCase() || "");
-      return (
-        letras.join("") || (usuario.username?.slice(0, 2).toUpperCase() ?? "")
-      );
+      return letras.join("") || (username.slice(0, 2).toUpperCase() ?? "");
     }
-    return usuario.username?.slice(0, 2).toUpperCase() ?? "";
-  }, [usuario]);
-
+    return username.slice(0, 2).toUpperCase() ?? "";
+  }, [usuario, form.first_name, form.last_name, form.username]);
   const fotoPerfil = form.foto_perfil
     ? URL.createObjectURL(form.foto_perfil)
     : form.foto_url
@@ -268,7 +276,11 @@ export default function PerfilUpdate() {
           <button
             type="button"
             className="btn btn-secondary form-button"
-            onClick={() => navigate(`/perfil/${id}/cambiar-password`)}
+            onClick={() =>
+              navigate(`/perfil/${id}/change-password`, {
+                state: { formData: form },
+              })
+            }
           >
             Cambiar contraseña
           </button>

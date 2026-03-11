@@ -12,6 +12,7 @@ import PerfilDetail from '../pages/PerfilDetail';
 import PerfilUpdate from '../pages/PerfilUpdate';
 import PrivateRoute from './PrivateRoute';
 import RutaProhibida from '../pages/RutaProhibida';
+import ChangePassword from '../pages/ChangePassword';
 
 const AppRouter: React.FC = () => (
   <BrowserRouter>
@@ -33,6 +34,7 @@ const AppRouter: React.FC = () => (
         </Route>
         <Route element={<PrivateRoute/>}>
           <Route path="perfil/:id/update/"element={<PerfilUpdate/>}/>
+          <Route path="perfil/:id/change-password/"element={<ChangePassword/>}/>
         </Route>
 
       </Route>

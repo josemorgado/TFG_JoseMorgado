@@ -39,4 +39,7 @@ urlpatterns = [
 
     #POST              /usuarios/logout/
     path('logout/', views.logout_view, name='usuario-logout'),
+
+    #PATCH              /usuarios/<int:user_id>/change-password
+    path('<int:pk>/change-password/', views.change_password, name='usuario-change-password'),
 ]
