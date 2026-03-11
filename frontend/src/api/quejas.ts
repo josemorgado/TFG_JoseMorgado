@@ -20,3 +20,7 @@ export async function getQuejasByUser(userId: number): Promise<Queja[]> {
 export async function deleteQueja(id: number) {
   return axios.delete(`/quejas/${id}/delete/`);
 }
+export async function getQuejas(): Promise<Queja[]> {
+  const response = await axios.get(`/quejas/`);
+  return response.data;
+}

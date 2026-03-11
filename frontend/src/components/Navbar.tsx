@@ -6,6 +6,7 @@ import CreateAccountButton from "./CreateAccountButton";
 import CreateQuejaButton from "./CreateQuejaButton";
 import MiPerfilButton from "./MiPerfilButton";
 import { useAuth } from "../context/AuthContext";
+import QuejasButton from "./QuejasButton";
 
 const Navbar: React.FC = () => {
   const { user } = useAuth();
@@ -20,6 +21,7 @@ const Navbar: React.FC = () => {
       </div>
 
       <ul className="nav-links">
+        <QuejasButton/>
         <CreateQuejaButton />
 
         {user ? (
