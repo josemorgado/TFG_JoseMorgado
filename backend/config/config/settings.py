@@ -192,3 +192,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://127.0.0.1:5173",
 ]
+
+
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "josemaria1.jmmp@gmail.com"
+
+FRONTEND_URL = "http://localhost:5173"

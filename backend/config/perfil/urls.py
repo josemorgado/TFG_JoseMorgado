@@ -42,4 +42,9 @@ urlpatterns = [
 
     #PATCH              /usuarios/<int:user_id>/change-password
     path('<int:pk>/change-password/', views.change_password, name='usuario-change-password'),
+
+    #PATCH              /usuarios/<int:user_id>/forgot-password
+    path('reset-password/', views.password_reset_request, name='usuario-reset-password'),
+
+    path('reset-password-confirm/', views.password_reset_confirm, name='usuario-reset-password-confirm'),
 ]

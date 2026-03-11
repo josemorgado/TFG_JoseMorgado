@@ -7,6 +7,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from video.serializers import VideoSerializer
+from perfil.serializers import PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 from video.models import Video
 from core.permissions import (
     IsAnonymousOrModerator,
@@ -14,6 +15,11 @@ from core.permissions import (
     IsModerator,
     IsAnonymousUser,
 )
+from django.core.mail import send_mail
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.conf import settings
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 from rest_framework.decorators import (
     api_view,
     parser_classes,
@@ -721,6 +727,7 @@ def logout_view(request):
     # 205 Reset Content: indica que el cliente debe resetear el estado (borrar storage/cookies)
     return Response(status=status.HTTP_205_RESET_CONTENT)
 
+
 # ============================================================
 # POST /usuarios/<pk>/change-password/
 # ============================================================
@@ -740,9 +747,11 @@ def logout_view(request):
     },
     responses={
         200: OpenApiResponse(description="Contraseña cambiada correctamente."),
-        400: OpenApiResponse(description="Contraseña actual incorrecta o datos inválidos."),
-        401: OpenApiResponse(description="No autenticado.")
-    }
+        400: OpenApiResponse(
+            description="Contraseña actual incorrecta o datos inválidos."
+        ),
+        401: OpenApiResponse(description="No autenticado."),
+    },
 )
 @api_view(["POST"])
 @authentication_classes([JWTAuthentication])
@@ -761,10 +770,91 @@ def change_password(request, pk):
     if not user.check_password(old_password):
         return Response(
             {"detail": "La contraseña actual es incorrecta."},
-            status=status.HTTP_400_BAD_REQUEST
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     user.set_password(new_password)
     user.save()
 
-    return Response({"detail": "Contraseña cambiada correctamente."}, status=status.HTTP_200_OK)
+    return Response(
+        {"detail": "Contraseña cambiada correctamente."}, status=status.HTTP_200_OK
+    )
+
+
+# ============================================================
+# FORGOT PASSWORD (Reset por email)
+# ============================================================
+
+
+@extend_schema(
+    summary="Solicitar reset de contraseña",
+    description="Envía un correo con el enlace para restablecer la contraseña.",
+    tags=["Auth"],
+    request=PasswordResetRequestSerializer,
+    responses={200: OpenApiResponse(description="Email enviado si el usuario existe.")},
+)
+@api_view(["POST"])
+@authentication_classes([])  # No hace falta autenticación
+@permission_classes([AllowAny])
+def password_reset_request(request):
+    serializer = PasswordResetRequestSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    email = serializer.validated_data["email"]
+    user = User.objects.get(email=email)
+
+    token = PasswordResetTokenGenerator().make_token(user)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+    # TODO: ajusta esta URL al frontend real
+    reset_url = f"{settings.FRONTEND_URL}/reset-password?uid={uid}&token={token}"
+    send_mail(
+        subject="Restablecer contraseña",
+        message=f"Haz clic en este enlace para restablecer tu contraseña: {reset_url}",
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[email],
+        fail_silently=False,
+    )
+
+    return Response(
+        {"detail": "Si el email existe, se ha enviado un enlace."},
+        status=status.HTTP_200_OK,
+    )
+
+@extend_schema(
+    summary="Confirmar reset de contraseña",
+    description="Valida UID + token y crea una nueva contraseña.",
+    tags=["Auth"],
+    request=PasswordResetConfirmSerializer,
+    responses={
+        200: OpenApiResponse(description="Contraseña actualizada."),
+        400: OpenApiResponse(description="Token o UID inválido.")
+    }
+)
+@api_view(["POST"])
+@authentication_classes([])
+@permission_classes([AllowAny])
+def password_reset_confirm(request):
+    serializer = PasswordResetConfirmSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+
+    uid = serializer.validated_data["uid"]
+    token = serializer.validated_data["token"]
+    new_password = serializer.validated_data["new_password"]
+
+    # Obtener usuario desde el UID
+    try:
+        user_id = urlsafe_base64_decode(uid).decode()
+        user = User.objects.get(pk=user_id)
+    except Exception:
+        return Response({"detail": "UID inválido."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Validar token
+    if not PasswordResetTokenGenerator().check_token(user, token):
+        return Response({"detail": "Token inválido o expirado."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Cambiar contraseña
+    user.set_password(new_password)
+    user.save()
+
+    return Response({"detail": "Contraseña actualizada correctamente."}, status=status.HTTP_200_OK)

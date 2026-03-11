@@ -231,3 +231,17 @@ class UserWithPerfilSerializer(serializers.ModelSerializer):
             "perfil",
         ]
         read_only_fields = fields
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email=serializers.EmailField()
+    def validate_email(self,value):
+        try:
+            User.objects.get(email=value)
+        except User.DoesNotExist:
+            raise serializers.ValidationError("No existe un usuario con este email.")
+        return value
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField()
