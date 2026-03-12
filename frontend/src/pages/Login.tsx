@@ -86,7 +86,7 @@ const Login: React.FC = () => {
             <button
               type="button"
               className="link"
-              onClick={() => navigate("/forgot-password")}
+              onClick={() => navigate("/reset-password")}
             >
               ¿Has olvidado tu contraseña?
             </button>

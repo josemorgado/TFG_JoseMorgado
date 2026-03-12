@@ -14,6 +14,9 @@ import PrivateRoute from './PrivateRoute';
 import RutaProhibida from '../pages/RutaProhibida';
 import ChangePassword from '../pages/ChangePassword';
 import QuejasList from '../pages/Quejas';
+import ResetPassword from '../pages/ResetPassword';
+import EnterToken from '../pages/EnterToken';
+import NewPassword from '../pages/NewPassword';
 
 const AppRouter: React.FC = () => (
   <BrowserRouter>
@@ -29,6 +32,9 @@ const AppRouter: React.FC = () => (
         <Route path="/ruta-prohibida" element={<RutaProhibida />} />
         <Route path="/quejas/:id/update" element={<QuejaUpdate />} />
         <Route path="/quejas/" element={<QuejasList />} />
+        <Route path="/reset-password/" element={<ResetPassword />} />
+        <Route path="/enter-token/" element={<EnterToken />} />
+        <Route path="/new-password/" element={<NewPassword />} />
 
         {/* Rutas privadas */}
         <Route element={<PrivateRouteCrearQueja />}>

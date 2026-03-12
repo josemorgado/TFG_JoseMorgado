@@ -58,3 +58,10 @@ export async function registerRequest(data: FormData) {
   const res = await api.post(AUTH_REGISTER, data);
   return res.data;
 }
+
+// Endpoints reales con prefijo /usuarios
+export const requestPasswordReset = (email: string) =>
+  api.post("/usuarios/reset-password/", { email });
+
+export const confirmPasswordReset = (uid: string, token: string, new_password: string) =>
+  api.post("/usuarios/reset-password-confirm/", { uid, token, new_password });

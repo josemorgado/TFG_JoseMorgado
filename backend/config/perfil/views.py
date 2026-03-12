@@ -16,7 +16,7 @@ from core.permissions import (
     IsAnonymousUser,
 )
 from django.core.mail import send_mail
-from django.utils.http import urlsafe_base64_encode
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes
 from django.conf import settings
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -807,7 +807,7 @@ def password_reset_request(request):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
 
     # TODO: ajusta esta URL al frontend real
-    reset_url = f"{settings.FRONTEND_URL}/reset-password?uid={uid}&token={token}"
+    reset_url =  f"{settings.FRONTEND_URL}/reset-password?uid={uid}&token={token}"
     send_mail(
         subject="Restablecer contraseña",
         message=f"Haz clic en este enlace para restablecer tu contraseña: {reset_url}",
@@ -817,7 +817,7 @@ def password_reset_request(request):
     )
 
     return Response(
-        {"detail": "Si el email existe, se ha enviado un enlace."},
+        {"detail": "Si el email existe, se ha enviado un enlace.Si lo ves desde consola, formatear con el uso de una IA."},
         status=status.HTTP_200_OK,
     )
 
