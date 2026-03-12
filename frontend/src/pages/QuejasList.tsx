@@ -1,8 +1,8 @@
 import { useEffect, useState, useMemo } from "react";
 import { getQuejas } from "../api/quejas";
 import type { Queja } from "../types/queja";
-import { useNavigate } from "react-router-dom";
 import "../styles/quejasList.css";
+import QuejaCard from "../components/QuejaCard";
 
 import {
   useCategorias,
@@ -10,7 +10,6 @@ import {
 } from "../modules/catalogos/catalogos.queries";
 
 export default function QuejasList() {
-  const navigate = useNavigate();
 
   const [quejas, setQuejas] = useState<Queja[]>([]);
   const [loading, setLoading] = useState(true);
@@ -494,61 +493,13 @@ export default function QuejasList() {
 
       {/* LISTA DE QUEJAS */}
       <div className="quejas-content">
-        <h2 className="quejas-header">Listado de Quejas({filteredQuejas.length})</h2>
+        <h2 className="quejas-header">
+          Listado de Quejas({filteredQuejas.length})
+        </h2>
 
         <div className="quejas-grid">
           {filteredQuejas.map((q) => (
-            <div
-              className="queja-card"
-              key={q.id}
-              onClick={() => navigate(`/quejas/${q.id}`)}
-            >
-              <h3 className="queja-title">{q.titulo}</h3>
-
-              <p className="queja-meta">
-                {q.categoria_nombre} · {q.distrito_nombre} · {q.estado} ·{" "}
-                {q.fecha_creacion}
-              </p>
-
-              <p className="queja-descripcion">
-                {q.descripcion.slice(0, 120)}…
-              </p>
-
-              <div className="queja-footer">
-                {/* Bloque de votos */}
-                <div className="queja-stat">
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="queja-stat__icon"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5
-               5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5
-               5.5 0 000-7.78z"
-                    />
-                  </svg>
-                  <span className="queja-stat__count">{q.num_votos}</span>
-                </div>
-
-                {/* Bloque de comentarios */}
-                <div className="queja-stat">
-                  <svg
-                    viewBox="0 0 24 24"
-                    className="queja-stat__icon"
-                    aria-hidden="true"
-                  >
-                    <path
-                      d="M4 4h16v10H7l-3 3V4z"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    />
-                  </svg>
-                  <span className="queja-stat__count">{q.num_comentarios}</span>
-                </div>
-              </div>
-            </div>
+            <QuejaCard key={q.id} q={q} />
           ))}
         </div>
       </div>
