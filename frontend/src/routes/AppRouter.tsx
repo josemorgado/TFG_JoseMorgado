@@ -13,7 +13,7 @@ import PerfilUpdate from '../pages/PerfilUpdate';
 import PrivateRoute from './PrivateRoute';
 import RutaProhibida from '../pages/RutaProhibida';
 import ChangePassword from '../pages/ChangePassword';
-import QuejasList from '../pages/Quejas';
+import QuejasList from '../pages/QuejasList';
 import ResetPassword from '../pages/ResetPassword';
 import EnterToken from '../pages/EnterToken';
 import NewPassword from '../pages/NewPassword';

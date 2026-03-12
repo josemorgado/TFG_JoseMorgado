@@ -494,7 +494,7 @@ export default function QuejasList() {
 
       {/* LISTA DE QUEJAS */}
       <div className="quejas-content">
-        <h2 className="quejas-header">Listado de Quejas</h2>
+        <h2 className="quejas-header">Listado de Quejas({filteredQuejas.length})</h2>
 
         <div className="quejas-grid">
           {filteredQuejas.map((q) => (
