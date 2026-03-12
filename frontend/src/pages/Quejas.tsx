@@ -62,26 +62,26 @@ export default function QuejasList() {
     ) {
       updated.comentariosMin = value;
     }
-    if (name=== "fechaDesde"){
-      const desde= new Date(value);
-      const hasta= new Date(filters.fechaHasta);
+    if (name === "fechaDesde") {
+      const desde = new Date(value);
+      const hasta = new Date(filters.fechaHasta);
       const hoy = new Date();
-      if (desde>hoy){
-        updated.fechaDesde= hoy.toISOString().slice(0,10);
+      if (desde > hoy) {
+        updated.fechaDesde = hoy.toISOString().slice(0, 10);
       }
-      if (filters.fechaHasta && desde>hasta){
-        updated.fechaHasta=value;
+      if (filters.fechaHasta && desde > hasta) {
+        updated.fechaHasta = value;
       }
     }
-    if (name=== "fechaHasta"){
-      const hasta= new Date(value);
-      const desde= new Date(filters.fechaDesde);
+    if (name === "fechaHasta") {
+      const hasta = new Date(value);
+      const desde = new Date(filters.fechaDesde);
       const hoy = new Date();
-      if (hasta>hoy){
-        updated.fechaHasta= hoy.toISOString().slice(0,10);
+      if (hasta > hoy) {
+        updated.fechaHasta = hoy.toISOString().slice(0, 10);
       }
-      if (filters.fechaDesde && hasta<desde){
-        updated.fechaDesde=value;
+      if (filters.fechaDesde && hasta < desde) {
+        updated.fechaDesde = value;
       }
     }
     setFilters(updated);
@@ -513,6 +513,41 @@ export default function QuejasList() {
               <p className="queja-descripcion">
                 {q.descripcion.slice(0, 120)}…
               </p>
+
+              <div className="queja-footer">
+                {/* Bloque de votos */}
+                <div className="queja-stat">
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="queja-stat__icon"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5
+               5.5 0 00-7.78 7.78L12 21.23l8.84-8.84a5.5
+               5.5 0 000-7.78z"
+                    />
+                  </svg>
+                  <span className="queja-stat__count">{q.num_votos}</span>
+                </div>
+
+                {/* Bloque de comentarios */}
+                <div className="queja-stat">
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="queja-stat__icon"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M4 4h16v10H7l-3 3V4z"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                  <span className="queja-stat__count">{q.num_comentarios}</span>
+                </div>
+              </div>
             </div>
           ))}
         </div>
