@@ -52,6 +52,9 @@ class QuejaSerializer(serializers.ModelSerializer):
         help_text="ID del distrito asociado.",
     )
 
+    imagenes_count = serializers.IntegerField(read_only=True)
+    videos_count = serializers.IntegerField(read_only=True)
+
     class Meta:
         model = Queja
         fields = [
@@ -74,6 +77,8 @@ class QuejaSerializer(serializers.ModelSerializer):
             "content_type",
             "is_liked",
             "fecha_creacion_iso",
+            "imagenes_count",
+            "videos_count",
         ]
         read_only_fields = [
             "id",
@@ -86,6 +91,8 @@ class QuejaSerializer(serializers.ModelSerializer):
             "content_type",
             "is_liked",
             "fecha_creacion_iso",
+            "imagenes_count",
+            "videos_count",
         ]
         extra_kwargs = {
             "titulo": {"help_text": "Título breve y descriptivo (5–200 caracteres)."},

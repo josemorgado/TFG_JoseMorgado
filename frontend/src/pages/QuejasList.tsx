@@ -10,12 +10,12 @@ import {
 } from "../modules/catalogos/catalogos.queries";
 
 export default function QuejasList() {
-
   const [quejas, setQuejas] = useState<Queja[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   const [isSortOpen, setIsSortOpen] = useState(false);
-  // Estado de todos los filtros
+
+  // Estado de todos los filtros (un único select para multimedia)
   const [filters, setFilters] = useState({
     texto: "",
     estado: "",
@@ -29,12 +29,14 @@ export default function QuejasList() {
     votosMax: "",
     comentariosMin: "",
     comentariosMax: "",
+    media: "", // "", "con", "sin", "videos", "imagenes"
   });
 
   const handleFilter = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
   ) => {
     const { name, value, type } = e.target;
+
     if (type === "number") {
       const num = Number(value);
       if (num < 0) {
@@ -42,24 +44,26 @@ export default function QuejasList() {
         return;
       }
     }
+
     let updated = { ...filters, [name]: value };
+
     if (name === "votosMin" && Number(value) > Number(filters.votosMax)) {
-      updated.votosMax = value;
+      updated.votosMax = "";
     }
     if (name === "votosMax" && Number(value) < Number(filters.votosMin)) {
-      updated.votosMin = value;
+      updated.votosMin = "";
     }
     if (
       name === "comentariosMin" &&
       Number(value) > Number(filters.comentariosMax)
     ) {
-      updated.comentariosMax = value;
+      updated.comentariosMax = "";
     }
     if (
       name === "comentariosMax" &&
       Number(value) < Number(filters.comentariosMin)
     ) {
-      updated.comentariosMin = value;
+      updated.comentariosMin = "";
     }
     if (name === "fechaDesde") {
       const desde = new Date(value);
@@ -83,6 +87,7 @@ export default function QuejasList() {
         updated.fechaDesde = value;
       }
     }
+
     setFilters(updated);
   };
 
@@ -109,6 +114,7 @@ export default function QuejasList() {
       setLoading(false);
     })();
   }, []);
+
   const [sortBy, setSortBy] = useState("");
 
   // Filtrado avanzado
@@ -170,8 +176,33 @@ export default function QuejasList() {
       )
         return false;
 
+      // ---------- FILTRO MULTIMEDIA ÚNICO ----------
+      const img = Number(q.imagenes_count ?? 0);
+      const vid = Number(q.videos_count ?? 0);
+      const totalMedia = img + vid;
+
+      switch (filters.media) {
+        case "con": // con media (imágenes o vídeos)
+          if (totalMedia === 0) return false;
+          break;
+        case "sin": // sin media
+          if (totalMedia > 0) return false;
+          break;
+        case "videos": // al menos un vídeo
+          if (vid === 0) return false;
+          break;
+        case "imagenes": // al menos una imagen
+          if (img === 0) return false;
+          break;
+        default:
+          // "" → sin filtro
+          break;
+      }
+      // ---------- FIN FILTRO MULTIMEDIA ----------
+
       return true;
     });
+
     let ordenadas = [...filtradas];
     switch (sortBy) {
       case "fecha_asc":
@@ -205,6 +236,7 @@ export default function QuejasList() {
   }, [quejas, filters, sortBy]);
 
   if (loading) return <p className="loading">Cargando...</p>;
+
   const resetFilters = () => {
     setFilters({
       texto: "",
@@ -219,6 +251,7 @@ export default function QuejasList() {
       votosMax: "",
       comentariosMin: "",
       comentariosMax: "",
+      media: "",
     });
   };
 
@@ -230,16 +263,14 @@ export default function QuejasList() {
           <div className="sidebar-header">
             <button
               className="sidebar-title-btn"
-              onClick={toggleSort}
+              onClick={() => setIsSortOpen((p) => !p)}
               aria-expanded={isSortOpen}
-              title={isSortOpen ? "Ocultar ordenacion" : "Mostrar ordenacion"}
+              title={isSortOpen ? "Ocultar ordenación" : "Mostrar ordenación"}
             >
               Ordenar por
               <span className={`chevron ${isSortOpen ? "up" : "down"}`} />
             </button>
           </div>
-
-          {/* Panel que se abre/cierra */}
 
           {isSortOpen && (
             <div className="filtros-panel">
@@ -291,12 +322,12 @@ export default function QuejasList() {
             </div>
           )}
         </div>
+
         <div className="sidebar-section">
-          {" "}
           <div className="sidebar-header">
             <button
               className="sidebar-title-btn"
-              onClick={toggleFilters}
+              onClick={() => setIsFiltersOpen((p) => !p)}
               aria-expanded={isFiltersOpen}
               aria-controls="filtros-panel"
               title={isFiltersOpen ? "Ocultar filtros" : "Mostrar filtros"}
@@ -314,7 +345,7 @@ export default function QuejasList() {
               Reiniciar filtros
             </button>
           </div>
-          {/* Panel colapsable */}
+
           {isFiltersOpen && (
             <div id="filtros-panel" className="filtros-panel">
               {/* TEXTO */}
@@ -327,6 +358,23 @@ export default function QuejasList() {
                   placeholder="Buscar…"
                   value={filters.texto}
                 />
+              </div>
+
+              {/* MULTIMEDIA (todas las opciones en el mismo select) */}
+              <div className="filtro-item">
+                <label>Multimedia</label>
+                <select
+                  className="input"
+                  name="media"
+                  onChange={handleFilter}
+                  value={filters.media}
+                >
+                  <option value="">Todas</option>
+                  <option value="con">Con media</option>
+                  <option value="sin">Sin media</option>
+                  <option value="videos">Con vídeos</option>
+                  <option value="imagenes">Con imágenes</option>
+                </select>
               </div>
 
               {/* ESTADO */}
@@ -494,7 +542,7 @@ export default function QuejasList() {
       {/* LISTA DE QUEJAS */}
       <div className="quejas-content">
         <h2 className="quejas-header">
-          Listado de Quejas({filteredQuejas.length})
+          Listado de Quejas ({filteredQuejas.length})
         </h2>
 
         <div className="quejas-grid">

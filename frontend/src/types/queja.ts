@@ -18,4 +18,6 @@ export interface Queja{
     num_comentarios_top_level: number;
     content_type: string;
     is_liked: boolean;
+    imagenes_count: number;
+    videos_count: number;
 }

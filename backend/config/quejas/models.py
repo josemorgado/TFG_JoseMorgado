@@ -6,6 +6,7 @@ from imagen.models import Imagen
 from video.models import Video
 from megusta.models import MeGusta
 from django.dispatch import receiver
+from django.contrib.contenttypes.fields import GenericRelation
 
 
 
@@ -82,6 +83,15 @@ class Queja(models.Model):
     fecha_actualizacion = models.DateTimeField(
         auto_now=True,
         help_text="Fecha y hora de la última actualización."
+    )
+
+    imagenes = GenericRelation(
+        Imagen,
+        related_query_name="queja"
+    )
+    videos = GenericRelation(
+        Video,
+        related_query_name="video"
     )
 
     class Meta:

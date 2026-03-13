@@ -12,6 +12,10 @@ from quejas.serializers import QuejaSerializer
 from quejas.models import Queja
 from django.contrib.auth import get_user_model
 
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Count, Q
+from imagen.models import Imagen
+
 from drf_spectacular.utils import (
     extend_schema,
     OpenApiParameter,
@@ -41,11 +45,20 @@ def _enforce_object_permissions(request, obj):
     }
 )
 @api_view(['GET'])
-@permission_classes([AllowAny])  # Cualquiera puede acceder
+@permission_classes([AllowAny])
 def quejas_list(request):
-    qs = Queja.objects.all().order_by('id')
-    serializer = QuejaSerializer(qs, many=True, context={'request': request})  # salida: no hace falta context
+    qs = (
+        Queja.objects
+        .annotate(
+            imagenes_count=Count("imagenes", distinct=True),
+            videos_count=Count("videos", distinct=True),
+        )
+        .order_by('id')
+    )
+
+    serializer = QuejaSerializer(qs, many=True, context={'request': request})
     return Response(serializer.data)
+
 
 
 # GET /quejas/<int:pk>/ → Detalle de una queja
