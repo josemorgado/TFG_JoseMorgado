@@ -4,6 +4,10 @@ import type { Queja } from "../types/queja";
 import "../styles/quejasList.css";
 import QuejaCard from "../components/QuejaCard";
 
+import type { FiltersShape, SortBy } from "../types/filters";
+import { defaultFilters } from "../types/filters";
+import { loadListState, saveListState, clearListState } from "../utils/storage";
+
 import {
   useCategorias,
   useDistritos,
@@ -12,40 +16,35 @@ import {
 export default function QuejasList() {
   const [quejas, setQuejas] = useState<Queja[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
-  const [isSortOpen, setIsSortOpen] = useState(false);
 
-  // Estado de todos los filtros (un único select para multimedia)
-  const [filters, setFilters] = useState({
-    texto: "",
-    estado: "",
-    categoria: "",
-    distrito: "",
-    autor: "",
-    ubicacion: "",
-    fechaDesde: "",
-    fechaHasta: "",
-    votosMin: "",
-    votosMax: "",
-    comentariosMin: "",
-    comentariosMax: "",
-    media: "", // "", "con", "sin", "videos", "imagenes"
-  });
+  // 1) Hidratar desde sessionStorage con tipos correctos
+  const saved = loadListState<FiltersShape, SortBy>();
+
+  const [filters, setFilters] = useState<FiltersShape>(
+    saved?.filters ?? defaultFilters
+  );
+  const [sortBy, setSortBy] = useState<SortBy>(saved?.sortBy ?? "");
+  const [isFiltersOpen, setIsFiltersOpen] = useState<boolean>(
+    saved?.isFiltersOpen ?? false
+  );
+  const [isSortOpen, setIsSortOpen] = useState<boolean>(
+    saved?.isSortOpen ?? false
+  );
 
   const handleFilter = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
 
     if (type === "number") {
       const num = Number(value);
       if (num < 0) {
-        setFilters({ ...filters, [name]: "" });
+        setFilters({ ...filters, [name]: "" } as FiltersShape);
         return;
       }
     }
 
-    let updated = { ...filters, [name]: value };
+    let updated = { ...filters, [name]: value } as FiltersShape;
 
     if (name === "votosMin" && Number(value) > Number(filters.votosMax)) {
       updated.votosMax = "";
@@ -65,6 +64,7 @@ export default function QuejasList() {
     ) {
       updated.comentariosMin = "";
     }
+
     if (name === "fechaDesde") {
       const desde = new Date(value);
       const hasta = new Date(filters.fechaHasta);
@@ -76,6 +76,7 @@ export default function QuejasList() {
         updated.fechaHasta = value;
       }
     }
+
     if (name === "fechaHasta") {
       const hasta = new Date(value);
       const desde = new Date(filters.fechaDesde);
@@ -91,7 +92,6 @@ export default function QuejasList() {
     setFilters(updated);
   };
 
-
   const {
     data: categorias,
     isLoading: catLoading,
@@ -104,7 +104,7 @@ export default function QuejasList() {
     error: disError,
   } = useDistritos();
 
-  // Cargar quejas
+  // 2) Cargar quejas SOLO al montar
   useEffect(() => {
     (async () => {
       const data = await getQuejas();
@@ -113,9 +113,26 @@ export default function QuejasList() {
     })();
   }, []);
 
-  const [sortBy, setSortBy] = useState("");
+  // 3) Guardar en sesión cuando cambien filtros/orden/paneles
+  useEffect(() => {
+    saveListState<FiltersShape, SortBy>({
+      filters,
+      sortBy,
+      isFiltersOpen,
+      isSortOpen,
+    });
+  }, [filters, sortBy, isFiltersOpen, isSortOpen]);
 
-  // Filtrado avanzado
+  // 4) Reset único que también limpia el storage
+  const resetFilters = () => {
+    setFilters(defaultFilters);
+    setSortBy("");
+    setIsFiltersOpen(false);
+    setIsSortOpen(false);
+    clearListState();
+  };
+
+  // 5) Filtrado avanzado
   const filteredQuejas = useMemo(() => {
     const filtradas = quejas.filter((q) => {
       if (filters.estado && q.estado !== filters.estado) return false;
@@ -180,24 +197,24 @@ export default function QuejasList() {
       const totalMedia = img + vid;
 
       switch (filters.media) {
-        case "con": // con media (imágenes o vídeos)
+        case "con":
           if (totalMedia === 0) return false;
           break;
-        case "sin": // sin media
+        case "sin":
           if (totalMedia > 0) return false;
           break;
-        case "videos": // al menos un vídeo
+        case "videos":
           if (vid === 0) return false;
           break;
-        case "imagenes": // al menos una imagen
+        case "imagenes":
           if (img === 0) return false;
           break;
+        case "ambos":
+          if (img === 0 || vid === 0) return false;
+          break;
         default:
-          // "" → sin filtro
           break;
       }
-      // ---------- FIN FILTRO MULTIMEDIA ----------
-
       return true;
     });
 
@@ -207,7 +224,7 @@ export default function QuejasList() {
         ordenadas.sort(
           (a, b) =>
             new Date(a.fecha_creacion_iso).getTime() -
-            new Date(b.fecha_creacion_iso).getTime(),
+            new Date(b.fecha_creacion_iso).getTime()
         );
         break;
 
@@ -215,7 +232,7 @@ export default function QuejasList() {
         ordenadas.sort(
           (a, b) =>
             new Date(b.fecha_creacion_iso).getTime() -
-            new Date(a.fecha_creacion_iso).getTime(),
+            new Date(a.fecha_creacion_iso).getTime()
         );
         break;
 
@@ -234,24 +251,6 @@ export default function QuejasList() {
   }, [quejas, filters, sortBy]);
 
   if (loading) return <p className="loading">Cargando...</p>;
-
-  const resetFilters = () => {
-    setFilters({
-      texto: "",
-      estado: "",
-      categoria: "",
-      distrito: "",
-      autor: "",
-      ubicacion: "",
-      fechaDesde: "",
-      fechaHasta: "",
-      votosMin: "",
-      votosMax: "",
-      comentariosMin: "",
-      comentariosMax: "",
-      media: "",
-    });
-  };
 
   return (
     <div className="quejas-layout">
@@ -279,7 +278,7 @@ export default function QuejasList() {
                     name="sort"
                     value="fecha_asc"
                     checked={sortBy === "fecha_asc"}
-                    onChange={(e) => setSortBy(e.target.value)}
+                    onChange={(e) => setSortBy(e.target.value as SortBy)}
                   />
                   <span>Fecha (más antiguas primero)</span>
                 </label>
@@ -290,7 +289,7 @@ export default function QuejasList() {
                     name="sort"
                     value="fecha_desc"
                     checked={sortBy === "fecha_desc"}
-                    onChange={(e) => setSortBy(e.target.value)}
+                    onChange={(e) => setSortBy(e.target.value as SortBy)}
                   />
                   <span>Fecha (más recientes primero)</span>
                 </label>
@@ -301,7 +300,7 @@ export default function QuejasList() {
                     name="sort"
                     value="votos"
                     checked={sortBy === "votos"}
-                    onChange={(e) => setSortBy(e.target.value)}
+                    onChange={(e) => setSortBy(e.target.value as SortBy)}
                   />
                   <span>Más votos</span>
                 </label>
@@ -312,7 +311,7 @@ export default function QuejasList() {
                     name="sort"
                     value="comentarios"
                     checked={sortBy === "comentarios"}
-                    onChange={(e) => setSortBy(e.target.value)}
+                    onChange={(e) => setSortBy(e.target.value as SortBy)}
                   />
                   <span>Más comentarios</span>
                 </label>
@@ -358,7 +357,7 @@ export default function QuejasList() {
                 />
               </div>
 
-              {/* MULTIMEDIA (todas las opciones en el mismo select) */}
+              {/* MULTIMEDIA */}
               <div className="filtro-item">
                 <label>Multimedia</label>
                 <select
@@ -372,6 +371,7 @@ export default function QuejasList() {
                   <option value="sin">Sin media</option>
                   <option value="videos">Con vídeos</option>
                   <option value="imagenes">Con imágenes</option>
+                  <option value="ambos">Con imágenes y videos</option>
                 </select>
               </div>
 
@@ -402,10 +402,8 @@ export default function QuejasList() {
                   value={filters.categoria}
                 >
                   <option value="">Todas</option>
-
                   {catLoading && <option>Cargando…</option>}
                   {catError && <option>Error</option>}
-
                   {categorias?.map((c) => (
                     <option key={c.id} value={c.nombre}>
                       {c.nombre}
@@ -424,10 +422,8 @@ export default function QuejasList() {
                   value={filters.distrito}
                 >
                   <option value="">Todos</option>
-
                   {disLoading && <option>Cargando…</option>}
                   {disError && <option>Error</option>}
-
                   {distritos?.map((d) => (
                     <option key={d.id} value={d.nombre}>
                       {d.nombre}

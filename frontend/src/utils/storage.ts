@@ -1,5 +1,9 @@
-const ACCESS_KEY = 'jwt_access';
-const REFRESH_KEY = 'jwt_refresh';
+import type { ListState } from "../types/storage";
+
+const ACCESS_KEY = "jwt_access";
+const REFRESH_KEY = "jwt_refresh";
+
+const KEY = "quejasListState";
 
 export const storage = {
   getAccess: () => localStorage.getItem(ACCESS_KEY),
@@ -15,3 +19,25 @@ export const storage = {
     localStorage.removeItem(REFRESH_KEY);
   },
 };
+
+export function loadListState<TFilters, TSort extends string = string>(): ListState<TFilters, TSort> | null {
+  try {
+    const raw = sessionStorage.getItem(KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as ListState<TFilters,TSort>;
+  } catch {
+    return null;
+  }
+}
+
+export function saveListState<TFilters, TSort extends string = string>(state: ListState<TFilters, TSort>) {
+  try {
+    sessionStorage.setItem(KEY, JSON.stringify(state));
+  } catch {}
+}
+
+export function clearListState() {
+  try {
+    sessionStorage.removeItem(KEY);
+  } catch {}
+}
