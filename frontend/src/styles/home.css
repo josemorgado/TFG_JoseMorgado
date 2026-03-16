@@ -70,8 +70,47 @@
 }
 
 .grid-cta {
-  grid-column: 1 / -1;          /* ocupa todas las columnas */
+  grid-column: 1 / -1;
   display: flex;
-  justify-content: center;       /* centra horizontal */
+  justify-content: center;
   margin-top: 8px;
+}
+.stats-card-home {
+  width: 100%;
+  margin-top: 2rem;
+  padding: 1.75rem 2rem;
+  border: 2px solid #103a5c;
+  border-radius: 24px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  box-sizing: border-box;
+}
+
+.stats-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stats-number {
+  font-size: clamp(1.6rem, 3.5vw, 2.4rem);
+  font-weight: 700;
+  line-height: 1.1;
+  color: #111;
+}
+
+.stats-label {
+  margin-top: 0.35rem;
+  font-size: 1rem;
+  color: #444;
+}
+
+@media (max-width: 768px) {
+  .stats-card-home {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
 }

@@ -1,5 +1,5 @@
 // src/api/stats.ts
-import axios from "axios"
+import axios from "../utils/axios"
 
 // Tipos opcionales (ayudan en React)
 export interface CategoriaStats {
@@ -29,7 +29,7 @@ interface StatsParams {
 
 
 export async function getTopCategorias(params?: StatsParams) {
-    const response = await axios.get<CategoriaStats[]>("/api/stats/categorias/", {
+    const response = await axios.get<CategoriaStats[]>("/stats/categorias/", {
         params,
     })
     return response.data
@@ -37,7 +37,7 @@ export async function getTopCategorias(params?: StatsParams) {
 
 
 export async function getTopDistritos(params?: StatsParams) {
-    const response = await axios.get<DistritoStats[]>("/api/stats/distritos/", {
+    const response = await axios.get<DistritoStats[]>("/stats/distritos/", {
         params,
     })
     return response.data

@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { getQuejas } from "../api/quejas";
 import type { Queja } from "../types/queja";
 import "../styles/home.css";
-
+import { getTopCategorias, getTopDistritos } from "../api/stats";
 import QuejaCard from "../components/QuejaCard";
 
 import {
@@ -17,8 +17,9 @@ import { useNavigate } from "react-router-dom";
 export default function Home() {
   const [quejas, setQuejas] = useState<Queja[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Filtros básicos de Home (más simples que la página de listado completo)
+  const [topCategoria, setTopCategoria] = useState<string>("");
+  const [topDistrito, setTopDistrito] = useState<string>("");
+  const [totalQuejas, setTotalQuejas] = useState<number>(0);
   const [filters, setFilters] = useState({
     texto: "",
     categoria: "",
@@ -29,7 +30,6 @@ export default function Home() {
   const handleClickVerMas = () => {
     navigate("/quejas");
   };
-  // Carga de categorías y distritos (TU SISTEMA REAL)
   const { data: categorias } = useCategorias();
   const { data: distritos } = useDistritos();
 
@@ -37,10 +37,21 @@ export default function Home() {
     (async () => {
       const data = await getQuejas();
       setQuejas(data);
+
+      // Total de quejas
+      setTotalQuejas(data.length);
+
+      // Top categoría (limit 1)
+      const cat = await getTopCategorias({ limit: 1 });
+      setTopCategoria(cat.length > 0 ? cat[0].nombre : "Sin datos");
+
+      // Top distrito (limit 1)
+      const dist = await getTopDistritos({ limit: 1 });
+      setTopDistrito(dist.length > 0 ? dist[0].nombre : "Sin datos");
+
       setLoading(false);
     })();
   }, []);
-
   // Filtrado
   const filteredQuejas = useMemo(() => {
     return quejas
@@ -141,27 +152,50 @@ export default function Home() {
         </div>
       </section>
 
-<section className="card">
-  <h2 className="home-section-title">Últimas quejas</h2>
+      <section className="card">
+        <h2 className="home-section-title">Últimas quejas</h2>
 
-  {loading ? (
-    <p>Cargando...</p>
-  ) : (
-    <div className="quejas-grid-home">
-      {filteredQuejas.slice(0, 9).map((q) => (
-        <QuejaCard key={q.id} q={q} />
-      ))}
+        {loading ? (
+          <p>Cargando...</p>
+        ) : (
+          <>
+            <div className="quejas-grid-home">
+              {filteredQuejas.slice(0, 9).map((q) => (
+                <QuejaCard key={q.id} q={q} />
+              ))}
 
-      {filteredQuejas.length > 9 && (
-        <div className="grid-cta">
-          <button className="auth-button" onClick={handleClickVerMas}>
-            Ver más
-          </button>
-        </div>
-      )}
-    </div>
-  )}
-</section>
+              {filteredQuejas.length > 9 && (
+                <div className="grid-cta">
+                  <button className="auth-button" onClick={handleClickVerMas}>
+                    Ver más
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="stats-card-home">
+              <div className="stats-item">
+                <div className="stats-number">
+                  {topCategoria || "Sin datos"}
+                </div>
+                <div className="stats-label">Categoría más activa</div>
+              </div>
+
+              <div className="stats-item">
+                <div className="stats-number">{totalQuejas}</div>
+                <div className="stats-label">Total de quejas</div>
+              </div>
+
+              <div className="stats-item">
+                <div className="stats-number">
+                  {topDistrito || "Sin datos"}
+                </div>
+                <div className="stats-label">Distrito más activo</div>
+              </div>
+            </div>
+          </>
+        )}
+      </section>
     </div>
   );
 }
