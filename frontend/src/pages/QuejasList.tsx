@@ -91,8 +91,6 @@ export default function QuejasList() {
     setFilters(updated);
   };
 
-  const toggleFilters = () => setIsFiltersOpen((prev) => !prev);
-  const toggleSort = () => setIsSortOpen((prev) => !prev);
 
   const {
     data: categorias,

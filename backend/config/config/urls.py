@@ -35,6 +35,9 @@ urlpatterns = [
     # API de usuarios y perfiles.
     path('api/usuarios/', include('perfil.urls')),
 
+    # API de stats.
+    path('api/stats/', include('stats.urls')),
+
     # Endpoint para obtener el par de tokens JWT (access + refresh)
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
 

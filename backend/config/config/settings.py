@@ -57,7 +57,8 @@ INSTALLED_APPS = [
     'imagen',
     'perfil',
     'video',
-    'core'
+    'core',
+    'stats'
 ]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
