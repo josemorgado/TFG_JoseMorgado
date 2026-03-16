@@ -8,6 +8,9 @@ import type { Queja } from "../types/queja";
 import { getQuejasByUser } from "../api/quejas";
 import { useAuth } from "../context/AuthContext";
 import editIcon from "../assets/icons/icono-update-perfil.png";
+import { getTopCategorias } from "../api/stats";
+import type { CategoriaStats } from "../api/stats";
+
 export default function PerfilDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -17,7 +20,7 @@ export default function PerfilDetail() {
   const [error, setError] = useState<string | null>(null);
   const [quejas, setQuejas] = useState<Queja[]>([]);
   const { user: userActivo } = useAuth();
-
+  const [topCategoria, setTopCategoria] = useState<CategoriaStats | null>(null);
 
   const estadoCompleto: Record<string, string> = {
     PEN: "Pendiente",
@@ -25,6 +28,7 @@ export default function PerfilDetail() {
     RES: "Resuelta",
     REC: "Rechazada",
   };
+
   useEffect(() => {
     if (!id) {
       setError("Falta la ID en la URL.");
@@ -41,12 +45,26 @@ export default function PerfilDetail() {
 
     (async () => {
       try {
-        const data = await getUsuarioById(userId);
-        setUsuario(data);
+        setLoading(true);
+        setError(null);
 
-        const quejasResp = await getQuejasByUser(userId);
+        // Cargamos todo en paralelo
+        const [usuarioData, quejasResp, topCats] = await Promise.all([
+          getUsuarioById(userId),
+          getQuejasByUser(userId),
+          getTopCategorias({
+            user_id: userId,
+            limit: 1,
+            include_zero: false,
+            ordering: "-total",
+          }),
+        ]);
+
+        setUsuario(usuarioData);
         setQuejas(quejasResp);
+        setTopCategoria(topCats?.[0] ?? null);
       } catch (e) {
+        console.error(e);
         setError("No se pudo cargar el perfil.");
       } finally {
         setLoading(false);
@@ -101,13 +119,11 @@ export default function PerfilDetail() {
               />
             )}
           </div>
+
           <div className="perfil-info">
             <div className="perfil-info-header">
               <h2 className="perfil-title">
-                Perfil de:{" "}
-                <strong>
-                  {usuario.username}
-                </strong>
+                Perfil de: <strong>{usuario.username}</strong>
               </h2>
             </div>
 
@@ -141,9 +157,22 @@ export default function PerfilDetail() {
               <p className="perfil-data-fields">
                 <strong>Quejas registradas:</strong> {quejas.length}
               </p>
+
+              <p className="perfil-data-fields">
+                {topCategoria ? (
+                  <>
+                    <strong>Categoría más usada:</strong> {topCategoria.nombre}{" "}
+
+                      ({topCategoria.total})
+                  </>
+                ) : (
+                  "Sin datos"
+                )}
+              </p>
             </div>
-          </div>{" "}
+          </div>
         </div>
+
         {/* ---------- LISTA DE QUEJAS -------- */}
         <h3 className="quejas-title">Quejas del usuario</h3>
 
