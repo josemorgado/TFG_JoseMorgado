@@ -20,6 +20,7 @@ export default function Home() {
   const [topCategoria, setTopCategoria] = useState<string>("");
   const [topDistrito, setTopDistrito] = useState<string>("");
   const [totalQuejas, setTotalQuejas] = useState<number>(0);
+
   const [filters, setFilters] = useState({
     texto: "",
     categoria: "",
@@ -27,7 +28,7 @@ export default function Home() {
   });
   const navigate = useNavigate();
 
-  const handleClickVerMas = () => {
+  const handleClickVerTodas = () => {
     navigate("/quejas");
   };
   const { data: categorias } = useCategorias();
@@ -166,8 +167,8 @@ export default function Home() {
 
               {filteredQuejas.length > 9 && (
                 <div className="grid-cta">
-                  <button className="auth-button" onClick={handleClickVerMas}>
-                    Ver más
+                  <button className="auth-button" onClick={handleClickVerTodas}>
+                    Ver todas
                   </button>
                 </div>
               )}
