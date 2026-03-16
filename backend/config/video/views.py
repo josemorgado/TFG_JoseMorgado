@@ -91,7 +91,6 @@ def video_detail(request, pk):
 @authentication_classes([])
 @permission_classes([AllowAny])
 def videos_por_queja(request, queja_id):
-    # Ajusta 'app_label' y 'model' si tus nombres reales difieren
     queja_ct = ContentType.objects.get(app_label='quejas', model='queja')
     qs = Video.objects.filter(content_type=queja_ct, object_id=queja_id).order_by('orden')
     serializer = VideoSerializer(qs, many=True)

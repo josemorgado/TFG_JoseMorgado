@@ -91,7 +91,7 @@ class Queja(models.Model):
     )
     videos = GenericRelation(
         Video,
-        related_query_name="video"
+        related_query_name="queja"
     )
 
     class Meta:
