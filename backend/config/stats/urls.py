@@ -1,6 +1,6 @@
 from django.urls import path
-from stats.views import CategoriasMasUsadasView, DistritosMasUsadosView
+from stats.views import stats_categorias, stats_distritos
 urlpatterns = [
-    path("categorias/", CategoriasMasUsadasView.as_view(), name="stats-categorias"),
-    path("distritos/", DistritosMasUsadosView.as_view(), name="stats-distritos"),
+    path("categorias/", stats_categorias, name="stats-categorias"),
+    path("distritos/", stats_distritos, name="stats-distritos"),
 ]
