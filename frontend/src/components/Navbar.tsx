@@ -7,6 +7,7 @@ import CreateQuejaButton from "./CreateQuejaButton";
 import MiPerfilButton from "./MiPerfilButton";
 import { useAuth } from "../context/AuthContext";
 import QuejasButton from "./QuejasButton";
+import StatsButton from "./StatsButton";
 
 const Navbar: React.FC = () => {
   const { user } = useAuth();
@@ -21,6 +22,7 @@ const Navbar: React.FC = () => {
       </div>
 
       <ul className="nav-links">
+        <StatsButton/>
         <QuejasButton/>
         <CreateQuejaButton />
 
