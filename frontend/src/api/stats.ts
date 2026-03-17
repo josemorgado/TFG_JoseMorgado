@@ -1,7 +1,6 @@
 // src/api/stats.ts
 import axios from "../utils/axios"
 
-// Tipos opcionales (ayudan en React)
 export interface CategoriaStats {
     id: number;
     nombre: string;
