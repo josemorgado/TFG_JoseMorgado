@@ -1,0 +1,141 @@
+/* src/styles/stats.css */
+.stats-container {
+  padding: 24px;
+  padding-top: 0px;
+}
+
+.stats-filters.card {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  margin-bottom: 16px;
+  top: var(--navbar-height);
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.filters-actions {
+  grid-column: span 6;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.kpi-card {
+  background: var(--color-white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  padding: 16px;
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.kpi-label {
+  opacity: 0.8;
+  margin: 4px 0 0 0;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 16px;
+}
+
+.chart-card {
+  grid-column: span 6;
+  background: var(--color-white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  padding: 16px;
+}
+
+.chart-card--full {
+  grid-column: 1 / -1;
+}
+
+.chart-title {
+  margin: 0 0 8px 0;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .filters-grid { grid-template-columns: repeat(2, 1fr); }
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .stats-grid { grid-template-columns: 1fr; }
+  .chart-card, .chart-card--full { grid-column: 1 / -1; }
+}
+
+.evolucion-temporal{
+  display: flex;
+  flex-direction: row;
+}
+
+/* CENTRADO EXCLUSIVO PARA LA CARD DE "POR ESTADO" */
+.card-3 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  grid-column: 4 / span 6;
+}
+
+
+.chart-card .chart-title {
+  text-align: center;
+  width: 100%;
+}
+/* Wrapper para adornar el input con el badge "Todas" */
+.limit-input {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.limit-input__wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.limit-input__wrapper .input {
+  padding-right: 70px; /* espacio para el badge */
+}
+
+.limit-input__badge {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-primary);
+  color: var(--color-white);
+  border-radius: var(--radius-small);
+  padding: 2px 8px;
+  font-size: 12px;
+  box-shadow: var(--shadow-soft);
+  user-select: none;
+  pointer-events: none; /* no bloquea el input */
+}
+
+.limit-input__hint {
+  opacity: 0.7;
+  font-size: 12px;
+}

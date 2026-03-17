@@ -13,7 +13,7 @@
   --color-danger: #D92D20;
   --color-danger-dark: #B42318;
   --color-danger-contrast: var(--color-white);
-
+  --navbar-height: 60px;
 }
 
 html,
