@@ -1,22 +1,25 @@
 # stats/views.py
 from datetime import datetime
+from typing import List, Optional
+
 from django.db.models import Count, Q
+from django.db.models.functions import TruncDay, TruncWeek, TruncMonth, TruncYear
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+
 from quejas.models import Queja
 from categoria.models import Categoria
 from distrito.models import Distrito
+
 from drf_spectacular.utils import (
     extend_schema,
     OpenApiParameter,
     OpenApiResponse,
     OpenApiExample,
 )
-from datetime import datetime
-from typing import List, Optional
-from django.db.models.functions import TruncDay, TruncWeek, TruncMonth, TruncYear
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
 from drf_spectacular.types import OpenApiTypes
+
 from stats.serializers import (
     StatItemSerializer,
     OverviewSerializer,
@@ -81,7 +84,7 @@ def _parse_estado_list(value: Optional[str]) -> Optional[List[str]]:
         "- `limit`: int (por defecto 5)\n"
         "- `desde`: fecha `YYYY-MM-DD`\n"
         "- `hasta`: fecha `YYYY-MM-DD`\n"
-        "- `estado`: `PEN|ENP|RES|REC`\n"
+        "- `estado`: permite múltiples en CSV `PEN,ENP,RES,REC`\n"
         "- `distrito_id`: int\n"
         "- `include_zero`: bool (incluir categorías sin ninguna queja)\n"
         "- `ordering`: `-total` (default) | `total` | `nombre`"
@@ -107,7 +110,7 @@ def _parse_estado_list(value: Optional[str]) -> Optional[List[str]]:
             name="estado",
             type=OpenApiTypes.STR,
             location=OpenApiParameter.QUERY,
-            description="Uno de PEN, ENP, RES, REC",
+            description="Permite múltiples (CSV): PEN,ENP,RES,REC",
         ),
         OpenApiParameter(
             name="distrito_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY
@@ -159,12 +162,11 @@ def stats_categorias(request):
             {"detail": "Parametro 'hasta' debe tener formato YYYY-MM-DD."}, status=400
         )
 
-    estado = request.query_params.get("estado")
-    if estado and estado not in ("PEN", "ENP", "RES", "REC"):
-        return Response(
-            {"detail": "Parametro 'estado' inválido. Use PEN, ENP, RES o REC."},
-            status=400,
-        )
+    # múltiple estados (CSV)
+    try:
+        estados = _parse_estado_list(request.query_params.get("estado"))
+    except ValueError as e:
+        return Response({"detail": str(e)}, status=400)
 
     distrito_id = request.query_params.get("distrito_id")
     include_zero = _parse_bool(request.query_params.get("include_zero"), default=False)
@@ -185,8 +187,8 @@ def stats_categorias(request):
         q &= Q(fecha_creacion__date__gte=desde)
     if hasta:
         q &= Q(fecha_creacion__date__lte=hasta)
-    if estado:
-        q &= Q(estado=estado)
+    if estados:
+        q &= Q(estado__in=estados)
     if distrito_id:
         q &= Q(distrito_id=distrito_id)
 
@@ -199,8 +201,8 @@ def stats_categorias(request):
             q_rel &= Q(quejas__fecha_creacion__date__gte=desde)
         if hasta:
             q_rel &= Q(quejas__fecha_creacion__date__lte=hasta)
-        if estado:
-            q_rel &= Q(quejas__estado=estado)
+        if estados:
+            q_rel &= Q(quejas__estado__in=estados)
         if distrito_id:
             q_rel &= Q(quejas__distrito_id=distrito_id)
 
@@ -260,7 +262,7 @@ def stats_categorias(request):
         "- `limit`: int (por defecto 5)\n"
         "- `desde`: fecha `YYYY-MM-DD`\n"
         "- `hasta`: fecha `YYYY-MM-DD`\n"
-        "- `estado`: `PEN|ENP|RES|REC`\n"
+        "- `estado`: permite múltiples en CSV `PEN,ENP,RES,REC`\n"
         "- `categoria_id`: int\n"
         "- `include_zero`: bool (incluir distritos sin ninguna queja)\n"
         "- `ordering`: `-total` (default) | `total` | `nombre`"
@@ -286,7 +288,7 @@ def stats_categorias(request):
             name="estado",
             type=OpenApiTypes.STR,
             location=OpenApiParameter.QUERY,
-            description="Uno de PEN, ENP, RES, REC",
+            description="Permite múltiples (CSV): PEN,ENP,RES,REC",
         ),
         OpenApiParameter(
             name="categoria_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY
@@ -338,12 +340,11 @@ def stats_distritos(request):
             {"detail": "Parametro 'hasta' debe tener formato YYYY-MM-DD."}, status=400
         )
 
-    estado = request.query_params.get("estado")
-    if estado and estado not in ("PEN", "ENP", "RES", "REC"):
-        return Response(
-            {"detail": "Parametro 'estado' inválido. Use PEN, ENP, RES o REC."},
-            status=400,
-        )
+    # múltiple estados (CSV)
+    try:
+        estados = _parse_estado_list(request.query_params.get("estado"))
+    except ValueError as e:
+        return Response({"detail": str(e)}, status=400)
 
     categoria_id = request.query_params.get("categoria_id")
     include_zero = _parse_bool(request.query_params.get("include_zero"), default=False)
@@ -364,8 +365,8 @@ def stats_distritos(request):
         q &= Q(fecha_creacion__date__gte=desde)
     if hasta:
         q &= Q(fecha_creacion__date__lte=hasta)
-    if estado:
-        q &= Q(estado=estado)
+    if estados:
+        q &= Q(estado__in=estados)
     if categoria_id:
         q &= Q(categoria_id=categoria_id)
 
@@ -378,8 +379,8 @@ def stats_distritos(request):
             q_rel &= Q(quejas__fecha_creacion__date__gte=desde)
         if hasta:
             q_rel &= Q(quejas__fecha_creacion__date__lte=hasta)
-        if estado:
-            q_rel &= Q(quejas__estado=estado)
+        if estados:
+            q_rel &= Q(quejas__estado__in=estados)
         if categoria_id:
             q_rel &= Q(quejas__categoria_id=categoria_id)
 
@@ -425,7 +426,6 @@ def stats_distritos(request):
         ]
 
     return Response(data)
-
 
 
 # ============================================
@@ -499,7 +499,6 @@ def stats_overview(request):
     # Asegurar enteros
     data = {k: int(agg.get(k, 0) or 0) for k in ("total", "pen", "enp", "res", "rec")}
     return Response(data)
-
 
 
 # ============================================

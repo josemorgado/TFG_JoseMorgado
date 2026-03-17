@@ -72,7 +72,7 @@ function splitEstados(value?: string): EstadoCode[] {
 }
 
 function joinEstados(values: EstadoCode[]): string | undefined {
-    return values.length ? values.join(",") : undefined;
+    return values.length ? values.join(", ") : undefined;
 }
 
 const COLORS = [
