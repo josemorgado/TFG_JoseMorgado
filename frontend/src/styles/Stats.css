@@ -1,4 +1,6 @@
-/* src/styles/stats.css */
+/* ===========================
+   Layout general
+   =========================== */
 .stats-container {
   padding: 24px;
   padding-top: 0px;
@@ -6,17 +8,20 @@
 
 .stats-filters.card {
   position: sticky;
-  top: 0;
+  top: var(--navbar-height);
   z-index: 5;
   margin-bottom: 16px;
-  top: var(--navbar-height);
 }
 
+/* ===========================
+   Filtros
+   =========================== */
 .filters-grid {
-  display: grid;
+  display: flex;
   grid-template-columns: repeat(6, 1fr);
   gap: 12px;
   align-items: end;
+  align-items: center;
 }
 
 .filters-actions {
@@ -26,9 +31,12 @@
   gap: 8px;
 }
 
+/* ===========================
+   KPIs
+   =========================== */
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 12px;
   margin: 16px 0;
 }
@@ -52,6 +60,9 @@
   margin: 4px 0 0 0;
 }
 
+/* ===========================
+   Grids de gráficos
+   =========================== */
 .stats-grid {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
@@ -74,9 +85,12 @@
   margin: 0 0 8px 0;
   font-weight: 600;
   color: var(--color-primary);
+  text-align: center;
 }
 
-/* Responsive */
+/* ===========================
+   Responsive
+   =========================== */
 @media (max-width: 1024px) {
   .filters-grid { grid-template-columns: repeat(2, 1fr); }
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
@@ -84,12 +98,9 @@
   .chart-card, .chart-card--full { grid-column: 1 / -1; }
 }
 
-.evolucion-temporal{
-  display: flex;
-  flex-direction: row;
-}
-
-/* CENTRADO EXCLUSIVO PARA LA CARD DE "POR ESTADO" */
+/* ===========================
+   Gráfico "Por estado"
+   =========================== */
 .card-3 {
   display: flex;
   flex-direction: column;
@@ -99,43 +110,85 @@
   grid-column: 4 / span 6;
 }
 
-
-.chart-card .chart-title {
-  text-align: center;
-  width: 100%;
-}
-/* Wrapper para adornar el input con el badge "Todas" */
-.limit-input {
+/* ===========================
+   Serie temporal
+   =========================== */
+.evolucion-temporal {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-direction: row;
+  justify-content: space-between;
 }
 
-.limit-input__wrapper {
+/* ===========================
+   MultiSelect estilo personalizado
+   =========================== */
+.input.select-like {
   position: relative;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding-right: 36px;
+  cursor: pointer;
 }
 
-.limit-input__wrapper .input {
-  padding-right: 70px; /* espacio para el badge */
+.select-like__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.limit-input__badge {
+.input.select-like .select-like__caret {
   position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: var(--color-primary);
-  color: var(--color-white);
-  border-radius: var(--radius-small);
-  padding: 2px 8px;
-  font-size: 12px;
-  box-shadow: var(--shadow-soft);
-  user-select: none;
-  pointer-events: none; /* no bloquea el input */
+  right: 10px;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 6px solid currentColor;
+  opacity: 0.8;
 }
 
-.limit-input__hint {
-  opacity: 0.7;
-  font-size: 12px;
+/* Menú */
+.select-like__menu {
+  position: absolute;
+  z-index: 50;
+  margin-top: 6px;
+  width: 100%;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 8px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-soft);
+  background: var(--color-white);
+}
+
+/* Items */
+.select-like__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.select-like__item:hover {
+  background: rgba(0,0,0,0.04);
+}
+
+.select-like__item--all {
+  font-weight: 600;
+  border-bottom: 1px solid rgba(0,0,0,0.08);
+  margin-bottom: 6px;
+  padding-bottom: 8px;
+}
+
+select.input[multiple] {
+  /* Mantén coherencia con tus tokens */
+  min-height: unset;      /* Evita altura mínima de inputs de una línea */
+  padding: 6px 8px;       /* Algo más fino para lista */
+  line-height: 1.4;
 }
