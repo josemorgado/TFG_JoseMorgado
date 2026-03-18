@@ -7,8 +7,6 @@ import {
   getTimeSeries,
 } from "../api/stats";
 
-import MultiSelect from "../components/MultiSelect";
-
 import type {
   DistritoStats,
   CategoriaStats,
@@ -43,6 +41,7 @@ import {
   Brush,
   Sector,
 } from "recharts";
+import LabelPopover from "../components/LabelPopover";
 
 
 // ===========================
@@ -79,14 +78,26 @@ function joinEstados(values: EstadoCode[]): string | undefined {
 }
 
 const COLORS = [
-  "var(--color-primary)",
-  "var(--color-secondary)",
   "#2E90FA",
   "#12B76A",
   "#F79009",
   "#F04438",
   "#9E77ED",
   "#7CD4FD",
+  "#6E56CF",
+  "#F3A8FF",
+  "#FF6B6B",
+  "#4ECDC4",
+  "#C7F464",
+  "#FFA36C",
+  "#1B9AAA",
+  "#E63946",
+  "#A8DADC",
+  "#457B9D",
+  "#8ECAE6",
+  "#219EBC",
+  "#FFB703",
+  "#FB8500",
 ];
 
 
@@ -95,6 +106,8 @@ const COLORS = [
 // ===========================
 export default function Stats() {
   const { user, isAuthenticated } = useAuth();
+
+  const [resetKey, setResetKey] = useState(0);
 
   // --- Cargar catálogos ---
   const {
@@ -271,13 +284,16 @@ export default function Stats() {
     setGroupBy("month");
     setStackByEstado(false);
 
-    setLimitCategorias(5);
+    setLimitCategorias(0);
     setOrderingCategorias("-total");
     setIncludeZeroCategorias(false);
 
-    setLimitDistritos(5);
+    setLimitDistritos(0);
     setOrderingDistritos("-total");
     setIncludeZeroDistritos(false);
+
+    setResetKey((k) => k + 1);
+
   };
 
 
@@ -390,22 +406,16 @@ export default function Stats() {
         <div className="chart-card chart-card--full">
           <div className="evolucion-temporal">
             <h3 className="chart-title">Evolución temporal</h3>
-
-            <div className="chart-stack">
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <input
-                  type="checkbox"
-                  checked={stackByEstado}
-                  onChange={(e) => setStackByEstado(e.target.checked)}
-                />
-                <span>Stacked</span>
-              </div>
-            </div>
           </div>
-          {loading ? <Skeleton /> : (
-            <TimeSeriesChart data={series} stacked={stackByEstado} />
-          )}
 
+          {loading ? (
+            <Skeleton />
+          ) : (
+            <>
+              <TimeSeriesChart data={series} stacked={stackByEstado} />
+
+            </>
+          )}
         </div>
       </div>
 
@@ -482,133 +492,247 @@ function FiltersForm({
 
   return (
     <>
-      <div className="filters-grid">
 
-        <div>
-          <label>Desde</label>
-          <input className="input" type="date"
-            value={value.desde || ""}
-            onChange={(e) => setField("desde", e.target.value)} />
-        </div>
+      <div className="filters-wrapper">
+        <div className="filters-left">
 
-        <div>
-          <label>Hasta</label>
-          <input className="input" type="date"
-            value={value.hasta || ""}
-            onChange={(e) => setField("hasta", e.target.value)} />
-        </div>
-
-        <div>
-          <label>Categoría</label>
-          <select
-            className="input"
-            value={value.categoria_id ?? ""}
-            disabled={catalogos.loading}
-            onChange={(e) =>
-              setField("categoria_id", e.target.value ? Number(e.target.value) : undefined)}
-          >
-            <option value="">Todas</option>
-            {catalogos.categorias?.map((c) => (
-              <option key={c.id} value={c.id}>{c.nombre}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label>Distrito</label>
-          <select
-            className="input"
-            value={value.distrito_id ?? ""}
-            disabled={catalogos.loading}
-            onChange={(e) =>
-              setField("distrito_id", e.target.value ? Number(e.target.value) : undefined)}
-          >
-            <option value="">Todos</option>
-            {catalogos.distritos?.map((d) => (
-              <option key={d.id} value={d.id}>{d.nombre}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <label>Estados</label>
-
-          <MultiSelect
-            value={splitEstados(value.estado)}
-            options={ESTADOS_OPTIONS}
-            onChange={(values) => setField("estado", joinEstados(values))}
-            disabled={catalogos.loading}
-            placeholder="Todos"
-            className=""
-          />
-        </div>
-
-
-
-        {/* Ranking categorias */}
-        <div>
-          <label>Top categorías</label>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              className="input"
-              type="number"
-              min={0}
-              max={maxCategorias}
-              value={rankingControls.categorias.limit}
-              onChange={(e) =>
-                rankingControls.categorias.setLimit(Number(e.target.value || 5))}
-              style={{ width: 70 }}
-            />
-          </div>
-        </div>
-
-        {/* Ranking distritos */}
-        <div>
-          <label>Top distritos</label>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              className="input"
-              type="number"
-              min={0}
-              max={maxDistritos}
-              value={rankingControls.distritos.limit}
-              onChange={(e) =>
-                rankingControls.distritos.setLimit(Number(e.target.value || 5))}
-              style={{ width: 70 }}
-            />
-          </div>
-        </div>
-
-        {/* Serie temporal */}
-        <div>
-          <label>Granularidad</label>
-          <select
-            className="input"
-            value={timeControls.groupBy}
-            onChange={(e) => timeControls.setGroupBy(e.target.value as GroupBy)}
-          >
-            <option value="day">día</option>
-            <option value="week">semana</option>
-            <option value="month">mes</option>
-            <option value="year">año</option>
-          </select>
-        </div>
-        {myOnly.show && (
           <div>
-            <label>Solo mis quejas</label>
-            <button
-              type="button"
-              className={`btn ${myOnly.active ? "btn-primary" : "btn-secondary"}`}
-              aria-pressed={myOnly.active}
-              onClick={myOnly.toggle}
-              title={myOnly.active ? "Mostrando solo tus quejas" : "Mostrar solo tus quejas"}
-            >
-              {myOnly.active ? "Activado" : "Desactivado"}
-            </button>
+            <LabelPopover label="Desde" disabled={catalogos.loading}>
+              <input
+                className="input"
+                type="date"
+                value={value.desde || ""}
+                onChange={(e) => setField("desde", e.target.value)}
+                autoFocus
+              />
+              {!!value.desde && (
+                <button
+                  type="button"
+                  className="btn btn-secondary filter-clear-btn"
+                  onClick={() => setField("desde", undefined)}
+                >
+                  Limpiar
+                </button>
+              )}
+            </LabelPopover>
           </div>
-        )}
-        <div className="filters-actions">
-            <label></label>
+
+          <div>
+            <LabelPopover label="Hasta" disabled={catalogos.loading}>
+              <input
+                className="input"
+                type="date"
+                value={value.hasta || ""}
+                onChange={(e) => setField("hasta", e.target.value)}
+                autoFocus
+              />
+              {!!value.hasta && (
+                <button
+                  type="button"
+                  className="btn btn-secondary filter-clear-btn"
+                  onClick={() => setField("hasta", undefined)}
+                >
+                  Limpiar
+                </button>
+              )}
+            </LabelPopover>
+          </div>
+          <div>
+            <LabelPopover label="Categoria" disabled={catalogos.loading}>
+              <select
+                className="input"
+                value={value.categoria_id ?? ""}
+                disabled={catalogos.loading}
+                onChange={(e) =>
+                  setField("categoria_id", e.target.value ? Number(e.target.value) : undefined)}
+              >
+                <option value="">Todas</option>
+                {catalogos.categorias?.map((c) => (
+                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                ))}
+              </select>
+              {!!value.categoria_id && (
+                <button
+                  type="button"
+                  className="btn btn-secondary filter-clear-btn"
+                  onClick={() => setField("categoria_id", undefined)}
+                >
+                  Limpiar
+                </button>
+              )}
+            </LabelPopover>
+          </div>
+          <div>
+            <LabelPopover label="Distrito" disabled={catalogos.loading}>
+              <select
+                className="input"
+                value={value.distrito_id ?? ""}
+                disabled={catalogos.loading}
+                onChange={(e) =>
+                  setField("distrito_id", e.target.value ? Number(e.target.value) : undefined)}
+              >
+                <option value="">Todos</option>
+                {catalogos.distritos?.map((d) => (
+                  <option key={d.id} value={d.id}>{d.nombre}</option>
+                ))}
+              </select>
+              {!!value.distrito_id && (
+                <button
+                  type="button"
+                  className="btn btn-secondary filter-clear-btn"
+                  onClick={() => setField("distrito_id", undefined)}
+                >
+                  Limpiar
+                </button>
+              )}
+            </LabelPopover>
+          </div>
+
+
+          <div>
+            <LabelPopover label="Estados" disabled={catalogos.loading}>
+              <select
+                multiple
+                className="input"
+                title="Usando el CTRL puede seleccionar mas de un estado"
+                disabled={catalogos.loading}
+                value={splitEstados(value.estado)}
+                onChange={(e) => {
+                  const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
+                  setField("estado", joinEstados(selected as EstadoCode[]));
+                }}
+                size={4}
+              >
+                {ESTADOS_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+              {!!value.estado && (
+                <button
+                  type="button"
+                  className="btn btn-secondary filter-clear-btn"
+                  onClick={() => setField("estado", undefined)}
+                >
+                  Limpiar
+                </button>
+              )}
+            </LabelPopover>
+          </div>
+
+
+          <div>
+            <LabelPopover label="Top categorías">
+              <input
+                className="input"
+                type="number"
+                min={0}
+                max={maxCategorias}
+                value={rankingControls.categorias.limit}
+                onChange={(e) =>
+                  rankingControls.categorias.setLimit(Number(e.target.value || 0))}
+                style={{ width: 90 }}
+                autoFocus
+              />
+              {rankingControls.categorias.limit !== 0 && (
+                <button
+                  type="button"
+                  className="btn btn-secondary filter-clear-btn"
+                  onClick={() => rankingControls.categorias.setLimit(0)}
+                >
+                  Limpiar
+                </button>
+              )}
+            </LabelPopover>
+          </div>
+          <div>
+            <LabelPopover label="Top distritos">
+              <input
+                className="input"
+                type="number"
+                min={0}
+                max={maxDistritos}
+                value={rankingControls.distritos.limit}
+                onChange={(e) =>
+                  rankingControls.distritos.setLimit(Number(e.target.value || 0))}
+                style={{ width: 90 }}
+                autoFocus
+              />
+              {rankingControls.distritos.limit !== 0 && (
+                <button
+                  type="button"
+                  className="btn btn-secondary filter-clear-btn"
+                  onClick={() => rankingControls.distritos.setLimit(0)}
+                >
+                  Limpiar
+                </button>
+              )}
+            </LabelPopover>
+          </div>
+          <div>
+            <LabelPopover label="Granularidad" disabled={catalogos.loading}>
+              <select
+                className="input"
+                value={timeControls.groupBy}
+                onChange={(e) => timeControls.setGroupBy(e.target.value as GroupBy)}
+                autoFocus
+              >
+                <option value="day">día</option>
+                <option value="week">semana</option>
+                <option value="month">mes</option>
+                <option value="year">año</option>
+              </select>
+
+              {timeControls.groupBy !== "month" && (
+                <button
+                  type="button"
+                  className="btn btn-secondary filter-clear-btn"
+                  onClick={() => timeControls.setGroupBy("month")}
+                >
+                  Limpiar
+                </button>
+              )}
+            </LabelPopover>
+          </div>
+
+          <div>
+            <LabelPopover label="Stacked" disabled={catalogos.loading}>
+              <input
+                type="checkbox"
+                className="input"
+                checked={timeControls.stackByEstado}
+                onChange={(e) => timeControls.setStackByEstado(e.target.checked)}
+                style={{ width: "16px", height: "16px" }}
+              />
+              <span> Estados</span>
+
+            </LabelPopover>
+          </div>
+
+          {myOnly.show && (
+            <div>
+              <LabelPopover label="Solo yo" disabled={catalogos.loading}>
+                <label
+                  style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}
+                  title={myOnly.active ? "Mostrando solo tus quejas" : "Mostrar solo tus quejas"}
+                >
+                  <input
+                    type="checkbox"
+                    className="input"
+                    checked={myOnly.active}
+                    onChange={() => myOnly.toggle()}
+                    style={{ width: 16, height: 16 }}
+                  />
+                  <span>{myOnly.active ? "Activado" : "Desactivado"}</span>
+                </label>
+              </LabelPopover>
+            </div>
+          )}
+
+        </div>
+
+        <div className="filters-right">
           <button className="btn btn-secondary" onClick={() => onReset()}>
             Restablecer
           </button>
