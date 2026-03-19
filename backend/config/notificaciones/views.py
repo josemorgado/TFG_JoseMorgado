@@ -13,6 +13,8 @@ from drf_spectacular.utils import (
     OpenApiExample
 )
 
+from core.permissions import IsModerator
+
 from .models import Notificacion
 from .serializers import NotificacionSerializer, NotificacionCreateSerializer
 
