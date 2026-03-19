@@ -8,6 +8,7 @@ import MiPerfilButton from "./MiPerfilButton";
 import { useAuth } from "../context/AuthContext";
 import QuejasButton from "./QuejasButton";
 import StatsButton from "./StatsButton";
+import NotificacionesButton from "./NotificacionesButton";
 
 const Navbar: React.FC = () => {
   const { user } = useAuth();
@@ -22,13 +23,15 @@ const Navbar: React.FC = () => {
       </div>
 
       <ul className="nav-links">
-        <StatsButton/>
-        <QuejasButton/>
+        <StatsButton />
+        <QuejasButton />
         <CreateQuejaButton />
-
+        {user && <NotificacionesButton/>
+        }
         {user ? (
           <li>
             <LogoutButton />
+
           </li>
         ) : (
           <li>
@@ -39,7 +42,7 @@ const Navbar: React.FC = () => {
             )}
           </li>
         )}
-        {user && <MiPerfilButton/>}
+        {user && <MiPerfilButton />}
 
       </ul>
     </nav>
