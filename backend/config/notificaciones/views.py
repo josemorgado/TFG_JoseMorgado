@@ -108,7 +108,7 @@ def notification_list(request):
     Lista paginada de notificaciones del usuario.
     Filtros opcionales: ?is_read=true|false
     """
-    qs = Notification.objects.filter(user=request.user).order_by('-created_at')
+    qs = Notificacion.objects.filter(user=request.user).order_by('-created_at')
 
     is_read = request.query_params.get('is_read')
     if is_read is not None:
@@ -119,7 +119,7 @@ def notification_list(request):
 
     paginator = StandardResultsSetPagination()
     page = paginator.paginate_queryset(qs, request)
-    serializer = NotificationSerializer(page, many=True)
+    serializer = NotificacionSerializer(page, many=True)
     return paginator.get_paginated_response(serializer.data)
 
 
@@ -151,7 +151,7 @@ def notification_unread_count(request):
     """
     Devuelve el total de notificaciones no leídas del usuario.
     """
-    count = Notification.objects.filter(user=request.user, is_read=False).count()
+    count = Notificacion.objects.filter(user=request.user, is_read=False).count()
     return Response({'unread': count}, status=200)
 
 
@@ -188,8 +188,8 @@ def notification_mark_read(request, notification_id):
     Marca una notificación del usuario como leída.
     """
     try:
-        n = Notification.objects.get(id=notification_id, user=request.user)
-    except Notification.DoesNotExist:
+        n = Notificacion.objects.get(id=notification_id, user=request.user)
+    except Notificacion.DoesNotExist:
         return Response({'detail': 'Notificación no encontrada'}, status=404)
 
     n.is_read = True
@@ -230,8 +230,8 @@ def notification_mark_unread(request, notification_id):
     Marca una notificación del usuario como NO leída.
     """
     try:
-        n = Notification.objects.get(id=notification_id, user=request.user)
-    except Notification.DoesNotExist:
+        n = Notificacion.objects.get(id=notification_id, user=request.user)
+    except Notificacion.DoesNotExist:
         return Response({'detail': 'Notificación no encontrada'}, status=404)
 
     n.is_read = False
@@ -261,7 +261,7 @@ def notification_mark_all_read(request):
     """
     Marca todas las notificaciones del usuario como leídas.
     """
-    Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+    Notificacion.objects.filter(user=request.user, is_read=False).update(is_read=True)
     return Response({'detail': 'Todas marcadas como leídas'}, status=200)
 
 
@@ -295,8 +295,8 @@ def notification_delete(request, notification_id):
     Elimina una notificación del propio usuario.
     """
     try:
-        n = Notification.objects.get(id=notification_id, user=request.user)
-    except Notification.DoesNotExist:
+        n = Notificacion.objects.get(id=notification_id, user=request.user)
+    except Notificacion.DoesNotExist:
         return Response({'detail': 'Notificación no encontrada'}, status=404)
     n.delete()
     return Response(status=204)
@@ -340,7 +340,7 @@ def notification_create(request):
     Crea una notificación (para cualquier usuario).
     Protegido para admin o para uso interno.
     """
-    serializer = NotificationCreateSerializer(data=request.data)
+    serializer = NotificacionCreateSerializer(data=request.data)
     if serializer.is_valid():
         serializer.save()
         return Response(serializer.data, status=201)
