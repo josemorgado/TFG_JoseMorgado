@@ -205,3 +205,13 @@
   background-position: center;
   background-size: 22px 22px;
 }
+.logout-wrapper {
+  margin-top: 15px;
+  display: flex;
+  justify-content: center;
+}
+
+.logout-wrapper button {
+  width: 100%;
+  max-width: 180px;
+}

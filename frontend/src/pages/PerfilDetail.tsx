@@ -7,10 +7,10 @@ import "../styles/perfilDetail.css";
 import type { Queja } from "../types/queja";
 import { getQuejasByUser } from "../api/quejas";
 import { useAuth } from "../context/AuthContext";
-import editIcon from "../assets/icons/icono-update-perfil.png";
+import editIcon from "../assets/icons/pencil-icon.png";
 import { getTopCategorias } from "../api/stats";
 import type { CategoriaStats } from "../api/stats";
-
+import LogoutButton from "../components/LogoutButton";
 export default function PerfilDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -117,8 +117,14 @@ export default function PerfilDetail() {
                 style={{ backgroundImage: `url(${editIcon})` }}
                 aria-label="Editar perfil"
               />
-            )}
+            )}          {esMiPerfil && (
+            <div className="logout-wrapper">
+              <LogoutButton />
+            </div>
+          )}
+
           </div>
+
 
           <div className="perfil-info">
             <div className="perfil-info-header">
@@ -163,7 +169,7 @@ export default function PerfilDetail() {
                   <>
                     <strong>Categoría más usada:</strong> {topCategoria.nombre}{" "}
 
-                      ({topCategoria.total})
+                    ({topCategoria.total})
                   </>
                 ) : (
                   "Sin datos"

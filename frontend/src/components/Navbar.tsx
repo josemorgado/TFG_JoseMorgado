@@ -25,17 +25,11 @@ const Navbar: React.FC = () => {
       <ul className="nav-links">
         <StatsButton />
         <QuejasButton />
-        <CreateQuejaButton />
         {user && <NotificacionesButton />
         }
 
 
-        {user ? (
-          <li>
-            <LogoutButton />
-
-          </li>
-        ) : (
+        {!user && (
           <li>
             {isLoginPage ? (
               <CreateAccountButton />
