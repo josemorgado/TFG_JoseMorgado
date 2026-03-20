@@ -26,8 +26,10 @@ const Navbar: React.FC = () => {
         <StatsButton />
         <QuejasButton />
         <CreateQuejaButton />
-        {user && <NotificacionesButton/>
+        {user && <NotificacionesButton />
         }
+
+
         {user ? (
           <li>
             <LogoutButton />

@@ -1,0 +1,180 @@
+/* ================================
+   NOTIFICATIONS PAGE - Estilo uniforme
+   ================================ */
+
+.notifications-page {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 0 12px;
+}
+
+/* HEADER */
+.notifications-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.notifications-title {
+  margin: 0;
+  color: var(--color-primary);
+  font-size: 1.8rem;
+  font-weight: 800;
+}
+
+/* Acciones */
+.notifications-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.notifications-list {
+  list-style: none;
+  margin-top: 20px;
+  padding: 0;
+}
+
+/* =====================================
+   TARJETA DE NOTIFICACIÓN (tipo QUEJA)
+   ===================================== */
+
+.notification-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+
+  padding: 18px 20px;
+  margin-bottom: 16px;
+
+  background: var(--color-white);
+  border: 1px solid #dbe2f1;
+  border-radius: var(--radius);
+
+  box-shadow: var(--shadow-soft);
+  transition: 0.25s ease;
+
+  position: relative;
+  overflow: hidden;
+}
+
+/* Borde lateral azul como las QUEJAS */
+.notification-item::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 6px;
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+/* Hover */
+.notification-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+  border-color: #cbd5e1;
+}
+
+/* Estado no leída */
+.notification-item.is-unread {
+  background: #eef2ff;
+  border-color: #c7d2fe;
+}
+.notification-item.is-unread::before {
+  background: var(--color-primary-light);
+}
+
+/* Zona clicable */
+.notification-main {
+  cursor: pointer;
+}
+
+/* HEADER dentro de la tarjeta */
+.notification-head {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.notification-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  margin: 0;
+}
+
+.notification-meta {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+/* Mensaje */
+.notification-message {
+  margin-top: 6px;
+  color: #25304b;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+/* Columna de acciones */
+.notification-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+/* Botón pequeño (estilo uniforme) */
+.btn-sm {
+  padding: 6px 12px;
+  border-radius: var(--radius-small);
+  border: 2px solid transparent;
+  background: #eef1f8;
+  color: var(--color-text);
+  cursor: pointer;
+  transition: 0.2s ease;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.btn-sm:hover {
+  background: #e2e6f1;
+}
+
+/* Danger */
+.btn-sm.danger {
+  background: #fff5f5;
+  border-color: #f8d3d3;
+  color: var(--color-danger-dark);
+}
+.btn-sm.danger:hover {
+  background: #ffe1e1;
+}
+
+/* Paginación */
+.notifications-pagination {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 18px;
+}
+
+.page-label {
+  align-self: center;
+  font-weight: 500;
+  color: var(--color-primary);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .notification-item {
+    grid-template-columns: 1fr;
+  }
+
+  .notification-actions {
+    flex-direction: row;
+    justify-content: flex-start;
+  }
+}

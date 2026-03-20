@@ -1,8 +1,8 @@
 // src/pages/NotificationsPage.tsx
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useNotificaciones } from "../hooks/useNotificaciones";
-import { formatDateTime } from "../utils/format";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import "../styles/Notificaciones.css";
 
 export default function NotificationsPage() {
   const [params, setParams] = useSearchParams();
@@ -35,52 +35,75 @@ export default function NotificationsPage() {
     setPage(p);
   };
 
+  const hasUnread = useMemo(
+    () => Boolean(data?.results?.some(n => !n.is_read)),
+    [data]
+  );
+
   return (
-    <div className="container" style={{ maxWidth: 800, margin: "24px auto", padding: "0 12px" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1 style={{ margin: 0 }}>Notificaciones</h1>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button className="btn" onClick={refresh}>Actualizar</button>
-          <button className="btn" onClick={onMarkAllRead}>Marcar todas como leídas</button>
+    <div className="notifications-page">
+      {/* Header */}
+      <div className="notifications-header">
+        <h1 className="notifications-title">Notificaciones</h1>
+
+        <div className="notifications-actions">
+          <button className="btn btn-secondary" onClick={refresh}>
+            Actualizar
+          </button>
+          {hasUnread && (
+            <button className="btn btn-primary" onClick={onMarkAllRead}>
+              Marcar todas como leídas
+            </button>)}
+
         </div>
       </div>
 
+      {/* Estados */}
       {loading && <p>Cargando…</p>}
-      {error && <p style={{ color: "#b91c1c" }}>{error}</p>}
+      {error && <p style={{ color: "var(--color-danger)" }}>{error}</p>}
 
-      <ul style={{ listStyle: "none", padding: 0, marginTop: 16 }}>
+      {/* Lista */}
+      <ul className="notifications-list">
         {data?.results.map((n) => (
           <li
             key={n.id}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr auto",
-              gap: 8,
-              padding: 12,
-              border: "1px solid #e5e7eb",
-              borderRadius: 8,
-              background: n.is_read ? "white" : "#f8fafc",
-              marginBottom: 10,
-            }}
+            className={`notification-item ${!n.is_read ? "is-unread" : ""}`}
           >
-            <div onClick={async () => {
-              await onMarkRead(n.id);
-              if (n.url) navigate(n.url);
-            }} style={{ cursor: "pointer" }}>
-              <div style={{ display: "flex", gap: 8, alignItems: "baseline" }}>
-                <strong style={{ fontSize: 16 }}>{n.title}</strong>
-                <small style={{ color: "#6b7280" }}>{formatDateTime(n.created_at)}</small>
+            {/* Área principal clicable */}
+            <div
+              className="notification-main"
+              onClick={async () => {
+                // Evitar llamadas redundantes si ya está leída
+                if (!n.is_read) await onMarkRead(n.id);
+                if (n.url) navigate(n.url);
+              }}
+            >
+              <div className="notification-head">
+                <strong className="notification-title">{n.title}</strong>
+                <small className="notification-meta">
+                  {n.created_at}
+                </small>
               </div>
-              <p style={{ margin: "6px 0 0 0", color: "#374151" }}>{n.message}</p>
+
+              <p className="notification-message">{n.message}</p>
             </div>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+            {/* Acciones secundarias */}
+            <div className="notification-actions">
               {!n.is_read ? (
-                <button className="btn-sm" onClick={() => onMarkRead(n.id)}>Marcar leída</button>
+                <button className="btn-sm" onClick={() => onMarkRead(n.id)}>
+                  Marcar leída
+                </button>
               ) : (
-                <button className="btn-sm" onClick={() => onMarkUnread(n.id)}>Marcar no leída</button>
+                <button className="btn-sm" onClick={() => onMarkUnread(n.id)}>
+                  Marcar no leída
+                </button>
               )}
-              <button className="btn-sm danger" onClick={() => onDelete(n.id)} style={{ color: "#b91c1c" }}>
+
+              <button
+                className="btn-sm danger"
+                onClick={() => onDelete(n.id)}
+              >
                 Eliminar
               </button>
             </div>
@@ -88,14 +111,24 @@ export default function NotificationsPage() {
         ))}
       </ul>
 
-      {/* Paginación simple */}
+      {/* Paginación */}
       {data && data.count > pageSize && (
-        <div style={{ display: "flex", gap: 8, justifyContent: "center", marginTop: 16 }}>
-          <button className="btn" disabled={!data.previous} onClick={() => goTo(Math.max(1, page - 1))}>
+        <div className="notifications-pagination">
+          <button
+            className="btn btn-secondary"
+            disabled={!data.previous}
+            onClick={() => goTo(Math.max(1, page - 1))}
+          >
             Anterior
           </button>
-          <span style={{ alignSelf: "center" }}>Página {page}</span>
-          <button className="btn" disabled={!data.next} onClick={() => goTo(page + 1)}>
+
+          <span className="page-label">Página {page}</span>
+
+          <button
+            className="btn btn-secondary"
+            disabled={!data.next}
+            onClick={() => goTo(page + 1)}
+          >
             Siguiente
           </button>
         </div>
