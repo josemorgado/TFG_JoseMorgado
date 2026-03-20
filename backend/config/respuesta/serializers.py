@@ -3,6 +3,12 @@ from rest_framework import serializers
 from .models import Respuesta
 
 class RespuestaSerializer(serializers.ModelSerializer):
+    moderador_username = serializers.CharField(
+        source='moderador.username',
+        read_only=True,
+        allow_null=True
+    )
+
     class Meta:
         model = Respuesta
         fields = '__all__'

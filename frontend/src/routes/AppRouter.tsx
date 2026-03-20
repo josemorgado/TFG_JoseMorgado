@@ -19,6 +19,7 @@ import EnterToken from '../pages/EnterToken';
 import NewPassword from '../pages/NewPassword';
 import Stats from '../pages/Stats';
 import Notificaciones from '../pages/Notificaciones';
+import QuejaRespuestasPage from '../pages/QuejaRespuestas';
 
 const AppRouter: React.FC = () => (
   <BrowserRouter>
@@ -39,14 +40,14 @@ const AppRouter: React.FC = () => (
         <Route path="/new-password/" element={<NewPassword />} />
         <Route path="/stats/" element={<Stats />} />
         <Route path="/notificaciones/" element={<Notificaciones />} />
-
+        <Route path="/quejas/:quejaId/respuestas" element={<QuejaRespuestasPage />} />
         {/* Rutas privadas */}
         <Route element={<PrivateRouteCrearQueja />}>
           <Route path="/create-queja" element={<QuejaCreate />} />
         </Route>
-        <Route element={<PrivateRoute/>}>
-          <Route path="perfil/:id/update/"element={<PerfilUpdate/>}/>
-          <Route path="perfil/:id/change-password/"element={<ChangePassword/>}/>
+        <Route element={<PrivateRoute />}>
+          <Route path="perfil/:id/update/" element={<PerfilUpdate />} />
+          <Route path="perfil/:id/change-password/" element={<ChangePassword />} />
         </Route>
 
       </Route>
