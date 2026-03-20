@@ -35,6 +35,9 @@ urlpatterns = [
     # API de usuarios y perfiles.
     path('api/usuarios/', include('perfil.urls')),
 
+    # API de usuarios y perfiles.
+    path('api/respuestas/', include('respuesta.urls')),
+
     # API de stats.
     path('api/stats/', include('stats.urls')),
 

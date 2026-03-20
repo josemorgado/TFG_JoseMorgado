@@ -59,7 +59,8 @@ INSTALLED_APPS = [
     'video',
     'core',
     'stats',
-    'notificaciones'
+    'notificaciones',
+    'respuesta'
 ]
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
