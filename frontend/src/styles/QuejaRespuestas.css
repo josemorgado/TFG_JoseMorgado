@@ -2,10 +2,6 @@
    QUEJA RESPUESTAS PAGE (ESTILOS AISLADOS)
    ========================================= */
 
-.respuestas-page {
-  /* wrapper sin estilos globales para evitar fugas */
-}
-
 /* Contenedor principal */
 .respuestas-page .respuestas-page__container {
   max-width: 960px;

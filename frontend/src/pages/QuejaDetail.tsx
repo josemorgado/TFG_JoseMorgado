@@ -421,13 +421,13 @@ function QuejaDetail() {
                 )}
 
               {isModeratorOrAdmin && (
-                <Link
-                  to={`/quejas/${id}/responder`}
+                <button
+                  type="button"
+                  onClick={() => navigate(`/quejas/${id}/responder`)}
                   className="btn btn-primary btn-small"
-                  style={{ marginLeft: 8 }}
                 >
                   Responder queja
-                </Link>
+                </button>
               )}
 
 

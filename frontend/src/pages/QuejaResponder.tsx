@@ -1,20 +1,43 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { useParams, useNavigate } from "react-router-dom";
 import axiosInstance from "../utils/axios";
 import type { Queja } from "../types/queja";
 import type { Imagen } from "../types/imagen";
 import type { Video } from "../types/video";
 import "../styles/QuejaDetail.css";
 import { mediaUrl } from "../utils/media";
+import { crearRespuesta } from "../api/respuestas";
+import type { EstadoQuejaCode } from "../types/respuestas";
+
 
 function QuejaResponder() {
     const { quejaId } = useParams();
+    const navigate = useNavigate();
 
+    const { user } = useAuth();
+
+    const [contenido, setContenido] = useState("");
+    const [nuevoEstado, setNuevoEstado] = useState<EstadoQuejaCode | "">("");
+    const [sending, setSending] = useState(false);
+    const [formError, setFormError] = useState<string | null>(null);
+    const [formOk, setFormOk] = useState<string | null>(null);
     const [queja, setQueja] = useState<Queja | null>(null);
     const [imagenes, setImagenes] = useState<Imagen[]>([]);
     const [videos, setVideos] = useState<Video[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
+
+    const isModeratorOrAdmin = Boolean(
+        user?.is_staff ||
+        user?.is_superuser ||
+        user?.is_moderator ||
+        (user?.groups || []).some((g: any) =>
+            (typeof g === "string" ? g : g?.name || "")
+                .toLowerCase()
+                .includes("moderador")
+        )
+    );
 
     useEffect(() => {
 
@@ -75,6 +98,49 @@ function QuejaResponder() {
         );
     }
 
+    async function handleSubmit(e: React.FormEvent) {
+        e.preventDefault();
+        setFormError(null);
+        setFormOk(null);
+
+        if (!quejaId || !queja?.id) {
+            setFormError("Queja no válida.");
+            return;
+        }
+
+        const text = contenido.trim();
+        if (text.length < 3) {
+            setFormError("El contenido es demasiado corto (mín. 3 caracteres).");
+            return;
+        }
+
+        try {
+            setSending(true);
+
+            await crearRespuesta(quejaId, {
+                contenido: text,
+                nuevo_estado: nuevoEstado || null,
+            });
+
+            setFormOk("Respuesta enviada correctamente.");
+            navigate(`/quejas/${quejaId}/respuestas`, { replace: true });
+
+        } catch (err: any) {
+            const data = err?.details || err?.response?.data;
+            const firstField = data && typeof data === "object" ? Object.keys(data)[0] : null;
+            const firstError = firstField ? data[firstField]?.[0] : null;
+
+            setFormError(
+                firstError ||
+                data?.detail ||
+                err?.message ||
+                "No se pudo enviar la respuesta."
+            );
+        } finally {
+            setSending(false);
+        }
+    }
+
     return (
         <main className="detail-page responder-page">
             <div className="detail">
@@ -118,7 +184,8 @@ function QuejaResponder() {
                         )}
                     </div>
                 </header>
-                <div className="sections-row">                {/* IMÁGENES */}
+                <div className="sections-row">
+                    {/* IMÁGENES */}
                     <section className="section_media">
                         <h2 className="section__title">Imágenes ({imagenes.length})</h2>
 
@@ -164,7 +231,73 @@ function QuejaResponder() {
                         )}
                     </section>
                 </div>
+                {isModeratorOrAdmin &&
+                    <div className="form-resp">
+                        <section className="section" style={{ marginTop: 8 }}>
+                            <h2 className="section__title">Responder queja</h2>
+                            {formError && <div className="alert alert--error">{formError}</div>}
+                            {formOk && <div className="alert alert--loading">{formOk}</div>}
 
+                            <form onSubmit={handleSubmit} className="comment-form">
+
+
+                                <div className="comment-form__row" style={{ marginBottom: 12 }}>
+                                    <textarea
+                                        className="comment-textarea"
+                                        placeholder="Escribe la respuesta a la queja."
+                                        value={contenido}
+                                        onChange={(e) => setContenido(e.target.value)}
+                                        minLength={3}
+                                        required
+                                    />
+
+                                    <div className="comment-form__buttons">
+                                        <button
+                                            type="submit"
+                                            className="btn btn-primary btn-small"
+                                            disabled={sending || contenido.trim().length < 3}
+                                        >
+                                            {sending ? "Enviando…" : "Enviar"}
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary btn-small"
+                                            onClick={() => navigate(-1)}
+                                        >
+                                            Cancelar
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Select de estado (opcional) */}
+                                <div className="mt-12">
+                                    <div className="form-field-inline form-field-inline--compact state">
+                                        <label htmlFor="nuevo-estado" className="meta__label">
+                                            Cambiar estado de la queja:
+                                        </label>
+
+                                        <select
+                                            id="nuevo-estado"
+                                            className="select-pill"
+                                            value={nuevoEstado}
+                                            onChange={(e) =>
+                                                setNuevoEstado((e.target.value || "") as EstadoQuejaCode | "")
+                                            }
+                                        >
+                                            <option value="">— Mantener estado —</option>
+                                            <option value="PEN">Pendiente</option>
+                                            <option value="ENP">En Progreso</option>
+                                            <option value="RES">Resuelta</option>
+                                            <option value="REC">Rechazada</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </form>
+                        </section>
+
+                    </div>
+                }
             </div>
         </main>
     );

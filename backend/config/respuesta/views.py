@@ -22,8 +22,8 @@ from drf_spectacular.utils import (
     OpenApiResponse,
 )
 
-from quejas.models import Queja               # <-- usa 'quejas' según tu código
-from core.permissions import IsModerator      # <-- ya lo tienes en core/permissions.py
+from quejas.models import Queja
+from core.permissions import IsModerator
 from .models import Respuesta
 from .serializers import RespuestaSerializer
 
@@ -124,8 +124,8 @@ def respuestas_listar(request, queja_id: int):
     },
 )
 @api_view(['POST'])
-@authentication_classes([JWTAuthentication])     # ← necesitamos conocer al usuario
-@permission_classes([IsAuthenticated, IsAdminUser])  # ← SOLO moderadores pueden crear
+@authentication_classes([JWTAuthentication])
+@permission_classes([IsAuthenticated, IsAdminUser])
 @parser_classes([JSONParser])
 def respuesta_crear(request, queja_id: int):
     """

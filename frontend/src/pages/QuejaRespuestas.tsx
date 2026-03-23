@@ -3,9 +3,7 @@ import { Link, useParams, useSearchParams } from "react-router-dom";
 import { listarRespuestasPorQueja } from "../api/respuestas";
 import type { Paginated, RespuestaDTO } from "../types/respuestas";
 import { ESTADO_LABEL } from "../types/estadosQueja";
-
-// Importa el CSS SÓLO para esta página
-import "../styles/QuejaRespuesta.css";
+import "../styles/QuejaRespuestas.css";
 
 
 
@@ -40,7 +38,6 @@ export default function QuejaRespuestasPage() {
   if (!quejaId)
     return <p className="respuestas-page__pad">Falta el ID de la queja.</p>;
 
-  // SKELETON LOADER (opcional y encapsulado)
   if (loading) {
     return (
       <div className="respuestas-page">
@@ -93,14 +90,15 @@ export default function QuejaRespuestasPage() {
 
         {data && data.results.length === 0 && (
           <div className="respuestas-page__empty">No hay respuestas aún.</div>
-        )}
 
+        )}
         <ul className="respuestas-page__list">
-          {data?.results.map((r) => (
+
+          {data?.results.map((r,index) => (
             <li key={r.id} className="respuestas-page__card">
               <div className="respuestas-page__row respuestas-page__row--between">
                 <div>
-                  <strong>Respuesta #{r.id}</strong>{" "}
+                  <strong>Respuesta #{data.results.length-index}</strong>{" "}
                 </div>
 
                 {r.nuevo_estado && (

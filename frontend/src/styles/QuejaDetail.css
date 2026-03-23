@@ -517,3 +517,41 @@
 .like-title {
   display: flex;
 }
+
+.form-field-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.form-field-inline--compact {
+  max-width: 100%;
+}
+
+.select-pill {
+  border: 1.5px solid var(--color-primary);
+  color: var(--color-primary);
+  background: #f0f3ff;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 6px 12px;
+  line-height: 1;
+  height: 32px;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+
+.meta__label {
+  display: inline-block;
+  margin: 0;
+}
+
+.state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
