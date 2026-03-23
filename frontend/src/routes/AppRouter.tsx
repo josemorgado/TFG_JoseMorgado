@@ -20,6 +20,7 @@ import NewPassword from '../pages/NewPassword';
 import Stats from '../pages/Stats';
 import Notificaciones from '../pages/Notificaciones';
 import QuejaRespuestasPage from '../pages/QuejaRespuestas';
+import QuejaResponder from '../pages/QuejaResponder';
 
 const AppRouter: React.FC = () => (
   <BrowserRouter>
@@ -41,6 +42,7 @@ const AppRouter: React.FC = () => (
         <Route path="/stats/" element={<Stats />} />
         <Route path="/notificaciones/" element={<Notificaciones />} />
         <Route path="/quejas/:quejaId/respuestas" element={<QuejaRespuestasPage />} />
+        <Route path="/quejas/:quejaId/responder" element={<QuejaResponder />} />
         {/* Rutas privadas */}
         <Route element={<PrivateRouteCrearQueja />}>
           <Route path="/create-queja" element={<QuejaCreate />} />

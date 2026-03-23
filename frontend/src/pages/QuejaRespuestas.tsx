@@ -7,14 +7,7 @@ import { ESTADO_LABEL } from "../types/estadosQueja";
 // Importa el CSS SÓLO para esta página
 import "../styles/QuejaRespuesta.css";
 
-function formatISO(iso: string) {
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString();
-  } catch {
-    return iso;
-  }
-}
+
 
 export default function QuejaRespuestasPage() {
   const { quejaId } = useParams<{ quejaId: string }>();
@@ -108,9 +101,6 @@ export default function QuejaRespuestasPage() {
               <div className="respuestas-page__row respuestas-page__row--between">
                 <div>
                   <strong>Respuesta #{r.id}</strong>{" "}
-                  <span className="respuestas-page__muted">
-                    • {formatISO(r.fecha_respuesta)}
-                  </span>
                 </div>
 
                 {r.nuevo_estado && (
@@ -124,7 +114,7 @@ export default function QuejaRespuestasPage() {
 
               <div className="respuestas-page__muted respuestas-page__small">
                 Moderador: {r.moderador_username ?? r.moderador ?? "N/D"} •{" "}
-                Actualizada: {formatISO(r.fecha_actualizacion)}
+                Fecha: {r.fecha_actualizacion}
               </div>
             </li>
           ))}

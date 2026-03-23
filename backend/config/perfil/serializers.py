@@ -39,7 +39,29 @@ class PerfilSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("La edad mínima es 14 años.")
         return value
 
+class UserMeSerializer(serializers.ModelSerializer):
+    perfil = PerfilSerializer(read_only=True)
+    # Alias plano para que el frontend no tenga que mirar dentro de perfil
+    is_moderator = serializers.BooleanField(source="perfil.moderator", read_only=True)
+    # Nombres de grupos (si usas Group de Django)
+    groups = serializers.SlugRelatedField(many=True, read_only=True, slug_field="name")
 
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "username",
+            "email",
+            "first_name",
+            "last_name",
+            "is_active",
+            "is_staff",
+            "is_superuser",
+            "is_moderator",   # <-- plano
+            "groups",         # <-- nombres de grupos
+            "perfil",         # <-- detalle del perfil (incluye moderator también)
+        ]
+        read_only_fields = fields
 # --------- User + Perfil ---------
 
 class UserPerfilSerializer(serializers.ModelSerializer):

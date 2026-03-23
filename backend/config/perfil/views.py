@@ -52,7 +52,7 @@ from drf_spectacular.utils import (
     OpenApiExample,
 )
 
-from .serializers import UserPerfilSerializer, UserWithPerfilSerializer
+from .serializers import UserPerfilSerializer, UserWithPerfilSerializer, UserMeSerializer
 from .models import Perfil
 
 User = get_user_model()
@@ -333,31 +333,22 @@ def usuario_delete(request, pk):
 # GET/PATCH/PUT /usuarios/me/ → Permite al usuario autenticado leer/actualizar su propio perfil
 @api_view(["GET", "PATCH", "PUT"])
 @authentication_classes([JWTAuthentication])
-@permission_classes(
-    [IsAuthenticated]
-)  # Solo el propio usuario o moderadores pueden acceder a esta vista
+@permission_classes([IsAuthenticated])
 @parser_classes([MultiPartParser, FormParser, JSONParser])
 def usuario_me(request):
-    # Carga el user con su perfil para evitar N+1
     user = User.objects.select_related("perfil").get(pk=request.user.pk)
 
     if request.method == "GET":
-        serializer = UserPerfilSerializer(user, context={"request": request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(UserMeSerializer(user).data, status=status.HTTP_200_OK)
 
     partial = request.method == "PATCH"
-    serializer = UserPerfilSerializer(
-        instance=user, data=request.data, partial=partial, context={"request": request}
-    )
+    serializer = UserPerfilSerializer(instance=user, data=request.data, partial=partial, context={"request": request})
     serializer.is_valid(raise_exception=True)
     serializer.save()
 
-    # Recarga para asegurar consistencia y perfil actualizado
     user = User.objects.select_related("perfil").get(pk=request.user.pk)
-    return Response(
-        UserPerfilSerializer(user, context={"request": request}).data,
-        status=status.HTTP_200_OK,
-    )
+    # tras actualizar, puedes devolver también UserMeSerializer si quieres roles
+    return Response(UserMeSerializer(user).data, status=status.HTTP_200_OK)
 
 
 # ============================================================

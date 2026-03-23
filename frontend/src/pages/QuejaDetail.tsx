@@ -14,7 +14,7 @@ import CommentButton from "../components/CommentButton";
 import { useAuth } from "../context/AuthContext";
 import { config } from "../config";
 import { deleteQueja } from "../api/quejas";
-
+import { listarRespuestasPorQueja } from "../api/respuestas";
 import { Link } from "react-router-dom";
 
 /** ---- Comentarios: árbol + tipos ---- */
@@ -60,11 +60,22 @@ function QuejaDetail() {
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const { user } = useAuth();
   const navigate = useNavigate();
-  // Imágenes: preview + desplegable
   const [showAllImages, setShowAllImages] = useState(false);
   const firstTwo = imagenes.slice(0, 2);
   const rest = imagenes.slice(2);
   const remaining = rest.length;
+
+  const esPropietario = user && queja?.autor === user.id;
+
+  const isModeratorOrAdmin = Boolean(
+    user?.is_staff ||
+    user?.is_superuser ||
+    user?.is_moderator ||
+    (user?.groups || []).some((g: any) => (typeof g === "string" ? g : g?.name || "").toLowerCase().includes("moderador"))
+  );
+
+  const [respuestasCount, setRespuestasCount] = useState<number | null>(null);
+  const [respuestasCountLoading, setRespuestasCountLoading] = useState<boolean>(false);
 
   // Estado legible del estado
   const estadoCompleto: Record<string, string> = {
@@ -132,12 +143,34 @@ function QuejaDetail() {
       } finally {
         if (!cancel) setLoading(false);
       }
+
     }
 
     fetchAll();
     return () => {
       cancel = true;
     };
+  }, [id]);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancel = false;
+
+    (async () => {
+      try {
+        setRespuestasCountLoading(true);
+
+        const qid = Number(id);
+        const data = await listarRespuestasPorQueja(qid, { page: 1, page_size: 1 })
+        if (!cancel) setRespuestasCount(data.count);
+      } catch {
+        if (!cancel) setRespuestasCount(0);
+      } finally {
+        if (!cancel) setRespuestasCountLoading(false);
+      }
+    })();
+
+    return () => { cancel = true; };
   }, [id]);
 
   function handleDelete() {
@@ -374,6 +407,30 @@ function QuejaDetail() {
                   Actualizar
                 </button>
               )}
+              {!respuestasCountLoading &&
+                respuestasCount !== null &&
+                respuestasCount > 0 &&
+                (esPropietario || isModeratorOrAdmin) && (
+                  <Link
+                    to={`/quejas/${id}/respuestas`}
+                    className="btn btn-secondary btn-small"
+                    style={{ marginLeft: 8 }}
+                  >
+                    Ver respuestas ({respuestasCount})
+                  </Link>
+                )}
+
+              {isModeratorOrAdmin && (
+                <Link
+                  to={`/quejas/${id}/responder`}
+                  className="btn btn-primary btn-small"
+                  style={{ marginLeft: 8 }}
+                >
+                  Responder queja
+                </Link>
+              )}
+
+
               {user && queja.autor === user.id && (
                 <button
                   type="button"
