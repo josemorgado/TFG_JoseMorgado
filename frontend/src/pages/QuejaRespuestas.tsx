@@ -134,7 +134,7 @@ export default function QuejaRespuestasPage() {
             </button>
 
             <span className="respuestas-page__muted">
-              Página {page} • Total: {data.count}
+              {page} / {Math.ceil(data.count / pageSize)}
             </span>
 
             <button

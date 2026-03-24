@@ -28,6 +28,13 @@ function QuejaResponder() {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
+    const ESTADO_TO_CODE: Record<string, EstadoQuejaCode> = {
+        "PEN": "PEN",
+        "ENP": "ENP",
+        "RES": "RES",
+        "REC": "REC",
+    };
+
     const isModeratorOrAdmin = Boolean(
         user?.is_staff ||
         user?.is_superuser ||
@@ -119,7 +126,7 @@ function QuejaResponder() {
 
             await crearRespuesta(quejaId, {
                 contenido: text,
-                nuevo_estado: nuevoEstado || null,
+                nuevo_estado: nuevoEstado !== "" ? nuevoEstado : ESTADO_TO_CODE[queja.estado],
             });
 
             setFormOk("Respuesta enviada correctamente.");
@@ -285,7 +292,7 @@ function QuejaResponder() {
                                                 setNuevoEstado((e.target.value || "") as EstadoQuejaCode | "")
                                             }
                                         >
-                                            <option value="">— Mantener estado —</option>
+                                            <option value={ESTADO_TO_CODE[queja.estado]}>— Mantener estado —</option>
                                             <option value="PEN">Pendiente</option>
                                             <option value="ENP">En Progreso</option>
                                             <option value="RES">Resuelta</option>

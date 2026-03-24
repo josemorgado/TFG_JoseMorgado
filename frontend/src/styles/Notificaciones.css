@@ -178,3 +178,16 @@
     justify-content: flex-start;
   }
 }
+
+.notifications-empty {
+  margin-top: 4rem;
+  text-align: center;
+  font-size: 1.2rem;
+  color: var(--color-gray-600);
+  opacity: 0.8;
+
+  /* Centrado vertical básico */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}

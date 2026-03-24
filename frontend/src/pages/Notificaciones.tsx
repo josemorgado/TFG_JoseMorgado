@@ -62,6 +62,12 @@ export default function NotificationsPage() {
       {loading && <p>Cargando…</p>}
       {error && <p style={{ color: "var(--color-danger)" }}>{error}</p>}
 
+      {!loading && !error && data?.results?.length === 0 && (
+        <div className="notifications-empty">
+          No hay notificaciones por mostrar
+        </div>
+      )}
+
       {/* Lista */}
       <ul className="notifications-list">
         {data?.results.map((n) => (
@@ -122,7 +128,7 @@ export default function NotificationsPage() {
             Anterior
           </button>
 
-          <span className="page-label">Página {page}</span>
+          <span className="page-label">{page}</span>
 
           <button
             className="btn btn-secondary"
