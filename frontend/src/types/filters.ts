@@ -16,7 +16,7 @@ export type FiltersShape = {
   media: MediaFilter;
 };
 
-export type SortBy = "" | "fecha_asc" | "fecha_desc" | "votos" | "comentarios";
+export type SortBy = "" | "fecha_asc" | "fecha_desc" | "votos" | "comentarios" | "respuestas";
 
 
 export const defaultFilters: FiltersShape = {

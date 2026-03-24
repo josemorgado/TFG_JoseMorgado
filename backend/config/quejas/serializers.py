@@ -7,6 +7,7 @@ from rest_framework.fields import SerializerMethodField
 from django.contrib.contenttypes.models import ContentType
 from quejas.models import Queja
 from megusta.models import MeGusta
+from respuesta.models import Respuesta
 
 
 class QuejaSerializer(serializers.ModelSerializer):
@@ -41,7 +42,7 @@ class QuejaSerializer(serializers.ModelSerializer):
         required=False,
         help_text="ID del usuario autor de la queja.",
     )
-
+    num_respuestas = serializers.SerializerMethodField(read_only=True)
     # Querysets dinámicos para evitar import circular
     categoria = serializers.PrimaryKeyRelatedField(
         queryset=Queja._meta.get_field("categoria").remote_field.model.objects.all(),
@@ -79,6 +80,7 @@ class QuejaSerializer(serializers.ModelSerializer):
             "fecha_creacion_iso",
             "imagenes_count",
             "videos_count",
+            "num_respuestas",
         ]
         read_only_fields = [
             "id",
@@ -93,6 +95,7 @@ class QuejaSerializer(serializers.ModelSerializer):
             "fecha_creacion_iso",
             "imagenes_count",
             "videos_count",
+            "num_respuestas",
         ]
         extra_kwargs = {
             "titulo": {"help_text": "Título breve y descriptivo (5–200 caracteres)."},
@@ -113,6 +116,9 @@ class QuejaSerializer(serializers.ModelSerializer):
     def get_content_type(selft, obj):
         ct = ContentType.objects.get_for_model(obj)
         return ct.id
+
+    def get_num_respuestas(self, obj):
+        return Respuesta.objects.filter(queja=obj).count()
 
     # CREACIÓN DE QUEJA
     def create(self, validated_data):

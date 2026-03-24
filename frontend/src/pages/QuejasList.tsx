@@ -243,7 +243,9 @@ export default function QuejasList() {
       case "comentarios":
         ordenadas.sort((a, b) => b.num_comentarios - a.num_comentarios);
         break;
-
+      case "respuestas":
+        ordenadas.sort((a, b) => b.num_respuestas - a.num_respuestas);
+        break;
       default:
         break;
     }
@@ -314,6 +316,17 @@ export default function QuejasList() {
                     onChange={(e) => setSortBy(e.target.value as SortBy)}
                   />
                   <span>Más comentarios</span>
+                </label>
+
+                <label className="option-item">
+                  <input
+                    type="radio"
+                    name="sort"
+                    value="respuestas"
+                    checked={sortBy === "respuestas"}
+                    onChange={(e) => setSortBy(e.target.value as SortBy)}
+                  />
+                  <span>Más respuestas</span>
                 </label>
               </div>
             </div>

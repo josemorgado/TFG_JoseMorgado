@@ -15,6 +15,7 @@ export interface Queja{
     fecha_actualizacion: string;
     num_votos: number;
     num_comentarios: number;
+    num_respuestas:number;
     num_comentarios_top_level: number;
     content_type: string;
     is_liked: boolean;
