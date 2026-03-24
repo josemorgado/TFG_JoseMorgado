@@ -37,15 +37,6 @@ function buildCommentTree(comments: Comentario[]): CommentNode[] {
     }
   });
 
-  const sortByDate = (arr: CommentNode[]) => {
-    arr.sort(
-      (a, b) =>
-        new Date(a.fecha_creacion).getTime() -
-        new Date(b.fecha_creacion).getTime(),
-    );
-    arr.forEach((n) => sortByDate(n.children));
-  };
-  sortByDate(roots);
 
   return roots;
 }
@@ -504,7 +495,7 @@ function QuejaDetail() {
                             className="overlay-more"
                             onClick={() => setShowAllImages(!showAllImages)}
                           >
-                            +{remaining}
+                            {showAllImages ? `-${remaining}` : `+${remaining}`}
                           </div>
                         )}
                       </div>
