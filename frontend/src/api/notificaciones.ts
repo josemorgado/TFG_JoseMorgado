@@ -24,17 +24,21 @@ export async function getUnreadCount(): Promise<number> {
 }
 
 export async function markRead(id: number): Promise<void> {
+  window.dispatchEvent(new Event("notificaciones-actualizadas"));
   await axios.patch(`/notificaciones/${id}/read/`);
 }
 
 export async function markUnread(id: number): Promise<void> {
+  window.dispatchEvent(new Event("notificaciones-actualizadas"));
   await axios.patch(`/notificaciones/${id}/unread/`);
 }
 
 export async function markAllRead(): Promise<void> {
+  window.dispatchEvent(new Event("notificaciones-actualizadas"));
   await axios.patch("/notificaciones/read-all/");
 }
 
 export async function deleteNotification(id: number): Promise<void> {
+  window.dispatchEvent(new Event("notificaciones-actualizadas"));
   await axios.delete(`/notificaciones/${id}/`);
 }

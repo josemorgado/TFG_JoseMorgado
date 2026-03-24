@@ -1,14 +1,27 @@
 import { useNavigate } from "react-router-dom";
 
-export default function LoginButton() {
+interface Props {
+  unreadNCount: number;
+}
+
+export default function NotificacionesButton({ unreadNCount }: Props) {
   const navigate = useNavigate();
-  const handleLogout = async () => {
-      navigate("/notificaciones");
+
+  const handleClick = () => {
+    navigate("/notificaciones");
   };
 
   return (
-    <button className="auth-button"onClick={handleLogout}>
-      Notificaciones
-    </button>
+    <div style={{ position: "relative", display: "inline-block" }}>
+      <button className="auth-button" onClick={handleClick}>
+        Notificaciones
+      </button>
+
+      {unreadNCount > 0 && (
+        <span className="notification-badge">
+          {unreadNCount}
+        </span>
+      )}
+    </div>
   );
 }
