@@ -65,7 +65,6 @@ function QuejaDetail() {
   const rest = imagenes.slice(2);
   const remaining = rest.length;
 
-  const esPropietario = user && queja?.autor === user.id;
 
   const isModeratorOrAdmin = Boolean(
     user?.is_staff ||
@@ -410,7 +409,7 @@ function QuejaDetail() {
               {!respuestasCountLoading &&
                 respuestasCount !== null &&
                 respuestasCount > 0 &&
-                (esPropietario || isModeratorOrAdmin) && (
+                (
                   <Link
                     to={`/quejas/${id}/respuestas`}
                     className="btn btn-secondary btn-small"
