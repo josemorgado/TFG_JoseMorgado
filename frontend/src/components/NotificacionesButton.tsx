@@ -17,11 +17,13 @@ export default function NotificacionesButton({ unreadNCount }: Props) {
         Notificaciones
       </button>
 
+
       {unreadNCount > 0 && (
         <span className="notification-badge">
-          {unreadNCount}
+          {unreadNCount > 99 ? "+99" : unreadNCount}
         </span>
       )}
+
     </div>
   );
 }

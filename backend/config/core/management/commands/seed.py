@@ -19,13 +19,14 @@ from megusta.models import MeGusta
 from perfil.models import Perfil
 from quejas.models import Queja
 from video.models import Video
-
+from respuesta.models import Respuesta
 
 class Command(BaseCommand):
     help = "Resetea y rellena la BD con datos masivos y heterogéneos para el TFG."
 
     def handle(self, *args, **kwargs):
-
+        import quejas.signals
+        import respuesta.signals
         # ============================================================
         #  TRUNCATE TODAS LAS TABLAS (reinicia IDs)
         # ============================================================
@@ -39,15 +40,43 @@ class Command(BaseCommand):
         #  CATEGORÍAS
         # ============================================================
         categorias = [
-            {"nombre": "Tecnología", "descripcion": "Categoría relacionada con tecnología."},
-            {"nombre": "Salud", "descripcion": "Categoría relacionada con salud y bienestar."},
-            {"nombre": "Deportes", "descripcion": "Categoría relacionada con deportes y actividades físicas."},
-            {"nombre": "Educación", "descripcion": "Categoría relacionada con educación y aprendizaje."},
-            {"nombre": "Entretenimiento", "descripcion": "Categoría relacionada con entretenimiento y ocio."},
-            {"nombre": "Igualdad", "descripcion": "Categoría relacionada con igualdad de oportunidades.", "activo": False},
-            {"nombre": "Infraestructura", "descripcion": "Problemas de calles, alumbrado, obras."},
-            {"nombre": "Transporte", "descripcion": "Autobuses, metro, tráfico, movilidad."},
-            {"nombre": "Servicios Públicos", "descripcion": "Limpieza, basuras, ruido, etc."},
+            {
+                "nombre": "Tecnología",
+                "descripcion": "Categoría relacionada con tecnología.",
+            },
+            {
+                "nombre": "Salud",
+                "descripcion": "Categoría relacionada con salud y bienestar.",
+            },
+            {
+                "nombre": "Deportes",
+                "descripcion": "Categoría relacionada con deportes y actividades físicas.",
+            },
+            {
+                "nombre": "Educación",
+                "descripcion": "Categoría relacionada con educación y aprendizaje.",
+            },
+            {
+                "nombre": "Entretenimiento",
+                "descripcion": "Categoría relacionada con entretenimiento y ocio.",
+            },
+            {
+                "nombre": "Igualdad",
+                "descripcion": "Categoría relacionada con igualdad de oportunidades.",
+                "activo": False,
+            },
+            {
+                "nombre": "Infraestructura",
+                "descripcion": "Problemas de calles, alumbrado, obras.",
+            },
+            {
+                "nombre": "Transporte",
+                "descripcion": "Autobuses, metro, tráfico, movilidad.",
+            },
+            {
+                "nombre": "Servicios Públicos",
+                "descripcion": "Limpieza, basuras, ruido, etc.",
+            },
         ]
         for c in categorias:
             Categoria.objects.get_or_create(**c)
@@ -75,10 +104,10 @@ class Command(BaseCommand):
         usuarios = [
             {
                 "username": "josem",
-                "email": "jose@test.com",
+                "email": "josemaria1.jmmp@gmail.com",
                 "password": "1234",
-                "first_name": "José M",
-                "last_name": "Morgado",
+                "first_name": "Jose",
+                "last_name": "Morgado Prudencio",
                 "is_superuser": True,
                 "is_staff": True,
                 "perfil": {
@@ -102,10 +131,12 @@ class Command(BaseCommand):
                     "perfil": {
                         "genero": random.choice(["M", "F"]),
                         "biografia": f"Biografía del usuario {i}.",
-                        "moderator": random.choice([False, False, False, True]),
+                        "moderator": False,
                         "telefono": f"+34600{random.randint(100000, 999999)}",
                         "direccion": f"Calle Ejemplo {i}",
-                        "fecha_nacimiento": date(1985 + (i % 20), (i % 12) + 1, (i % 27) + 1),
+                        "fecha_nacimiento": date(
+                            1985 + (i % 20), (i % 12) + 1, (i % 27) + 1
+                        ),
                     },
                 }
             )
@@ -121,6 +152,14 @@ class Command(BaseCommand):
                 user.save()
             Perfil.objects.update_or_create(user=user, defaults=perfil_data)
 
+        otros_usuarios = User.objects.exclude(username="josem")
+        otros_moderadores = random.sample(list(otros_usuarios), 9)
+
+        for u in otros_moderadores:
+            p = u.perfil
+            p.moderator = True
+            p.save()
+
         usuarios_obj = list(User.objects.all())
         self.stdout.write(self.style.SUCCESS(f"Usuarios OK ({len(usuarios_obj)})."))
 
@@ -131,6 +170,19 @@ class Command(BaseCommand):
         distritos_obj = list(Distrito.objects.all())
 
         quejas_payload = []
+
+        for i in range(1, 191):
+            quejas_payload.append(
+                {
+                    "titulo": f"Queja generada #{i}",
+                    "descripcion": f"Descripción automática de la queja #{i}",
+                    "categoria": random.choice(categorias_obj),
+                    "distrito": random.choice(distritos_obj),
+                    "estado": random.choice(["PEN", "ENP", "REC", "RES"]),
+                    "ubicacion": f"Zona aleatoria {i}",
+                    "autor": random.choice(usuarios_obj),
+                }
+            )
         base_quejas = [
             "Farolas rotas en avenida principal",
             "Autobuses llegan siempre tarde",
@@ -152,19 +204,6 @@ class Command(BaseCommand):
                     "distrito": random.choice(distritos_obj),
                     "estado": random.choice(["PEN", "ENP", "REC", "RES"]),
                     "ubicacion": f"Ubicación específica de {titulo}",
-                    "autor": random.choice(usuarios_obj),
-                }
-            )
-
-        for i in range(1, 191):
-            quejas_payload.append(
-                {
-                    "titulo": f"Queja generada #{i}",
-                    "descripcion": f"Descripción automática de la queja #{i}",
-                    "categoria": random.choice(categorias_obj),
-                    "distrito": random.choice(distritos_obj),
-                    "estado": random.choice(["PEN", "ENP", "REC", "RES"]),
-                    "ubicacion": f"Zona aleatoria {i}",
                     "autor": random.choice(usuarios_obj),
                 }
             )
@@ -202,7 +241,7 @@ class Command(BaseCommand):
         # ============================================================
         total_root = 120
         total_replies = 180
-        total_deep = 80  # respuestas a respuestas
+        total_deep = 80
         comentarios_creados = []
 
         # 1) Comentarios raíz
@@ -237,7 +276,9 @@ class Command(BaseCommand):
             )
             comentarios_creados.append(c)
 
-        self.stdout.write(self.style.SUCCESS(f"Comentarios creados: {len(comentarios_creados)}"))
+        self.stdout.write(
+            self.style.SUCCESS(f"Comentarios creados: {len(comentarios_creados)}")
+        )
 
         # ============================================================
         #  ME GUSTA: MASIVOS (quejas + comentarios)
@@ -270,7 +311,9 @@ class Command(BaseCommand):
                     likes_comentarios += 1
 
         self.stdout.write(
-            self.style.SUCCESS(f"Likes OK. Quejas: {likes_quejas} | Comentarios: {likes_comentarios}")
+            self.style.SUCCESS(
+                f"Likes OK. Quejas: {likes_quejas} | Comentarios: {likes_comentarios}"
+            )
         )
 
         # ============================================================
@@ -314,3 +357,22 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"Vídeos creados: {videos_creados}"))
         self.stdout.write(self.style.SUCCESS("✅ SEED COMPLETADO."))
+
+
+        respuestas_creadas = 0
+        moderadores = [u for u in usuarios_obj if u.perfil.moderator]
+
+        for q in todas_quejas:
+            # Cantidad aleatoria de respuestas para cada queja
+            num_respuestas = random.randint(0, 4)
+
+            for _ in range(num_respuestas):
+                Respuesta.objects.create(
+                    queja=q,
+                    moderador=random.choice(moderadores),
+                    contenido=f"Respuesta automática a la queja #{q.id}",
+                    nuevo_estado=random.choice(["PEN", "ENP", "REC", "RES"]),
+                )
+                respuestas_creadas += 1
+
+        self.stdout.write(self.style.SUCCESS(f"Respuestas creadas: {respuestas_creadas}"))

@@ -7,7 +7,6 @@ from notificaciones.services import crear_notificacion
 
 @receiver(post_save, sender=Respuesta)
 def notificar_respuesta_formal(sender, instance, created, **kwargs):
-    print(">>> Señal Respuesta ejecutada", instance.id)  # Debug
 
     if not created:
         return
