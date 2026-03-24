@@ -17,6 +17,9 @@ export default function QuejasList() {
   const [quejas, setQuejas] = useState<Queja[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
+
   // 1) Hidratar desde sessionStorage con tipos correctos
   const saved = loadListState<FiltersShape, SortBy>();
 
@@ -121,6 +124,7 @@ export default function QuejasList() {
       isFiltersOpen,
       isSortOpen,
     });
+    setCurrentPage(1); // volver a la primera página tras filtrar
   }, [filters, sortBy, isFiltersOpen, isSortOpen]);
 
   // 4) Reset único que también limpia el storage
@@ -251,8 +255,16 @@ export default function QuejasList() {
     }
     return ordenadas;
   }, [quejas, filters, sortBy]);
-
+  // 6) Paginación real SOBRE las quejas ya filtradas
+  const paginatedQuejas = useMemo(() => {
+    const start = (currentPage - 1) * itemsPerPage;
+    const end = start + itemsPerPage;
+    return filteredQuejas.slice(start, end);
+  }, [filteredQuejas, currentPage, itemsPerPage]);
   if (loading) return <p className="loading">Cargando...</p>;
+
+  // 7) Total de páginas calculado desde las filtradas
+  const totalPages = Math.ceil(filteredQuejas.length / itemsPerPage);
 
   return (
     <div className="quejas-layout">
@@ -553,10 +565,34 @@ export default function QuejasList() {
         </h2>
 
         <div className="quejas-grid">
-          {filteredQuejas.map((q) => (
+          {paginatedQuejas.map((q) => (
             <QuejaCard key={q.id} q={q} />
           ))}
         </div>
+
+        {totalPages > 1 && (
+          <div className="pagination">
+            <button
+              className="btn"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+            >
+              ← Anterior
+            </button>
+
+            <span className="page-indicator">
+              {currentPage} / {totalPages}
+            </span>
+
+            <button
+              className="btn"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
+              Siguiente →
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

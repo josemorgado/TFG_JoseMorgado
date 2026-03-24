@@ -371,3 +371,19 @@
     line-height: 18px;
   }
 }
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.page-indicator {
+  font-weight: bold;
+}
+
+.pagination .btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
