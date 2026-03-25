@@ -2,16 +2,22 @@
 from datetime import datetime
 from typing import List, Optional
 
-from django.db.models import Count, Q
+# --- Django ORM ---
+from django.db.models import Count, Q, Min, Avg, F, ExpressionWrapper, DurationField
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth, TruncYear
+
+# --- DRF ---
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
+# --- Models ---
 from quejas.models import Queja
 from categoria.models import Categoria
 from distrito.models import Distrito
+from respuesta.models import Respuesta
 
+# --- OpenAPI ---
 from drf_spectacular.utils import (
     extend_schema,
     OpenApiParameter,
@@ -20,6 +26,7 @@ from drf_spectacular.utils import (
 )
 from drf_spectacular.types import OpenApiTypes
 
+# --- Serializers ---
 from stats.serializers import (
     StatItemSerializer,
     OverviewSerializer,
@@ -28,9 +35,10 @@ from stats.serializers import (
 )
 
 
-# ----------------------------
-# Helpers parsing
-# ----------------------------
+# ============================================================
+# HELPERS
+# ============================================================
+
 def _parse_date(value):
     """Devuelve date o None si es inválida (espera YYYY-MM-DD)."""
     if not value:
@@ -50,8 +58,6 @@ def _parse_bool(value, default=False) -> bool:
 def _parse_estado_list(value: Optional[str]) -> Optional[List[str]]:
     """
     Convierte 'PEN,ENP,RES' -> ['PEN','ENP','RES'] validando contra choices.
-    Devuelve None si no se ha pasado nada.
-    Lanza ValueError si hay algún valor inválido.
     """
     if not value:
         return None
@@ -59,127 +65,45 @@ def _parse_estado_list(value: Optional[str]) -> Optional[List[str]]:
     valid = {"PEN", "ENP", "RES", "REC"}
     invalid = [v for v in raw if v not in valid]
     if invalid:
-        raise ValueError(
-            f"Valor(es) de 'estado' inválido(s): {invalid}. Use PEN, ENP, RES o REC (separados por coma)."
-        )
-    # eliminar duplicados conservando orden
-    seen = set()
-    dedup = []
-    for v in raw:
-        if v not in seen:
-            dedup.append(v)
-            seen.add(v)
-    return dedup
+        raise ValueError(f"Estado(s) inválido(s): {invalid}.")
+    return list(dict.fromkeys(raw))  # Elimina duplicados conservando orden
 
 
-# ============================================
-# GET /stats/categorias/  → categorías más usadas
-# ============================================
+# ============================================================
+#  QUEJAS - CATEGORÍAS
+# ============================================================
+
 @extend_schema(
     summary="Categorías más usadas",
     description=(
-        "Devuelve un ranking de categorías según número de quejas que cumplen los filtros.\n\n"
-        "**Parámetros soportados (querystring):**\n"
-        "- `user_id`: int (filtra por autor)\n"
-        "- `limit`: int (por defecto 5)\n"
-        "- `desde`: fecha `YYYY-MM-DD`\n"
-        "- `hasta`: fecha `YYYY-MM-DD`\n"
-        "- `estado`: permite múltiples en CSV `PEN,ENP,RES,REC`\n"
-        "- `distrito_id`: int\n"
-        "- `include_zero`: bool (incluir categorías sin ninguna queja)\n"
-        "- `ordering`: `-total` (default) | `total` | `nombre`"
+        "Devuelve un ranking de categorías según número de quejas que "
+        "cumplen los filtros."
     ),
     tags=["Estadísticas"],
-    parameters=[
-        OpenApiParameter(
-            name="user_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY
-        ),
-        OpenApiParameter(
-            name="limit",
-            type=OpenApiTypes.INT,
-            location=OpenApiParameter.QUERY,
-            description="Número de resultados (default 5)",
-        ),
-        OpenApiParameter(
-            name="desde", type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY
-        ),
-        OpenApiParameter(
-            name="hasta", type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY
-        ),
-        OpenApiParameter(
-            name="estado",
-            type=OpenApiTypes.STR,
-            location=OpenApiParameter.QUERY,
-            description="Permite múltiples (CSV): PEN,ENP,RES,REC",
-        ),
-        OpenApiParameter(
-            name="distrito_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY
-        ),
-        OpenApiParameter(
-            name="include_zero", type=OpenApiTypes.BOOL, location=OpenApiParameter.QUERY
-        ),
-        OpenApiParameter(
-            name="ordering",
-            type=OpenApiTypes.STR,
-            location=OpenApiParameter.QUERY,
-            description="`-total` (default) | `total` | `nombre`",
-        ),
-    ],
-    responses={
-        200: OpenApiResponse(response=StatItemSerializer(many=True)),
-        400: OpenApiResponse(description="Parámetro inválido"),
-    },
-    examples=[
-        OpenApiExample(
-            "Ejemplo básico",
-            value=[
-                {"id": 3, "nombre": "Vía pública", "total": 42},
-                {"id": 1, "nombre": "Limpieza", "total": 27},
-            ],
-            response_only=True,
-        )
-    ],
+    responses={200: OpenApiResponse(response=StatItemSerializer(many=True))}
 )
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def stats_categorias(request):
     # --- lectura de parámetros
     user_id = request.query_params.get("user_id")
-    limit_raw = request.query_params.get("limit", "5")
-    try:
-        limit = int(limit_raw)
-    except ValueError:
-        return Response({"detail": "Parametro 'limit' inválido."}, status=400)
-
+    limit = int(request.query_params.get("limit", 5))
     desde = _parse_date(request.query_params.get("desde"))
     hasta = _parse_date(request.query_params.get("hasta"))
-    if request.query_params.get("desde") and desde is None:
-        return Response(
-            {"detail": "Parametro 'desde' debe tener formato YYYY-MM-DD."}, status=400
-        )
-    if request.query_params.get("hasta") and hasta is None:
-        return Response(
-            {"detail": "Parametro 'hasta' debe tener formato YYYY-MM-DD."}, status=400
-        )
 
-    # múltiple estados (CSV)
     try:
         estados = _parse_estado_list(request.query_params.get("estado"))
     except ValueError as e:
         return Response({"detail": str(e)}, status=400)
 
     distrito_id = request.query_params.get("distrito_id")
-    include_zero = _parse_bool(request.query_params.get("include_zero"), default=False)
+    include_zero = _parse_bool(request.query_params.get("include_zero"))
     ordering = request.query_params.get("ordering", "-total")
-    if ordering not in ("-total", "total", "nombre"):
-        return Response(
-            {
-                "detail": "Parametro 'ordering' inválido. Use '-total', 'total' o 'nombre'."
-            },
-            status=400,
-        )
 
-    # --- filtros para consultas basadas en Queja
+    if ordering not in ("-total", "total", "nombre"):
+        return Response({"detail": "ordering inválido"}, status=400)
+
+    # --- filtros
     q = Q()
     if user_id:
         q &= Q(autor_id=user_id)
@@ -192,269 +116,97 @@ def stats_categorias(request):
     if distrito_id:
         q &= Q(distrito_id=distrito_id)
 
-    if include_zero:
-        # Partimos de Categoria y anotamos count filtrado sobre relación 'quejas'
-        q_rel = Q()
-        if user_id:
-            q_rel &= Q(quejas__autor_id=user_id)
-        if desde:
-            q_rel &= Q(quejas__fecha_creacion__date__gte=desde)
-        if hasta:
-            q_rel &= Q(quejas__fecha_creacion__date__lte=hasta)
-        if estados:
-            q_rel &= Q(quejas__estado__in=estados)
-        if distrito_id:
-            q_rel &= Q(quejas__distrito_id=distrito_id)
+    # --- consulta
+    qs = (
+        Queja.objects.filter(q)
+        .values("categoria_id", "categoria__nombre")
+        .annotate(total=Count("id"))
+    )
 
-        qs = Categoria.objects.values("id", "nombre").annotate(
-            total=Count("quejas", filter=q_rel)
-        )
-        if ordering == "nombre":
-            qs = qs.order_by("nombre")
-        elif ordering == "total":
-            qs = qs.order_by("total")
-        else:
-            qs = qs.order_by("-total")
-        if limit:
-            qs = qs[:limit]
-
-        data = [
-            {"id": row["id"], "nombre": row["nombre"], "total": row["total"] or 0}
-            for row in qs
-        ]
+    # ordering
+    if ordering == "nombre":
+        qs = qs.order_by("categoria__nombre")
+    elif ordering == "total":
+        qs = qs.order_by("total")
     else:
-        # Solo categorías con alguna queja que cumpla filtros
-        qs = (
-            Queja.objects.filter(q)
-            .values("categoria_id", "categoria__nombre")
-            .annotate(total=Count("id"))
-        )
-        if ordering == "nombre":
-            qs = qs.order_by("categoria__nombre")
-        elif ordering == "total":
-            qs = qs.order_by("total")
-        else:
-            qs = qs.order_by("-total")
-        if limit:
-            qs = qs[:limit]
+        qs = qs.order_by("-total")
 
-        data = [
-            {
-                "id": row["categoria_id"],
-                "nombre": row["categoria__nombre"],
-                "total": row["total"],
-            }
-            for row in qs
-        ]
+    if limit:
+        qs = qs[:limit]
+
+    data = [
+        {"id": r["categoria_id"], "nombre": r["categoria__nombre"], "total": r["total"]}
+        for r in qs
+    ]
 
     return Response(data)
 
 
-# ============================================
-# GET /stats/distritos/ → distritos más usados
-# ============================================
+# ============================================================
+#  QUEJAS - DISTRITOS
+# ============================================================
+
 @extend_schema(
     summary="Distritos con más quejas",
-    description=(
-        "Devuelve un ranking de distritos según número de quejas que cumplen los filtros.\n\n"
-        "**Parámetros soportados (querystring):**\n"
-        "- `user_id`: int (filtra por autor)\n"
-        "- `limit`: int (por defecto 5)\n"
-        "- `desde`: fecha `YYYY-MM-DD`\n"
-        "- `hasta`: fecha `YYYY-MM-DD`\n"
-        "- `estado`: permite múltiples en CSV `PEN,ENP,RES,REC`\n"
-        "- `categoria_id`: int\n"
-        "- `include_zero`: bool (incluir distritos sin ninguna queja)\n"
-        "- `ordering`: `-total` (default) | `total` | `nombre`"
-    ),
     tags=["Estadísticas"],
-    parameters=[
-        OpenApiParameter(
-            name="user_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY
-        ),
-        OpenApiParameter(
-            name="limit",
-            type=OpenApiTypes.INT,
-            location=OpenApiParameter.QUERY,
-            description="Número de resultados (default 5)",
-        ),
-        OpenApiParameter(
-            name="desde", type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY
-        ),
-        OpenApiParameter(
-            name="hasta", type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY
-        ),
-        OpenApiParameter(
-            name="estado",
-            type=OpenApiTypes.STR,
-            location=OpenApiParameter.QUERY,
-            description="Permite múltiples (CSV): PEN,ENP,RES,REC",
-        ),
-        OpenApiParameter(
-            name="categoria_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY
-        ),
-        OpenApiParameter(
-            name="include_zero", type=OpenApiTypes.BOOL, location=OpenApiParameter.QUERY
-        ),
-        OpenApiParameter(
-            name="ordering",
-            type=OpenApiTypes.STR,
-            location=OpenApiParameter.QUERY,
-            description="`-total` (default) | `total` | `nombre`",
-        ),
-    ],
-    responses={
-        200: OpenApiResponse(response=StatItemSerializer(many=True)),
-        400: OpenApiResponse(description="Parámetro inválido"),
-    },
-    examples=[
-        OpenApiExample(
-            "Ejemplo básico",
-            value=[
-                {"id": 1, "nombre": "Centro", "total": 35},
-                {"id": 2, "nombre": "Norte", "total": 18},
-            ],
-            response_only=True,
-        )
-    ],
+    responses={200: OpenApiResponse(response=StatItemSerializer(many=True))}
 )
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def stats_distritos(request):
-    # --- lectura de parámetros
     user_id = request.query_params.get("user_id")
-    limit_raw = request.query_params.get("limit", "5")
-    try:
-        limit = int(limit_raw)
-    except ValueError:
-        return Response({"detail": "Parametro 'limit' inválido."}, status=400)
-
+    limit = int(request.query_params.get("limit", 5))
     desde = _parse_date(request.query_params.get("desde"))
     hasta = _parse_date(request.query_params.get("hasta"))
-    if request.query_params.get("desde") and desde is None:
-        return Response(
-            {"detail": "Parametro 'desde' debe tener formato YYYY-MM-DD."}, status=400
-        )
-    if request.query_params.get("hasta") and hasta is None:
-        return Response(
-            {"detail": "Parametro 'hasta' debe tener formato YYYY-MM-DD."}, status=400
-        )
 
-    # múltiple estados (CSV)
     try:
         estados = _parse_estado_list(request.query_params.get("estado"))
     except ValueError as e:
         return Response({"detail": str(e)}, status=400)
 
     categoria_id = request.query_params.get("categoria_id")
-    include_zero = _parse_bool(request.query_params.get("include_zero"), default=False)
+    include_zero = _parse_bool(request.query_params.get("include_zero"))
     ordering = request.query_params.get("ordering", "-total")
+
     if ordering not in ("-total", "total", "nombre"):
-        return Response(
-            {
-                "detail": "Parametro 'ordering' inválido. Use '-total', 'total' o 'nombre'."
-            },
-            status=400,
-        )
+        return Response({"detail": "ordering inválido"}, status=400)
 
-    # --- filtros para consultas basadas en Queja
     q = Q()
-    if user_id:
-        q &= Q(autor_id=user_id)
-    if desde:
-        q &= Q(fecha_creacion__date__gte=desde)
-    if hasta:
-        q &= Q(fecha_creacion__date__lte=hasta)
-    if estados:
-        q &= Q(estado__in=estados)
-    if categoria_id:
-        q &= Q(categoria_id=categoria_id)
+    if user_id: q &= Q(autor_id=user_id)
+    if desde: q &= Q(fecha_creacion__date__gte=desde)
+    if hasta: q &= Q(fecha_creacion__date__lte=hasta)
+    if estados: q &= Q(estado__in=estados)
+    if categoria_id: q &= Q(categoria_id=categoria_id)
 
-    if include_zero:
-        # Partimos de Distrito y anotamos count de quejas relacionadas
-        q_rel = Q()
-        if user_id:
-            q_rel &= Q(quejas__autor_id=user_id)
-        if desde:
-            q_rel &= Q(quejas__fecha_creacion__date__gte=desde)
-        if hasta:
-            q_rel &= Q(quejas__fecha_creacion__date__lte=hasta)
-        if estados:
-            q_rel &= Q(quejas__estado__in=estados)
-        if categoria_id:
-            q_rel &= Q(quejas__categoria_id=categoria_id)
+    qs = (
+        Queja.objects.filter(q)
+        .values("distrito_id", "distrito__nombre")
+        .annotate(total=Count("id"))
+    )
 
-        qs = Distrito.objects.values("id", "nombre").annotate(
-            total=Count("quejas", filter=q_rel)
-        )
-        if ordering == "nombre":
-            qs = qs.order_by("nombre")
-        elif ordering == "total":
-            qs = qs.order_by("total")
-        else:
-            qs = qs.order_by("-total")
-        if limit:
-            qs = qs[:limit]
-
-        data = [
-            {"id": row["id"], "nombre": row["nombre"], "total": row["total"] or 0}
-            for row in qs
-        ]
+    if ordering == "nombre":
+        qs = qs.order_by("distrito__nombre")
+    elif ordering == "total":
+        qs = qs.order_by("total")
     else:
-        # Solo distritos con alguna queja que cumpla filtros
-        qs = (
-            Queja.objects.filter(q)
-            .values("distrito_id", "distrito__nombre")
-            .annotate(total=Count("id"))
-        )
-        if ordering == "nombre":
-            qs = qs.order_by("distrito__nombre")
-        elif ordering == "total":
-            qs = qs.order_by("total")
-        else:
-            qs = qs.order_by("-total")
-        if limit:
-            qs = qs[:limit]
+        qs = qs.order_by("-total")
 
-        data = [
-            {
-                "id": row["distrito_id"],
-                "nombre": row["distrito__nombre"],
-                "total": row["total"],
-            }
-            for row in qs
-        ]
+    if limit: qs = qs[:limit]
 
-    return Response(data)
+    return Response([
+        {"id": r["distrito_id"], "nombre": r["distrito__nombre"], "total": r["total"]}
+        for r in qs
+    ])
 
 
-# ============================================
-# GET /stats/overview/ → KPIs (totales por estado)
-# ============================================
+# ============================================================
+#  QUEJAS - OVERVIEW
+# ============================================================
+
 @extend_schema(
     summary="KPIs de quejas",
-    description=(
-        "Devuelve totales de quejas para el rango/criterios seleccionados. "
-        "Si se pasa `estado` (incluye múltiples, p.ej. `PEN,ENP`), los totales se limitan a ese subconjunto."
-    ),
     tags=["Estadísticas"],
-    parameters=[
-        OpenApiParameter(name="user_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY),
-        OpenApiParameter(name="desde", type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY),
-        OpenApiParameter(name="hasta", type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY),
-        OpenApiParameter(name="estado", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY,
-                         description="Permite múltiples: `PEN,ENP,RES,REC`"),
-        OpenApiParameter(name="categoria_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY),
-        OpenApiParameter(name="distrito_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY),
-    ],
-    responses={200: OpenApiResponse(response=OverviewSerializer), 400: OpenApiResponse(description="Parámetro inválido")},
-    examples=[
-        OpenApiExample(
-            "Ejemplo respuesta",
-            value={"total": 287, "pen": 120, "enp": 65, "res": 90, "rec": 12},
-            response_only=True,
-        )
-    ],
+    responses={200: OpenApiResponse(response=OverviewSerializer)}
 )
 @api_view(["GET"])
 @permission_classes([AllowAny])
@@ -462,10 +214,6 @@ def stats_overview(request):
     user_id = request.query_params.get("user_id")
     desde = _parse_date(request.query_params.get("desde"))
     hasta = _parse_date(request.query_params.get("hasta"))
-    if request.query_params.get("desde") and desde is None:
-        return Response({"detail": "Parametro 'desde' debe tener formato YYYY-MM-DD."}, status=400)
-    if request.query_params.get("hasta") and hasta is None:
-        return Response({"detail": "Parametro 'hasta' debe tener formato YYYY-MM-DD."}, status=400)
 
     try:
         estados = _parse_estado_list(request.query_params.get("estado"))
@@ -476,18 +224,12 @@ def stats_overview(request):
     distrito_id = request.query_params.get("distrito_id")
 
     q = Q()
-    if user_id:
-        q &= Q(autor_id=user_id)
-    if desde:
-        q &= Q(fecha_creacion__date__gte=desde)
-    if hasta:
-        q &= Q(fecha_creacion__date__lte=hasta)
-    if categoria_id:
-        q &= Q(categoria_id=categoria_id)
-    if distrito_id:
-        q &= Q(distrito_id=distrito_id)
-    if estados:
-        q &= Q(estado__in=estados)
+    if user_id: q &= Q(autor_id=user_id)
+    if desde: q &= Q(fecha_creacion__date__gte=desde)
+    if hasta: q &= Q(fecha_creacion__date__lte=hasta)
+    if categoria_id: q &= Q(categoria_id=categoria_id)
+    if distrito_id: q &= Q(distrito_id=distrito_id)
+    if estados: q &= Q(estado__in=estados)
 
     agg = Queja.objects.filter(q).aggregate(
         total=Count("id"),
@@ -496,32 +238,18 @@ def stats_overview(request):
         res=Count("id", filter=Q(estado="RES")),
         rec=Count("id", filter=Q(estado="REC")),
     )
-    # Asegurar enteros
-    data = {k: int(agg.get(k, 0) or 0) for k in ("total", "pen", "enp", "res", "rec")}
-    return Response(data)
+
+    return Response({k: int(agg.get(k, 0) or 0) for k in agg})
 
 
-# ============================================
-# GET /stats/estados/ → conteo por estado
-# ============================================
+# ============================================================
+#  QUEJAS - ESTADOS
+# ============================================================
+
 @extend_schema(
     summary="Distribución por estado",
-    description=(
-        "Devuelve conteos de quejas por estado. "
-        "Si se pasa `estado` (múltiple permitido), la salida se limita a esos estados."
-    ),
     tags=["Estadísticas"],
-    parameters=[
-        OpenApiParameter(name="user_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY),
-        OpenApiParameter(name="desde", type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY),
-        OpenApiParameter(name="hasta", type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY),
-        OpenApiParameter(name="estado", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY,
-                         description="Permite múltiples: `PEN,ENP,RES,REC`"),
-        OpenApiParameter(name="categoria_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY),
-        OpenApiParameter(name="distrito_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY),
-    ],
-    responses={200: OpenApiResponse(response=EstadosSerializer), 400: OpenApiResponse(description="Parámetro inválido")},
-    examples=[OpenApiExample("Ejemplo respuesta", value={"PEN": 120, "ENP": 65, "RES": 90, "REC": 12, "total": 287})],
+    responses={200: OpenApiResponse(response=EstadosSerializer)}
 )
 @api_view(["GET"])
 @permission_classes([AllowAny])
@@ -529,10 +257,6 @@ def stats_estados(request):
     user_id = request.query_params.get("user_id")
     desde = _parse_date(request.query_params.get("desde"))
     hasta = _parse_date(request.query_params.get("hasta"))
-    if request.query_params.get("desde") and desde is None:
-        return Response({"detail": "Parametro 'desde' debe tener formato YYYY-MM-DD."}, status=400)
-    if request.query_params.get("hasta") and hasta is None:
-        return Response({"detail": "Parametro 'hasta' debe tener formato YYYY-MM-DD."}, status=400)
 
     try:
         estados = _parse_estado_list(request.query_params.get("estado"))
@@ -543,20 +267,15 @@ def stats_estados(request):
     distrito_id = request.query_params.get("distrito_id")
 
     q = Q()
-    if user_id:
-        q &= Q(autor_id=user_id)
-    if desde:
-        q &= Q(fecha_creacion__date__gte=desde)
-    if hasta:
-        q &= Q(fecha_creacion__date__lte=hasta)
-    if categoria_id:
-        q &= Q(categoria_id=categoria_id)
-    if distrito_id:
-        q &= Q(distrito_id=distrito_id)
-    if estados:
-        q &= Q(estado__in=estados)
+    if user_id: q &= Q(autor_id=user_id)
+    if desde: q &= Q(fecha_creacion__date__gte=desde)
+    if hasta: q &= Q(fecha_creacion__date__lte=hasta)
+    if categoria_id: q &= Q(categoria_id=categoria_id)
+    if distrito_id: q &= Q(distrito_id=distrito_id)
+    if estados: q &= Q(estado__in=estados)
 
     base = Queja.objects.filter(q)
+
     data = {
         "PEN": base.filter(estado="PEN").count(),
         "ENP": base.filter(estado="ENP").count(),
@@ -567,61 +286,29 @@ def stats_estados(request):
     return Response(data)
 
 
-# ============================================
-# GET /stats/timeseries/ → serie temporal
-# ============================================
+# ============================================================
+#  QUEJAS - TIME SERIES
+# ============================================================
+
 @extend_schema(
     summary="Serie temporal de quejas",
-    description=(
-        "Devuelve puntos temporales agrupados por `group_by` y opcionalmente apilados por `estado`.\n\n"
-        "`group_by`: `day | week | month | year` (por defecto `month`).\n"
-        "`stack_by`: `none | estado` (por defecto `none`)."
-    ),
     tags=["Estadísticas"],
-    parameters=[
-        OpenApiParameter(name="group_by", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY,
-                         description="day | week | month | year"),
-        OpenApiParameter(name="stack_by", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY,
-                         description="none | estado"),
-        OpenApiParameter(name="user_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY),
-        OpenApiParameter(name="desde", type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY),
-        OpenApiParameter(name="hasta", type=OpenApiTypes.DATE, location=OpenApiParameter.QUERY),
-        OpenApiParameter(name="estado", type=OpenApiTypes.STR, location=OpenApiParameter.QUERY,
-                         description="Permite múltiples: `PEN,ENP,RES,REC`"),
-        OpenApiParameter(name="categoria_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY),
-        OpenApiParameter(name="distrito_id", type=OpenApiTypes.INT, location=OpenApiParameter.QUERY),
-    ],
-    responses={200: OpenApiResponse(response=TimeSeriesPointSerializer(many=True)),
-               400: OpenApiResponse(description="Parámetro inválido")},
-    examples=[
-        OpenApiExample(
-            "Ejemplo mensual apilado por estado",
-            value=[
-                {"period": "2025-01", "total": 42, "by_estado": {"PEN": 20, "ENP": 10, "RES": 9, "REC": 3}},
-                {"period": "2025-02", "total": 55, "by_estado": {"PEN": 22, "ENP": 14, "RES": 15, "REC": 4}}
-            ],
-            response_only=True,
-        )
-    ],
+    responses={200: OpenApiResponse(response=TimeSeriesPointSerializer(many=True))}
 )
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def stats_timeseries(request):
     group_by = (request.query_params.get("group_by") or "month").lower()
     if group_by not in {"day", "week", "month", "year"}:
-        return Response({"detail": "Parametro 'group_by' inválido. Use: day|week|month|year."}, status=400)
+        return Response({"detail": "group_by inválido"}, status=400)
 
     stack_by = (request.query_params.get("stack_by") or "none").lower()
     if stack_by not in {"none", "estado"}:
-        return Response({"detail": "Parametro 'stack_by' inválido. Use: none|estado."}, status=400)
+        return Response({"detail": "stack_by inválido"}, status=400)
 
     user_id = request.query_params.get("user_id")
     desde = _parse_date(request.query_params.get("desde"))
     hasta = _parse_date(request.query_params.get("hasta"))
-    if request.query_params.get("desde") and desde is None:
-        return Response({"detail": "Parametro 'desde' debe tener formato YYYY-MM-DD."}, status=400)
-    if request.query_params.get("hasta") and hasta is None:
-        return Response({"detail": "Parametro 'hasta' debe tener formato YYYY-MM-DD."}, status=400)
 
     try:
         estados = _parse_estado_list(request.query_params.get("estado"))
@@ -631,22 +318,20 @@ def stats_timeseries(request):
     categoria_id = request.query_params.get("categoria_id")
     distrito_id = request.query_params.get("distrito_id")
 
-    # filtros
     q = Q()
-    if user_id:
-        q &= Q(autor_id=user_id)
-    if desde:
-        q &= Q(fecha_creacion__date__gte=desde)
-    if hasta:
-        q &= Q(fecha_creacion__date__lte=hasta)
-    if categoria_id:
-        q &= Q(categoria_id=categoria_id)
-    if distrito_id:
-        q &= Q(distrito_id=distrito_id)
-    if estados:
-        q &= Q(estado__in=estados)
+    if user_id: q &= Q(autor_id=user_id)
+    if desde: q &= Q(fecha_creacion__date__gte=desde)
+    if hasta: q &= Q(fecha_creacion__date__lte=hasta)
+    if categoria_id: q &= Q(categoria_id=categoria_id)
+    if distrito_id: q &= Q(distrito_id=distrito_id)
+    if estados: q &= Q(estado__in=estados)
 
-    trunc_map = {"day": TruncDay, "week": TruncWeek, "month": TruncMonth, "year": TruncYear}
+    trunc_map = {
+        "day": TruncDay,
+        "week": TruncWeek,
+        "month": TruncMonth,
+        "year": TruncYear,
+    }
     trunc_fn = trunc_map[group_by]
 
     qs = (
@@ -668,10 +353,11 @@ def stats_timeseries(request):
 
     qs = qs.order_by("period_dt")
 
-    # Formateo de etiqueta 'period' según granularidad
-    results = []
+    data = []
     for row in qs:
         dt = row["period_dt"]
+        if not dt:
+            continue
         if group_by == "day":
             label = dt.strftime("%Y-%m-%d")
         elif group_by == "week":
@@ -679,17 +365,190 @@ def stats_timeseries(request):
             label = f"{iso.year}-W{iso.week:02d}"
         elif group_by == "month":
             label = dt.strftime("%Y-%m")
-        else:  # year
+        else:
             label = dt.strftime("%Y")
 
-        item = {"period": label, "total": int(row["total"] or 0)}
+        item = {"period": label, "total": int(row["total"])}
         if stack_by == "estado":
             item["by_estado"] = {
-                "PEN": int(row.get("PEN") or 0),
-                "ENP": int(row.get("ENP") or 0),
-                "RES": int(row.get("RES") or 0),
-                "REC": int(row.get("REC") or 0),
+                "PEN": int(row.get("PEN", 0)),
+                "ENP": int(row.get("ENP", 0)),
+                "RES": int(row.get("RES", 0)),
+                "REC": int(row.get("REC", 0)),
             }
-        results.append(item)
+        data.append(item)
 
-    return Response(results)
+    return Response(data)
+
+
+# ============================================================
+#  RESPUESTAS - KPIs
+# ============================================================
+
+@extend_schema(
+    summary="KPIs de respuestas",
+    description="Estadísticas agregadas de respuestas.",
+    tags=["Estadísticas"],
+    responses={200: OpenApiResponse(description="KPIs de respuestas")}
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def stats_respuestas_overview(request):
+
+    desde = _parse_date(request.query_params.get("desde"))
+    hasta = _parse_date(request.query_params.get("hasta"))
+
+    q = Q()
+    if desde: q &= Q(fecha_respuesta__date__gte=desde)
+    if hasta: q &= Q(fecha_respuesta__date__lte=hasta)
+
+    base = Respuesta.objects.filter(q)
+
+    total_quejas_respondidas = base.values("queja_id").distinct().count()
+
+    counts = base.values("queja_id").annotate(c=Count("id")).aggregate(avg=Avg("c"))
+    media_respuestas = counts["avg"] or 0
+
+    primeras = (
+        base.values("queja_id")
+        .annotate(first=Min("fecha_respuesta"))
+        .annotate(
+            delta=ExpressionWrapper(
+                F("first") - F("queja__fecha_creacion"), output_field=DurationField()
+            )
+        )
+    )
+
+    tiempos = [p["delta"].total_seconds() for p in primeras if p["delta"]]
+    tiempo_medio = sum(tiempos) / len(tiempos) if tiempos else 0
+
+    return Response({
+        "tiempo_medio_primera": tiempo_medio,
+        "media_respuestas_por_queja": round(media_respuestas, 2),
+        "total_quejas_respondidas": total_quejas_respondidas,
+    })
+
+
+# ============================================================
+#  RESPUESTAS - TIME SERIES
+# ============================================================
+
+@extend_schema(
+    summary="Serie temporal de respuestas",
+    tags=["Estadísticas"],
+    responses={200: OpenApiResponse(response=TimeSeriesPointSerializer(many=True))}
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def stats_respuestas_timeseries(request):
+
+    group_by = (request.query_params.get("group_by") or "month").lower()
+    if group_by not in {"day", "week", "month", "year"}:
+        return Response({"detail": "group_by inválido"}, status=400)
+
+    desde = _parse_date(request.query_params.get("desde"))
+    hasta = _parse_date(request.query_params.get("hasta"))
+
+    q = Q()
+    if desde: q &= Q(fecha_respuesta__date__gte=desde)
+    if hasta: q &= Q(fecha_respuesta__date__lte=hasta)
+
+    trunc_map = {
+        "day": TruncDay,
+        "week": TruncWeek,
+        "month": TruncMonth,
+        "year": TruncYear,
+    }
+
+    trunc_fn = trunc_map[group_by]
+
+    qs = (
+        Respuesta.objects.filter(q)
+        .annotate(period_dt=trunc_fn("fecha_respuesta"))
+        .values("period_dt")
+        .annotate(total=Count("id"))
+        .order_by("period_dt")
+    )
+
+    data = []
+    for row in qs:
+        dt = row["period_dt"]
+        if not dt:
+            continue
+
+        label = (
+            dt.strftime("%Y-%m-%d") if group_by == "day" else
+            f"{dt.year}-W{dt.isocalendar().week:02d}" if group_by == "week" else
+            dt.strftime("%Y-%m") if group_by == "month" else
+            dt.strftime("%Y")
+        )
+
+        data.append({"period": label, "total": int(row["total"])})
+
+    return Response(data)
+
+
+# ============================================================
+#  RESPUESTAS - CATEGORÍAS
+# ============================================================
+
+@extend_schema(
+    summary="Categorías con más respuestas",
+    tags=["Estadísticas"],
+    responses={200: OpenApiResponse(response=StatItemSerializer(many=True))}
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def stats_respuestas_categorias(request):
+
+    desde = _parse_date(request.query_params.get("desde"))
+    hasta = _parse_date(request.query_params.get("hasta"))
+
+    q = Q()
+    if desde: q &= Q(fecha_respuesta__date__gte=desde)
+    if hasta: q &= Q(fecha_respuesta__date__lte=hasta)
+
+    qs = (
+        Respuesta.objects.filter(q)
+        .values("queja__categoria_id", "queja__categoria__nombre")
+        .annotate(total=Count("id"))
+        .order_by("-total")
+    )
+
+    return Response([
+        {"id": r["queja__categoria_id"], "nombre": r["queja__categoria__nombre"], "total": r["total"]}
+        for r in qs
+    ])
+
+
+# ============================================================
+#  RESPUESTAS - DISTRITOS
+# ============================================================
+
+@extend_schema(
+    summary="Distritos con más respuestas",
+    tags=["Estadísticas"],
+    responses={200: OpenApiResponse(response=StatItemSerializer(many=True))}
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def stats_respuestas_distritos(request):
+
+    desde = _parse_date(request.query_params.get("desde"))
+    hasta = _parse_date(request.query_params.get("hasta"))
+
+    q = Q()
+    if desde: q &= Q(fecha_respuesta__date__gte=desde)
+    if hasta: q &= Q(fecha_respuesta__date__lte=hasta)
+
+    qs = (
+        Respuesta.objects.filter(q)
+        .values("queja__distrito_id", "queja__distrito__nombre")
+        .annotate(total=Count("id"))
+        .order_by("-total")
+    )
+
+    return Response([
+        {"id": r["queja__distrito_id"], "nombre": r["queja__distrito__nombre"], "total": r["total"]}
+        for r in qs
+    ])
