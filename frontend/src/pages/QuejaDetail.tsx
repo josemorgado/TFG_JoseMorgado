@@ -434,7 +434,9 @@ function QuejaDetail() {
           </div>
           <div className="detail__meta">
             <span className="pill" title="User">
-              <strong>Autor:</strong> {queja.autor_nombre}
+              <strong>
+            <Link to={`/perfil/${queja.autor}`}>{queja.autor_nombre}</Link>
+          </strong>
             </span>
 
             <span className="meta__group">
