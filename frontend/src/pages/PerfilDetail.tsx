@@ -100,28 +100,26 @@ export default function PerfilDetail() {
           <div className="perfil-avatar-wrapper">
             <div className="perfil-avatar">
               {fotoPerfil ? (
-                <img
-                  src={fotoPerfil}
-                  className="perfil-avatar__img"
-                  alt="foto"
-                />
+                <img src={fotoPerfil} className="perfil-avatar__img" alt="foto" />
               ) : (
                 <div className="perfil-avatar__fallback">{iniciales}</div>
+              )}
+
+              {esMiPerfil && (
+                <button
+                  className="avatar-edit-btn avatar-edit-btn--icon"
+                  onClick={() => navigate(`/perfil/${usuario.id}/update`)}
+                  style={{ backgroundImage: `url(${editIcon})` }}
+                  aria-label="Editar perfil"
+                />
               )}
             </div>
 
             {esMiPerfil && (
-              <button
-                className="avatar-edit-btn avatar-edit-btn--icon"
-                onClick={() => navigate(`/perfil/${usuario.id}/update`)}
-                style={{ backgroundImage: `url(${editIcon})` }}
-                aria-label="Editar perfil"
-              />
-            )}          {esMiPerfil && (
-            <div className="logout-wrapper">
-              <LogoutButton />
-            </div>
-          )}
+              <div className="logout-wrapper">
+                <LogoutButton />
+              </div>
+            )}
 
           </div>
 
