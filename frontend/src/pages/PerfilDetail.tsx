@@ -163,14 +163,12 @@ export default function PerfilDetail() {
               </p>
 
               <p className="perfil-data-fields">
-                {topCategoria ? (
+                {topCategoria && (
                   <>
                     <strong>Categoría más usada:</strong> {topCategoria.nombre}{" "}
 
                     ({topCategoria.total})
                   </>
-                ) : (
-                  "Sin datos"
                 )}
               </p>
             </div>

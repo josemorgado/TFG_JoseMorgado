@@ -8,7 +8,7 @@ export default function LoginButton() {
 
   return (
     <button className="auth-button"onClick={handleLogout}>
-      Estadisticas
+      Estadísticas
     </button>
   );
 }

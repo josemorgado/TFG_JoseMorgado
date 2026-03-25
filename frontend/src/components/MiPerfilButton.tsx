@@ -2,7 +2,7 @@
 
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
-import perfilIcon from "../assets/icons/perfil-icon.png"; // ✅ Importar imagen
+import perfilIcon from "../assets/icons/perfil-icon.png";
 
 export default function MiPerfilButton() {
   const { user } = useAuth();
