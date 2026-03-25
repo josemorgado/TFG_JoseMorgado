@@ -160,7 +160,7 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),  # Tokens válidos por 30 minutos
+    'ACCESS_TOKEN_LIFETIME': timedelta(seconds=10),  # Tokens válidos por 30 minutos
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),     # Tokens de refresco válidos por 1 día
     'ROTATE_REFRESH_TOKENS': False,                 # No rotar tokens de refresco
     'ALGORITHM': 'HS256',

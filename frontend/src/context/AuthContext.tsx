@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { loginRequest, fetchMe } from '../api/auth';
-import type { LoginRequest } from '../api/auth';
-import { storage } from '../utils/storage';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { loginRequest, fetchMe } from "../api/auth";
+import type { LoginRequest } from "../api/auth";
+import { storage } from "../utils/storage";
 
 type AuthUser = { id: number; username: string; [k: string]: any };
 
@@ -21,47 +21,51 @@ const AuthContext = createContext<AuthContextType>({
 
 export const useAuth = () => useContext(AuthContext);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<AuthUser | null>(null);
 
+  // Restaurar sesión en carga inicial
   useEffect(() => {
     const access = storage.getAccess();
-    if (!access) {
-      return;
-    }
 
-  const restoreSession = async () => {
+    if (!access) return;
+
+    const restore = async () => {
       try {
-        const me = await fetchMe(access);
+        const me = await fetchMe(access); // Axios renovará token si está expirado
         setUser(me);
-      } catch (err) {
+      } catch {
         storage.clearAll();
         setUser(null);
       }
-  };
+    };
 
-  restoreSession();
+    restore();
   }, []);
 
+  // Login
   const login = async (credentials: LoginRequest) => {
-    // 1) pedir tokens
     const tokens = await loginRequest(credentials);
-    // 2) guardar tokens
+
     storage.setAccess(tokens.access);
     if (tokens.refresh) storage.setRefresh(tokens.refresh);
-    // 3) pedir datos de usuario (si tienes /me)
+
     const me = await fetchMe(tokens.access);
     setUser(me);
-    return me;
   };
 
+  // Logout
   const logout = () => {
     storage.clearAll();
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isAuthenticated: !!user, login, logout }}>
+    <AuthContext.Provider
+      value={{ user, isAuthenticated: !!user, login, logout }}
+    >
       {children}
     </AuthContext.Provider>
   );
