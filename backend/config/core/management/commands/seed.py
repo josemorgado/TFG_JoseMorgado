@@ -356,23 +356,40 @@ class Command(BaseCommand):
                         videos_creados += 1
 
         self.stdout.write(self.style.SUCCESS(f"Vídeos creados: {videos_creados}"))
-        self.stdout.write(self.style.SUCCESS("✅ SEED COMPLETADO."))
+
 
 
         respuestas_creadas = 0
         moderadores = [u for u in usuarios_obj if u.perfil.moderator]
 
         for q in todas_quejas:
-            # Cantidad aleatoria de respuestas para cada queja
             num_respuestas = random.randint(0, 4)
 
             for _ in range(num_respuestas):
+
+                # --- Obtener fecha real de la queja ya actualizada ---
+                fecha_base = timezone.localtime(q.fecha_creacion)
+
+                # --- Generar fecha aleatoria posterior ---
+                fecha_resp = fecha_base + timedelta(
+                    days=random.randint(1, 40),
+                    hours=random.randint(0, 23),
+                    minutes=random.randint(0, 59)
+                )
+
+                # Garantizar timezone-aware siempre
+                if fecha_resp.tzinfo is None:
+                    fecha_resp = timezone.make_aware(fecha_resp)
+
                 Respuesta.objects.create(
                     queja=q,
                     moderador=random.choice(moderadores),
                     contenido=f"Respuesta automática a la queja #{q.id}",
                     nuevo_estado=random.choice(["PEN", "ENP", "REC", "RES"]),
+                    fecha_respuesta=fecha_resp,
                 )
+
                 respuestas_creadas += 1
 
         self.stdout.write(self.style.SUCCESS(f"Respuestas creadas: {respuestas_creadas}"))
+        self.stdout.write(self.style.SUCCESS("✅ SEED COMPLETADO."))

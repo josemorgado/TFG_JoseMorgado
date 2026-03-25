@@ -83,3 +83,22 @@ export async function getTimeSeries(params: (Omit<StatsParams, "limit" | "orderi
     const { data } = await axios.get<TimePoint[]>("/stats/timeseries/", { params });
     return data;
 }
+export async function getRespuestasOverview(params?: StatsParams): Promise<any> {
+  const res = await axios.get("/stats/respuestas/overview/", { params });
+  return res.data;
+}
+
+export async function getRespuestasTimeSeries(params?: any): Promise<TimePoint[]> {
+  const res = await axios.get("/stats/respuestas/timeseries/", { params });
+  return res.data;
+}
+
+export async function getRespuestasCategorias(params?: StatsParams): Promise<CategoriaStats[]> {
+  const res = await axios.get("/stats/respuestas/categorias/", { params });
+  return res.data;
+}
+
+export async function getRespuestasDistritos(params?: StatsParams): Promise<DistritoStats[]> {
+  const res = await axios.get("/stats/respuestas/distritos/", { params });
+  return res.data;
+}

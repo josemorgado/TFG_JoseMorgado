@@ -5,6 +5,10 @@ import {
   getEstados,
   getOverview,
   getTimeSeries,
+  getRespuestasCategorias,
+  getRespuestasDistritos,
+  getRespuestasOverview,
+  getRespuestasTimeSeries,
 } from "../api/stats";
 
 import type {
@@ -161,6 +165,11 @@ export default function Stats() {
   const [error, setError] = useState<string | null>(null);
 
 
+  const [respuestasOverview, setRespuestasOverview] = useState<any | null>(null);
+  const [respuestasCategorias, setRespuestasCategorias] = useState<CategoriaStats[]>([]);
+  const [respuestasDistritos, setRespuestasDistritos] = useState<DistritoStats[]>([]);
+  const [respuestasSeries, setRespuestasSeries] = useState<TimePoint[]>([]);
+
   useEffect(() => {
     if (!isAuthenticated || !user) {
       setOnlyMine(false);
@@ -230,12 +239,22 @@ export default function Stats() {
           categoriasRes,
           distritosRes,
           seriesRes,
+          resOverviewRes,
+          resCategoriasRes,
+          resDistritosRes,
+          resSeriesRes,
+
         ] = await Promise.all([
           getOverview(paramsGlobales),
           getEstados(paramsGlobales),
           getTopCategorias(paramsCategorias),
           getTopDistritos(paramsDistritos),
           getTimeSeries(paramsSeries),
+          getRespuestasOverview(paramsGlobales),
+          getRespuestasCategorias(paramsGlobales),
+          getRespuestasDistritos(paramsGlobales),
+          getRespuestasTimeSeries(paramsSeries),
+
         ]);
 
         if (cancel) return;
@@ -245,6 +264,11 @@ export default function Stats() {
         setCategorias(categoriasRes);
         setDistritos(distritosRes);
         setSeries(seriesRes);
+
+        setRespuestasOverview(resOverviewRes);
+        setRespuestasCategorias(resCategoriasRes);
+        setRespuestasDistritos(resDistritosRes);
+        setRespuestasSeries(resSeriesRes);
 
       } catch (err: any) {
         if (cancel) return;
@@ -368,6 +392,7 @@ export default function Stats() {
         <KPI label="En progreso" value={overview?.enp ?? 0} />
         <KPI label="Resueltas" value={overview?.res ?? 0} />
         <KPI label="Rechazadas" value={overview?.rec ?? 0} />
+        <KPI label="Quejas respondidas" value={respuestasOverview?.total_quejas_respondidas ?? 0} />
       </div>
 
       {/* Gráficos */}
@@ -388,6 +413,30 @@ export default function Stats() {
           {loading ? <Skeleton /> : (
             <DistritosChart
               data={distritos}
+              onClickItem={(id) => applyFilterDistrito(id)}
+            />
+          )}
+        </div>
+
+        <div className="chart-card">
+          <h3 className="chart-title">Respuestas por categoría</h3>
+          {loading ? (
+            <Skeleton />
+          ) : (
+            <CategoriasChart
+              data={respuestasCategorias}
+              onClickItem={(id) => applyFilterCategoria(id)}
+            />
+          )}
+        </div>
+
+        <div className="chart-card">
+          <h3 className="chart-title">Respuestas por distrito</h3>
+          {loading ? (
+            <Skeleton />
+          ) : (
+            <DistritosChart
+              data={respuestasDistritos}
               onClickItem={(id) => applyFilterDistrito(id)}
             />
           )}
@@ -417,6 +466,20 @@ export default function Stats() {
             </>
           )}
         </div>
+
+        <div className="chart-card chart-card--full">
+          <h3 className="chart-title">Evolución temporal de respuestas</h3>
+
+          {loading ? (
+            <Skeleton />
+          ) : (
+            <TimeSeriesChart
+              data={respuestasSeries}
+              stacked={false}
+            />
+          )}
+        </div>
+
       </div>
 
     </div>
