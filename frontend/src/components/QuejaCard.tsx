@@ -11,6 +11,7 @@ interface Queja {
   descripcion: string;
   num_votos: number;
   num_comentarios: number;
+  autor_nombre:string;
 }
 
 interface Props {
@@ -26,6 +27,7 @@ const QuejaCard: React.FC<Props> = ({ q }) => {
       onClick={() => navigate(`/quejas/${q.id}`)}
     >
       <h3 className="queja-title">{q.titulo}</h3>
+      <h6 className="queja-author">{q.autor_nombre}</h6>
 
       <p className="queja-meta">
         {q.categoria_nombre} · {q.distrito_nombre} · {q.estado} · {q.fecha_creacion}
