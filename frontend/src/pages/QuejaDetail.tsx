@@ -435,8 +435,8 @@ function QuejaDetail() {
           <div className="detail__meta">
             <span className="pill" title="User">
               <strong>
-            <Link to={`/perfil/${queja.autor}`}>{queja.autor_nombre}</Link>
-          </strong>
+                <Link to={`/perfil/${queja.autor}`}>{queja.autor_nombre}</Link>
+              </strong>
             </span>
 
             <span className="meta__group">
@@ -493,14 +493,14 @@ function QuejaDetail() {
                           alt=""
                         />
 
-{index === 1 && remaining > 0 && !showAllImages && (
-  <div
-    className="overlay-more"
-    onClick={() => setShowAllImages(true)}
-  >
-    +{remaining}
-  </div>
-)}
+                        {index === 1 && remaining > 0 && !showAllImages && (
+                          <div
+                            className="overlay-more"
+                            onClick={() => setShowAllImages(true)}
+                          >
+                            +{remaining}
+                          </div>
+                        )}
 
                       </div>
                     </div>
@@ -508,31 +508,31 @@ function QuejaDetail() {
                 </div>
 
 
-{showAllImages && remaining > 0 && (
-  <div className="media-grid">
-    {rest.map((img, i) => (
-      <div key={i} className="media-card">
-        <div className="media-card__visual">
-          <img
-            className="media media--image"
-            src={mediaUrl(img.imagen)}
-            alt=""
-          />
+                {showAllImages && remaining > 0 && (
+                  <div className="media-grid">
+                    {rest.map((img, i) => (
+                      <div key={i} className="media-card">
+                        <div className="media-card__visual">
+                          <img
+                            className="media media--image"
+                            src={mediaUrl(img.imagen)}
+                            alt=""
+                          />
 
-          {/* -N solo en la última imagen */}
-          {i === rest.length - 1 && (
-            <div
-              className="overlay-more"
-              onClick={() => setShowAllImages(false)}
-            >
-              -{remaining}
-            </div>
-          )}
-        </div>
-      </div>
-    ))}
-  </div>
-)}
+                          {/* -N solo en la última imagen */}
+                          {i === rest.length - 1 && (
+                            <div
+                              className="overlay-more"
+                              onClick={() => setShowAllImages(false)}
+                            >
+                              -{remaining}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
               </>
             ) : (

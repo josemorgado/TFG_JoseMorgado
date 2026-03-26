@@ -15,30 +15,32 @@ export async function getNotifications(params?: {
       is_read: typeof is_read === "boolean" ? (is_read ? "true" : "false") : undefined,
     },
   });
+  window.dispatchEvent(new Event("notificaciones-actualizadas"));
   return resp.data;
 }
 
 export async function getUnreadCount(): Promise<number> {
   const resp = await axios.get<{ unread: number }>("/notificaciones/unread-count/");
+  window.dispatchEvent(new Event("notificaciones-actualizadas"));
   return resp.data.unread;
 }
 
 export async function markRead(id: number): Promise<void> {
-  window.dispatchEvent(new Event("notificaciones-actualizadas"));
   await axios.patch(`/notificaciones/${id}/read/`);
+  window.dispatchEvent(new Event("notificaciones-actualizadas"));
 }
 
 export async function markUnread(id: number): Promise<void> {
-  window.dispatchEvent(new Event("notificaciones-actualizadas"));
   await axios.patch(`/notificaciones/${id}/unread/`);
+  window.dispatchEvent(new Event("notificaciones-actualizadas"));
 }
 
 export async function markAllRead(): Promise<void> {
-  window.dispatchEvent(new Event("notificaciones-actualizadas"));
   await axios.patch("/notificaciones/read-all/");
+  window.dispatchEvent(new Event("notificaciones-actualizadas"));
 }
 
 export async function deleteNotification(id: number): Promise<void> {
-  window.dispatchEvent(new Event("notificaciones-actualizadas"));
   await axios.delete(`/notificaciones/${id}/`);
+  window.dispatchEvent(new Event("notificaciones-actualizadas"));
 }
