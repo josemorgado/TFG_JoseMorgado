@@ -975,6 +975,7 @@ function EstadosDonut({
             <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
           ))}
         </Pie>
+        <Tooltip/>
         <Legend />
       </PieChart>
     </ResponsiveContainer>
