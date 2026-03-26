@@ -130,12 +130,14 @@ export default function QuejasList() {
   // 4) Reset único que también limpia el storage
   const resetFilters = () => {
     setFilters(defaultFilters);
-    setSortBy("");
     setIsFiltersOpen(false);
+    clearListState();
+  };
+  const resetSort = () => {
+    setSortBy("");
     setIsSortOpen(false);
     clearListState();
   };
-
   // 5) Filtrado avanzado
   const filteredQuejas = useMemo(() => {
     const filtradas = quejas.filter((q) => {
@@ -281,6 +283,14 @@ export default function QuejasList() {
               Ordenar por
               <span className={`chevron ${isSortOpen ? "up" : "down"}`} />
             </button>
+            <button
+              className="btn btn-secondary btn-small btn-filter"
+              onClick={resetSort}
+              style={{ marginTop: "10px" }}
+              title="Reiniciar ordenación"
+            >
+              Reiniciar
+            </button>
           </div>
 
           {isSortOpen && (
@@ -364,7 +374,7 @@ export default function QuejasList() {
               style={{ marginTop: "10px" }}
               title="Reiniciar filtros"
             >
-              Reiniciar filtros
+              Reiniciar
             </button>
           </div>
 
