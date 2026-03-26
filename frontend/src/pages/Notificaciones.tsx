@@ -24,6 +24,11 @@ export default function NotificationsPage() {
     refresh,
   } = useNotificaciones({ initialPageSize: pageSize });
 
+  const totalPages = useMemo(() => {
+    if (!data?.count) return 1;
+    return Math.ceil(data.count / pageSize);
+  }, [data, pageSize]);
+
   useEffect(() => {
     if (page !== pageParam) {
       setPage(pageParam);
@@ -128,7 +133,7 @@ export default function NotificationsPage() {
             Anterior
           </button>
 
-          <span className="page-label">{page}</span>
+          <span className="page-label">{page}/{totalPages}</span>
 
           <button
             className="btn btn-secondary"
