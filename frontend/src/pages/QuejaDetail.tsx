@@ -492,34 +492,48 @@ function QuejaDetail() {
                           src={mediaUrl(img.imagen)}
                           alt=""
                         />
-                        {index === 1 && remaining > 0 && (
-                          <div
-                            className="overlay-more"
-                            onClick={() => setShowAllImages(!showAllImages)}
-                          >
-                            {showAllImages ? `-${remaining}` : `+${remaining}`}
-                          </div>
-                        )}
+
+{index === 1 && remaining > 0 && !showAllImages && (
+  <div
+    className="overlay-more"
+    onClick={() => setShowAllImages(true)}
+  >
+    +{remaining}
+  </div>
+)}
+
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {showAllImages && remaining > 0 && (
-                  <div className="media-grid">
-                    {rest.map((img, i) => (
-                      <div key={i} className="media-card">
-                        <div className="media-card__visual">
-                          <img
-                            className="media media--image"
-                            src={mediaUrl(img.imagen)}
-                            alt=""
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+
+{showAllImages && remaining > 0 && (
+  <div className="media-grid">
+    {rest.map((img, i) => (
+      <div key={i} className="media-card">
+        <div className="media-card__visual">
+          <img
+            className="media media--image"
+            src={mediaUrl(img.imagen)}
+            alt=""
+          />
+
+          {/* -N solo en la última imagen */}
+          {i === rest.length - 1 && (
+            <div
+              className="overlay-more"
+              onClick={() => setShowAllImages(false)}
+            >
+              -{remaining}
+            </div>
+          )}
+        </div>
+      </div>
+    ))}
+  </div>
+)}
+
               </>
             ) : (
               <p className="empty-state">No hay imágenes.</p>
