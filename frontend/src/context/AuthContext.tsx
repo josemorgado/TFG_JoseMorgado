@@ -3,20 +3,23 @@ import { loginRequest, fetchMe } from "../api/auth";
 import type { LoginRequest } from "../api/auth";
 import { storage } from "../utils/storage";
 
-type AuthUser = { id: number; username: string; [k: string]: any };
+type AuthUser = { id: number; username: string;[k: string]: any };
+
 
 type AuthContextType = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   login: (data: LoginRequest) => Promise<void>;
   logout: () => void;
+  setUser: React.Dispatch<React.SetStateAction<AuthUser | null>>;
 };
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   isAuthenticated: false,
-  login: async () => {},
-  logout: () => {},
+  login: async () => { },
+  logout: () => { },
+  setUser: () => { },
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -64,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   return (
     <AuthContext.Provider
-      value={{ user, isAuthenticated: !!user, login, logout }}
+      value={{ user, isAuthenticated: !!user, login, logout, setUser }}
     >
       {children}
     </AuthContext.Provider>

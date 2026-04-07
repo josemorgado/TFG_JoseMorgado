@@ -1,16 +1,23 @@
 from datetime import date
+import json
+
 from django.contrib.auth import get_user_model
 from django.db import transaction
 from rest_framework import serializers
-import json
+from rest_framework.exceptions import PermissionDenied
+
 from .models import Perfil
 
 User = get_user_model()
 
 
-# --------- Perfil ---------
-
 class PerfilSerializer(serializers.ModelSerializer):
+    """
+    Serializer del perfil de usuario.
+    Gestiona la información extendida del usuario y aplica
+    validaciones de edad y coherencia de datos.
+    """
+
     edad = serializers.IntegerField(read_only=True)
 
     class Meta:
@@ -33,17 +40,27 @@ class PerfilSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "La fecha de nacimiento no puede estar en el futuro."
             )
+
         if value:
             edad = (date.today() - value).days // 365
             if edad < 14:
-                raise serializers.ValidationError("La edad mínima es 14 años.")
+                raise serializers.ValidationError(
+                    "La edad mínima para registrarse es de 14 años."
+                )
+
         return value
 
+
 class UserMeSerializer(serializers.ModelSerializer):
+    """
+    Serializer del endpoint /me.
+    Devuelve la información del usuario autenticado junto a su perfil,
+    ofreciendo además campos aplanados para facilitar el consumo
+    desde el frontend.
+    """
+
     perfil = PerfilSerializer(read_only=True)
-    # Alias plano para que el frontend no tenga que mirar dentro de perfil
     is_moderator = serializers.BooleanField(source="perfil.moderator", read_only=True)
-    # Nombres de grupos (si usas Group de Django)
     groups = serializers.SlugRelatedField(many=True, read_only=True, slug_field="name")
 
     class Meta:
@@ -57,22 +74,23 @@ class UserMeSerializer(serializers.ModelSerializer):
             "is_active",
             "is_staff",
             "is_superuser",
-            "is_moderator",   # <-- plano
-            "groups",         # <-- nombres de grupos
-            "perfil",         # <-- detalle del perfil (incluye moderator también)
+            "is_moderator",
+            "groups",
+            "perfil",
         ]
         read_only_fields = fields
-# --------- User + Perfil ---------
+
 
 class UserPerfilSerializer(serializers.ModelSerializer):
     """
-    Serializer para crear/actualizar usuario + perfil.
-    Maneja JSON y multipart/form-data.
+    Serializer encargado de la creación y actualización conjunta
+    del usuario y su perfil asociado.
+
+    Admite tanto peticiones JSON como multipart/form-data,
+    permitiendo la gestión de imágenes y campos anidados.
     """
 
     password = serializers.CharField(write_only=True, required=False)
-
-    # Perfil en solo lectura (ya lo manejamos manualmente en update)
     perfil = PerfilSerializer(read_only=True)
 
     class Meta:
@@ -87,35 +105,41 @@ class UserPerfilSerializer(serializers.ModelSerializer):
             "perfil",
         ]
 
-    # --------- Validadores ---------
-
     def validate_email(self, value):
         value = value.strip()
+
         if not value:
-            raise serializers.ValidationError("El email no puede estar vacío.")
+            raise serializers.ValidationError(
+                "El correo electrónico no puede estar vacío."
+            )
+
         qs = User.objects.filter(email__iexact=value)
+
         if self.instance:
             qs = qs.exclude(pk=self.instance.pk)
+
         if qs.exists():
-            raise serializers.ValidationError("Este email ya está en uso.")
+            raise serializers.ValidationError("Este correo electrónico ya está en uso.")
+
         return value
 
     def validate_username(self, value):
         value = value.strip()
+
         if not value:
             raise serializers.ValidationError("El nombre de usuario es obligatorio.")
+
         qs = User.objects.filter(username__iexact=value)
+
         if self.instance:
             qs = qs.exclude(pk=self.instance.pk)
+
         if qs.exists():
             raise serializers.ValidationError(
                 "Ya existe un usuario con ese nombre de usuario."
             )
-        return value
 
-    # ============================================================
-    # CREATE
-    # ============================================================
+        return value
 
     @transaction.atomic
     def create(self, validated_data):
@@ -146,15 +170,10 @@ class UserPerfilSerializer(serializers.ModelSerializer):
 
         return user
 
-    # ============================================================
-    # UPDATE
-    # ============================================================
-
     @transaction.atomic
     def update(self, instance, validated_data):
         request = self.context.get("request")
 
-        # --------- 1. Actualizar datos del usuario ---------
         password = validated_data.pop("password", None)
 
         for field, value in validated_data.items():
@@ -165,7 +184,6 @@ class UserPerfilSerializer(serializers.ModelSerializer):
 
         instance.save()
 
-        # --------- 2. Actualizar perfil ---------
         perfil_instance = instance.perfil
 
         perfil_raw = request.data.get("perfil")
@@ -180,9 +198,17 @@ class UserPerfilSerializer(serializers.ModelSerializer):
             except json.JSONDecodeError:
                 perfil_data = {}
 
-        # -----------------------------------------
-        # 🔥 CAMBIO AÑADIDO: borrar foto si se pide
-        # -----------------------------------------
+        if "moderator" in perfil_data:
+            usuario_actual = request.user
+
+            if not (
+                usuario_actual.is_superuser
+                or getattr(usuario_actual.perfil, "moderator", False)
+            ):
+                raise PermissionDenied(
+                    "No tienes permiso para modificar el rol de moderador."
+                )
+
         eliminar_foto = perfil_data.pop("eliminar_foto", False)
 
         if eliminar_foto is True:
@@ -190,28 +216,30 @@ class UserPerfilSerializer(serializers.ModelSerializer):
                 perfil_instance.foto_perfil.delete(save=False)
             perfil_instance.foto_perfil = None
 
-        # -----------------------------------------
-        # Añadir nueva foto si viene en la petición
-        # -----------------------------------------
         foto = request.FILES.get("perfil.foto_perfil")
+
         if foto:
             perfil_data["foto_perfil"] = foto
 
-        # Guardar resto de campos del perfil
         perfil_serializer = PerfilSerializer(
             perfil_instance,
             data=perfil_data,
             partial=True,
         )
+
         perfil_serializer.is_valid(raise_exception=True)
         perfil_serializer.save()
 
         return instance
 
 
-# --------- User Lite (para listar/mostrar) ---------
-
 class UserLiteSerializer(serializers.ModelSerializer):
+    """
+    Serializer reducido de usuario.
+    Se utiliza en listados y vistas donde no es necesario
+    cargar la información completa del perfil.
+    """
+
     class Meta:
         model = User
         fields = [
@@ -225,18 +253,14 @@ class UserLiteSerializer(serializers.ModelSerializer):
             "last_login",
         ]
         read_only_fields = ["id", "date_joined", "last_login"]
-        extra_kwargs = {
-            "username": {"help_text": "Nombre único de usuario."},
-            "email": {"help_text": "Correo electrónico del usuario."},
-            "first_name": {"help_text": "Nombre."},
-            "last_name": {"help_text": "Apellidos."},
-            "is_active": {"help_text": "Indica si la cuenta está activa."},
-            "date_joined": {"help_text": "Fecha de alta (solo lectura)."},
-            "last_login": {"help_text": "Último acceso (solo lectura)."},
-        }
 
 
 class UserWithPerfilSerializer(serializers.ModelSerializer):
+    """
+    Serializer de solo lectura del usuario junto a su perfil,
+    pensado para vistas públicas o de consulta.
+    """
+
     perfil = PerfilSerializer(read_only=True)
 
     class Meta:
@@ -254,16 +278,32 @@ class UserWithPerfilSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
+
 class PasswordResetRequestSerializer(serializers.Serializer):
-    email=serializers.EmailField()
-    def validate_email(self,value):
+    """
+    Serializer para solicitar el restablecimiento de contraseña
+    a partir del correo electrónico del usuario.
+    """
+
+    email = serializers.EmailField()
+
+    def validate_email(self, value):
         try:
             User.objects.get(email=value)
         except User.DoesNotExist:
-            raise serializers.ValidationError("No existe un usuario con este email.")
+            raise serializers.ValidationError(
+                "No existe ningún usuario con este correo electrónico."
+            )
+
         return value
 
+
 class PasswordResetConfirmSerializer(serializers.Serializer):
+    """
+    Serializer encargado de confirmar el cambio de contraseña
+    mediante token y nueva clave.
+    """
+
     uid = serializers.CharField()
     token = serializers.CharField()
     new_password = serializers.CharField()

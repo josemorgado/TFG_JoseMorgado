@@ -11,6 +11,7 @@ import editIcon from "../assets/icons/pencil-icon.png";
 import { getTopCategorias } from "../api/stats";
 import type { CategoriaStats } from "../api/stats";
 import LogoutButton from "../components/LogoutButton";
+import ModButton from "../components/ModButton";
 export default function PerfilDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -115,11 +116,24 @@ export default function PerfilDetail() {
               )}
             </div>
 
+
             {esMiPerfil && (
               <div className="logout-wrapper">
                 <LogoutButton />
               </div>
             )}
+
+
+            {!esMiPerfil && userActivo?.perfil?.moderator && usuario && (
+              <div className="logout-wrapper">
+                <ModButton
+                  targetUserId={usuario.id}
+                  targetIsModerator={usuario.perfil.moderator}
+                  onUpdated={(updatedUser) => setUsuario(updatedUser)}
+                />
+              </div>
+            )}
+
 
           </div>
 
@@ -200,6 +214,6 @@ export default function PerfilDetail() {
           </div>
         )}
       </div>
-    </div>
+    </div >
   );
 }

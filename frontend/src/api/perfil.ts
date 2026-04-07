@@ -58,7 +58,6 @@ export const changePassword = async (
   });
 };
 
-
 export async function deleteUsuario(id: number | string) {
   try {
     // 1) Coger el refresh token
@@ -77,7 +76,7 @@ export async function deleteUsuario(id: number | string) {
     try {
       localStorage.removeItem("access");
       localStorage.removeItem("refresh");
-    } catch {}
+    } catch { }
 
     // 4) Eliminar usuario definitivamente
     const res = await axios.delete(`/usuarios/${id}/delete/`);
@@ -88,3 +87,14 @@ export async function deleteUsuario(id: number | string) {
   }
 }
 
+export async function toggleModerator(
+  id: number | string,
+  currentValue: boolean
+) {
+  const res = await axios.patch(`/usuarios/${id}/partial-update/`, {
+    perfil: {
+      moderator: !currentValue,
+    },
+  });
+  return res.data;
+}
