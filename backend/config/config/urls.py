@@ -17,6 +17,7 @@ urlpatterns = [
     path('api/videos/', include('video.urls')),
     path('api/megusta/', include('megusta.urls')),
     path('api/usuarios/', include('perfil.urls')),
+    path('api/suggestions/', include('suggestion.urls')),
 
     path('api/', include('respuesta.urls')),
 

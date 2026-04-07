@@ -30,10 +30,15 @@ class Command(BaseCommand):
         # ============================================================
         #  TRUNCATE TODAS LAS TABLAS (reinicia IDs)
         # ============================================================
+
+        existing_tables = connection.introspection.table_names()
+
         with connection.cursor() as cursor:
             for model in apps.get_models():
                 table = model._meta.db_table
-                cursor.execute(f'TRUNCATE TABLE "{table}" RESTART IDENTITY CASCADE;')
+                if table in existing_tables:
+                    cursor.execute(f'TRUNCATE TABLE \"{table}\" RESTART IDENTITY CASCADE;')
+
         self.stdout.write(self.style.SUCCESS("TRUNCATE OK."))
 
         # ============================================================
@@ -392,4 +397,64 @@ class Command(BaseCommand):
                 respuestas_creadas += 1
 
         self.stdout.write(self.style.SUCCESS(f"Respuestas creadas: {respuestas_creadas}"))
+        # ============================================================
+        #  SUGGESTIONS AUTOMÁTICAS (150 sugerencias)
+        # ============================================================
+        from suggestion.models import Suggestion
+
+        títulos_sugerencias = [
+            "Mejorar iluminación en parques",
+            "Añadir más bancos en zonas de descanso",
+            "Implementar puntos de reciclaje inteligente",
+            "Aumentar la frecuencia de autobuses nocturnos",
+            "Crear más zonas verdes pequeñas en calles",
+            "Instalar fuentes de agua potable en plazas",
+            "Reparar pasos de peatones deteriorados",
+            "Crear carriles bici adicionales",
+            "Instalar contenedores soterrados",
+            "Mejorar accesibilidad para personas mayores",
+        ]
+
+        sugerencias_creadas = []
+
+        for i in range(1, 151):
+            titulo = random.choice(títulos_sugerencias) + f" #{i}"
+            descripcion = (
+                f"Descripción generada automáticamente para la sugerencia #{i}. "
+                "Esta sugerencia ha sido incluida para poblar la base de datos con datos realistas."
+            )
+
+            autor_random = random.choice(usuarios_obj)
+
+            sug = Suggestion.objects.create(
+                titulo=titulo,
+                descripcion=descripcion,
+                autor=autor_random,
+            )
+
+            sugerencias_creadas.append(sug)
+
+        self.stdout.write(self.style.SUCCESS(f"Sugerencias creadas: {len(sugerencias_creadas)}"))
+
+
+        # ============================================================
+        #  ME GUSTA PARA SUGERENCIAS
+        # ============================================================
+        ct_suggestion = ContentType.objects.get_for_model(Suggestion)
+
+        likes_suggestions = 0
+        for s in sugerencias_creadas:
+            k = min(random.randint(2, 15), len(usuarios_obj))
+            for u in random.sample(usuarios_obj, k):
+                _, created = MeGusta.objects.get_or_create(
+                    content_type=ct_suggestion,
+                    object_id=s.id,
+                    autor=u,
+                )
+                if created:
+                    likes_suggestions += 1
+
+        self.stdout.write(
+            self.style.SUCCESS(f"Likes en sugerencias: {likes_suggestions}")
+        )
         self.stdout.write(self.style.SUCCESS("✅ SEED COMPLETADO."))
