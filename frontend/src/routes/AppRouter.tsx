@@ -21,6 +21,7 @@ import Stats from '../pages/Stats';
 import Notificaciones from '../pages/Notificaciones';
 import QuejaRespuestasPage from '../pages/QuejaRespuestas';
 import QuejaResponder from '../pages/QuejaResponder';
+import Contacto from '../pages/Contacto';
 
 const AppRouter: React.FC = () => (
   <BrowserRouter>
@@ -33,6 +34,7 @@ const AppRouter: React.FC = () => (
         <Route path="/register" element={<Register />} />
         <Route path="/quejas/:id" element={<QuejaDetail />} />
         <Route path="/perfil/:id" element={<PerfilDetail />} />
+        <Route path="/contact" element={<Contacto />} />
         <Route path="/ruta-prohibida" element={<RutaProhibida />} />
         <Route path="/quejas/:id/update" element={<QuejaUpdate />} />
         <Route path="/quejas/" element={<QuejasList />} />

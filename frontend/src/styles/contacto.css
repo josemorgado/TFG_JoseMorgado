@@ -1,0 +1,108 @@
+.contacto-page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem;
+}
+
+.contacto-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.contacto-header h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.contacto-header p {
+  color: #555;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+/* GRID */
+.contacto-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+}
+
+/* CARD BASE */
+.contacto-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+  transition: transform 0.2s ease;
+}
+
+.contacto-card:hover {
+  transform: translateY(-4px);
+}
+
+.contacto-card h2 {
+  margin-bottom: 1rem;
+  font-size: 1.4rem;
+}
+
+.contacto-card p {
+  margin-bottom: 1.5rem;
+  color: #444;
+  line-height: 1.6;
+}
+
+/* LISTA DE DATOS */
+.contacto-list {
+  list-style: none;
+  padding: 0;
+}
+
+.contacto-list li {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 0.8rem;
+}
+
+.contacto-list strong {
+  font-weight: 600;
+  color: #222;
+}
+
+.contacto-list span,
+.contacto-list a {
+  color: #555;
+  text-decoration: none;
+}
+
+.contacto-list a:hover {
+  text-decoration: underline;
+}
+
+/* LINKS US */
+.contacto-links {
+  list-style: none;
+  padding: 0;
+}
+
+.contacto-links li {
+  margin-bottom: 0.8rem;
+}
+
+.contacto-links a {
+  text-decoration: none;
+  font-weight: 500;
+  color: #1d4ed8;
+}
+
+.contacto-links a:hover {
+  text-decoration: underline;
+}
+
+/* VARIANTES */
+.contacto-autor {
+  background: linear-gradient(135deg, #eef4ff, #ffffff);
+}
+
+.contacto-us {
+  background: linear-gradient(135deg, #f0fdf4, #ffffff);
+}

@@ -9,6 +9,7 @@ import StatsButton from "./StatsButton";
 import NotificacionesButton from "./NotificacionesButton";
 import { getUnreadCount } from "../api/notificaciones";
 import { useState, useEffect } from "react";
+import ContactButton from "./ContactButton";
 const Navbar: React.FC = () => {
   const { user } = useAuth();
   const location = useLocation();
@@ -55,8 +56,9 @@ useEffect(() => {
       </div>
 
       <ul className="nav-links">
-        <StatsButton />
         <QuejasButton />
+        <StatsButton />
+        <ContactButton/>
         {user && <NotificacionesButton unreadNCount={unreadCount} />}
 
 
