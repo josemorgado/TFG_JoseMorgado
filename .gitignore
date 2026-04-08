@@ -38,6 +38,7 @@ eggs/
 ############################
 # Tu sección original + variantes
 .venv/
+.venv311/
 venv311/
 venv/
 env/

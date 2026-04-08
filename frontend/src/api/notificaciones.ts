@@ -1,4 +1,4 @@
-// src/api/notifications.ts
+// src/api/notificaciones.ts
 import axios from "../utils/axios";
 import type { Notificacion, Paginated } from "../types/notificaciones";
 
@@ -15,13 +15,11 @@ export async function getNotifications(params?: {
       is_read: typeof is_read === "boolean" ? (is_read ? "true" : "false") : undefined,
     },
   });
-  window.dispatchEvent(new Event("notificaciones-actualizadas"));
   return resp.data;
 }
 
 export async function getUnreadCount(): Promise<number> {
   const resp = await axios.get<{ unread: number }>("/notificaciones/unread-count/");
-  window.dispatchEvent(new Event("notificaciones-actualizadas"));
   return resp.data.unread;
 }
 

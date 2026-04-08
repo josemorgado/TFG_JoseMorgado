@@ -50,6 +50,7 @@ useEffect(() => {
 
 
   return (
+
     <nav className="navbar">
       <div className="logo">
         <Link to="/">ALCALDE ESCUCHAME</Link>
