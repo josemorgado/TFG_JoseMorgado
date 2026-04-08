@@ -3,7 +3,7 @@ from .models import Comentario
 from megusta.models import MeGusta
 from rest_framework.fields import SerializerMethodField
 from django.contrib.contenttypes.models import ContentType
-
+from config.services.moderation.moderation_service import moderate_text
 long_minima_contenido = 3
 
 
@@ -65,9 +65,10 @@ class ComentarioSerializer(serializers.ModelSerializer):
         - Un comentario no puede ser su propio parent.
         - El parent debe pertenecer a la misma queja.
         """
-        parent = attrs.get('parent')
         queja = attrs.get('queja') or getattr(self.instance, 'queja', None)
-
+        parent = attrs.get('parent')
+        contenido = attrs.get('contenido')
+        moderate_text(contenido)
         if parent:
             if self.instance and parent.pk == getattr(self.instance, 'pk', None):
                 raise serializers.ValidationError({

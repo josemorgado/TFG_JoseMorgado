@@ -7,7 +7,7 @@ from quejas.models import Queja
 from megusta.models import MeGusta
 from respuesta.models import Respuesta
 
-from quejas.services.moderation.moderation_service import moderate_text
+from config.services.moderation.moderation_service import moderate_text
 
 
 class QuejaSerializer(serializers.ModelSerializer):
