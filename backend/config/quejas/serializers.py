@@ -1,61 +1,71 @@
-import dis
-import re
-from webbrowser import get
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from rest_framework.fields import SerializerMethodField
 from django.contrib.contenttypes.models import ContentType
+from rest_framework.fields import SerializerMethodField
+
 from quejas.models import Queja
 from megusta.models import MeGusta
 from respuesta.models import Respuesta
 
+from quejas.services.moderation.moderation_service import moderate_text
+
 
 class QuejaSerializer(serializers.ModelSerializer):
     """
-    Serializador para el modelo Queja.
-    Mantiene todas las validaciones y lógica original, añadiendo
-    descripciones para mejorar la documentación en Swagger.
+    Serializer del modelo Queja.
+
+    Responsabilidades:
+    - Validar campos individuales y cruzados.
+    - Aplicar moderación de contenido textual.
+    - Controlar la asignación del autor según permisos.
+    - Exponer campos derivados necesarios para el frontend.
     """
 
-    # Campos de solo lectura derivados
-    categoria_nombre = SerializerMethodField(
-        read_only=True, help_text="Nombre legible de la categoría."
-    )
-    distrito_nombre = SerializerMethodField(
-        read_only=True, help_text="Nombre legible del distrito."
-    )
-    autor_nombre = SerializerMethodField(
-        read_only=True, help_text="Nombre completo o username del autor."
-    )
-    content_type = SerializerMethodField(
-        read_only=True, help_text="Id del content type de queja"
-    )
-    is_liked = SerializerMethodField(
-        read_only=True, help_text="Si el usuario autenticado ha dado megusta"
-    )
+    # ───────────────
+    # Campos derivados
+    # ───────────────
+    categoria_nombre = SerializerMethodField()
+    distrito_nombre = SerializerMethodField()
+    autor_nombre = SerializerMethodField()
+    content_type = SerializerMethodField()
+    is_liked = SerializerMethodField()
+    num_respuestas = SerializerMethodField()
+
+    # Fecha formateada para consumo en frontend
     fecha_creacion_iso = serializers.DateTimeField(
-        source="fecha_creacion", format="%Y-%m-%dT%H:%M:%S%z", read_only=True
+        source="fecha_creacion",
+        format="%Y-%m-%dT%H:%M:%S%z",
+        read_only=True
     )
-    # Campos relacionados (en producción el autor vendrá del request)
+
+    # ───────────────
+    # Relaciones
+    # ───────────────
     autor = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
         required=False,
-        help_text="ID del usuario autor de la queja.",
-    )
-    num_respuestas = serializers.SerializerMethodField(read_only=True)
-    # Querysets dinámicos para evitar import circular
-    categoria = serializers.PrimaryKeyRelatedField(
-        queryset=Queja._meta.get_field("categoria").remote_field.model.objects.all(),
-        help_text="ID de la categoría asociada.",
-    )
-    distrito = serializers.PrimaryKeyRelatedField(
-        queryset=Queja._meta.get_field("distrito").remote_field.model.objects.all(),
-        help_text="ID del distrito asociado.",
+        help_text="Autor de la queja. Ignorado para usuarios no moderadores."
     )
 
+    categoria = serializers.PrimaryKeyRelatedField(
+        queryset=Queja._meta.get_field("categoria")
+        .remote_field.model.objects.all(),
+        help_text="Categoría asociada a la queja."
+    )
+
+    distrito = serializers.PrimaryKeyRelatedField(
+        queryset=Queja._meta.get_field("distrito")
+        .remote_field.model.objects.all(),
+        help_text="Distrito asociado a la queja."
+    )
+
+    # Contadores precalculados (solo lectura)
     imagenes_count = serializers.IntegerField(read_only=True)
     videos_count = serializers.IntegerField(read_only=True)
 
+    # ───────────────
+    # Meta
+    # ───────────────
     class Meta:
         model = Queja
         fields = [
@@ -72,15 +82,15 @@ class QuejaSerializer(serializers.ModelSerializer):
             "autor_nombre",
             "fecha_creacion",
             "fecha_actualizacion",
+            "fecha_creacion_iso",
             "num_votos",
             "num_comentarios",
             "num_comentarios_top_level",
-            "content_type",
-            "is_liked",
-            "fecha_creacion_iso",
             "imagenes_count",
             "videos_count",
             "num_respuestas",
+            "content_type",
+            "is_liked",
         ]
         read_only_fields = [
             "id",
@@ -90,86 +100,40 @@ class QuejaSerializer(serializers.ModelSerializer):
             "num_votos",
             "num_comentarios",
             "num_comentarios_top_level",
-            "content_type",
-            "is_liked",
-            "fecha_creacion_iso",
             "imagenes_count",
             "videos_count",
             "num_respuestas",
+            "content_type",
+            "is_liked",
+            "fecha_creacion_iso",
         ]
         extra_kwargs = {
-            "titulo": {"help_text": "Título breve y descriptivo (5–200 caracteres)."},
+            "titulo": {
+                "help_text": "Título breve y descriptivo (5–200 caracteres)."
+            },
             "descripcion": {
                 "help_text": "Descripción detallada de la queja (10–5000 caracteres)."
             },
             "ubicacion": {
                 "help_text": "Ubicación relacionada con la incidencia (opcional)."
             },
-            "estado": {"help_text": "Estado de la queja (solo lectura)."},
-            "fecha_creacion": {"help_text": "Fecha y hora de creación (solo lectura)."},
-            "fecha_actualizacion": {
-                "help_text": "Fecha y hora de última modificación (solo lectura)."
-            },
         }
 
-    # Obtener el content_type de queja para la creacion de comentarios, imagenes y videos
-    def get_content_type(selft, obj):
-        ct = ContentType.objects.get_for_model(obj)
-        return ct.id
-
-    def get_num_respuestas(self, obj):
-        return Respuesta.objects.filter(queja=obj).count()
-
-    # CREACIÓN DE QUEJA
-    def create(self, validated_data):
-        # El autor se asigna automáticamente desde el request
-        request = self.context.get("request")
-        user = request.user
-
-        autor_enviado = validated_data.get("autor", None)
-
-        if not user.perfil.moderator:
-            validated_data["autor"] = user
-
-        else:
-            if autor_enviado is None:
-                validated_data["autor"] = user
-            else:
-                validated_data["autor"] = autor_enviado
-
-        validated_data.setdefault("estado", "PEN")
-        return super().create(validated_data)
-
-    def update(self, instance, validated_data):
-        request = self.context["request"]
-        user = request.user
-
-        autor_enviado = validated_data.get("autor", None)
-
-        # Usuarios normales NO pueden cambiar el autor
-        if not user.is_staff:
-            validated_data.pop("autor", None)
-        else:
-            # Si es moderador: si no envía autor → él mismo
-            if autor_enviado is None:
-                validated_data["autor"] = user
-
-        return super().update(instance, validated_data)
-
-    # VALIDACIÓN DEL TÍTULO
+    # ───────────────
+    # Validaciones de campo
+    # ───────────────
     def validate_titulo(self, value):
         value = value.strip()
-        if len(value) < 5 or len(value) > 200:
-            raise serializers.ValidationError(
-                "El título debe tener al menos 5 caracteres y no más de 200."
-            )
         if not value:
             raise serializers.ValidationError(
                 "El título no puede estar vacío o contener solo espacios."
             )
+        if len(value) < 5 or len(value) > 200:
+            raise serializers.ValidationError(
+                "El título debe tener entre 5 y 200 caracteres."
+            )
         return value
 
-    # VALIDACIÓN DE DESCRIPCIÓN
     def validate_descripcion(self, value):
         if len(value) < 10 or len(value) > 5000:
             raise serializers.ValidationError(
@@ -177,25 +141,82 @@ class QuejaSerializer(serializers.ModelSerializer):
             )
         return value
 
-    # VALIDACIONES CRUZADAS
+    # ───────────────
+    # Validaciones cruzadas
+    # ───────────────
     def validate(self, data):
-        # Evita duplicar quejas con el mismo título en un distrito
-        request = self.context.get("request")
-        user = getattr(request, "user", None)
+        """
+        Validaciones que dependen de múltiples campos:
+        - Moderación del contenido textual.
+        - Evitar duplicados por título y distrito.
+        """
+        titulo = data.get("titulo", getattr(self.instance, "titulo", ""))
+        descripcion = data.get(
+            "descripcion",
+            getattr(self.instance, "descripcion", "")
+        )
 
-        titulo = data.get("titulo", getattr(self.instance, "titulo", None))
-        distrito = data.get("distrito", getattr(self.instance, "distrito", None))
+        # 1. Sistema de moderación de contenido
+        texto = f"{titulo} {descripcion}"
+        moderate_text(texto)
 
-        qs = Queja.objects.filter(titulo__iexact=titulo, distrito=distrito)
+        # 2. Prevenir duplicados por título y distrito
+        distrito = data.get(
+            "distrito", getattr(self.instance, "distrito", None)
+        )
+
+        qs = Queja.objects.filter(
+            titulo__iexact=titulo,
+            distrito=distrito
+        )
+
         if self.instance:
             qs = qs.exclude(pk=self.instance.pk)
+
         if qs.exists():
             raise serializers.ValidationError(
-                "Ya has presentado una queja con el mismo título en este distrito."
+                "Ya existe una queja con el mismo título en este distrito."
             )
+
         return data
 
-    # CAMPOS DERIVADOS
+    # ───────────────
+    # Creación y actualización
+    # ───────────────
+    def create(self, validated_data):
+        """
+        Asigna automáticamente el autor y establece el estado inicial.
+        """
+        request = self.context.get("request")
+        user = request.user
+
+        autor_enviado = validated_data.get("autor")
+
+        if not user.perfil.moderator:
+            validated_data["autor"] = user
+        else:
+            validated_data["autor"] = autor_enviado or user
+
+        validated_data.setdefault("estado", "PEN")
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        """
+        Controla la modificación del autor según permisos.
+        """
+        request = self.context.get("request")
+        user = request.user
+
+        if not user.is_staff:
+            validated_data.pop("autor", None)
+        else:
+            validated_data["autor"] = validated_data.get("autor", user)
+
+        return super().update(instance, validated_data)
+
+    # ───────────────
+    # Métodos de campos derivados
+    # ───────────────
     def get_categoria_nombre(self, obj):
         return getattr(obj.categoria, "nombre", None)
 
@@ -208,7 +229,13 @@ class QuejaSerializer(serializers.ModelSerializer):
         nombre = f"{obj.autor.first_name} {obj.autor.last_name}".strip()
         return nombre if nombre else obj.autor.username
 
+    def get_content_type(self, obj):
+        return ContentType.objects.get_for_model(obj).id
+
     def get_is_liked(self, obj):
         request = self.context.get("request")
         user = getattr(request, "user", None)
         return MeGusta.objects.is_liked_by(obj, user)
+
+    def get_num_respuestas(self, obj):
+        return Respuesta.objects.filter(queja=obj).count()
