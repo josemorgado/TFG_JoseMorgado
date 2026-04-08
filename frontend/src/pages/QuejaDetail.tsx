@@ -433,6 +433,7 @@ function QuejaDetail() {
             </div>
           </div>
           <div className="detail__meta">
+            <span className="meta__label">Usuario:</span>
             <span className="pill" title="User">
               <strong>
                 <Link to={`/perfil/${queja.autor}`}>{queja.autor_nombre}</Link>
@@ -441,24 +442,37 @@ function QuejaDetail() {
 
             <span className="meta__group">
               <span className="meta__label">Estado:</span>
-              <span className="pill pill--neutral">
+              <Link
+                to={`/quejas?estado=${queja.estado}`}
+                className="pill pill--neutral pill--link"
+              >
                 {estadoCompleto[queja.estado] || queja.estado}
-              </span>
+              </Link>
             </span>
+
 
             <span className="meta__group">
               <span className="meta__label">Categoría:</span>
-              <span className="pill pill--neutral">
+              <Link
+                to={`/quejas?categoria=${encodeURIComponent(queja.categoria_nombre)}`}
+                className="pill pill--neutral pill--link"
+              >
                 {queja.categoria_nombre}
-              </span>
+              </Link>
             </span>
+
+
 
             <span className="meta__group">
               <span className="meta__label">Distrito:</span>
-              <span className="pill pill--neutral">
+              <Link
+                to={`/quejas?distrito=${encodeURIComponent(queja.distrito_nombre)}`}
+                className="pill pill--neutral pill--link"
+              >
                 {queja.distrito_nombre}
-              </span>
+              </Link>
             </span>
+
           </div>
           <div className="detail_content">
             {queja.descripcion && (

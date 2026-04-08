@@ -1,6 +1,6 @@
 from transformers import pipeline
 
-TOXICITY_THRESHOLD = 0.65
+TOXICITY_THRESHOLD = 0.5
 
 _toxicity_classifier = pipeline(
     task="text-classification",

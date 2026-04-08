@@ -3,7 +3,7 @@ import { getQuejas } from "../api/quejas";
 import type { Queja } from "../types/queja";
 import "../styles/quejasList.css";
 import QuejaCard from "../components/QuejaCard";
-
+import { useSearchParams } from "react-router-dom";
 import type { FiltersShape, SortBy } from "../types/filters";
 import { defaultFilters } from "../types/filters";
 import { loadListState, saveListState, clearListState } from "../utils/storage";
@@ -16,7 +16,7 @@ import {
 export default function QuejasList() {
   const [quejas, setQuejas] = useState<Queja[]>([]);
   const [loading, setLoading] = useState(true);
-
+  const [searchParams] = useSearchParams();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
@@ -106,6 +106,29 @@ export default function QuejasList() {
     isLoading: disLoading,
     error: disError,
   } = useDistritos();
+
+  useEffect(() => {
+    const categoria = searchParams.get("categoria");
+    const distrito = searchParams.get("distrito");
+    const estado = searchParams.get("estado");
+
+    if (categoria || distrito || estado) {
+      // 🔥 LIMPIAR TODO
+      clearListState();
+
+      setFilters({
+        ...defaultFilters,
+        categoria: categoria ?? "",
+        distrito: distrito ?? "",
+        estado: estado ?? "",
+      });
+
+      setSortBy("");
+      setIsFiltersOpen(true);
+      setIsSortOpen(false);
+      setCurrentPage(1);
+    }
+  }, []);
 
   // 2) Cargar quejas SOLO al montar
   useEffect(() => {
