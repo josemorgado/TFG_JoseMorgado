@@ -111,7 +111,6 @@ const COLORS = [
 export default function Stats() {
   const { user, isAuthenticated } = useAuth();
 
-  const [resetKey, setResetKey] = useState<number>(0);
 
   // --- Cargar catálogos ---
   const {
@@ -316,7 +315,6 @@ export default function Stats() {
     setOrderingDistritos("-total");
     setIncludeZeroDistritos(false);
 
-    setResetKey((k) => k + 1);
 
   };
 
