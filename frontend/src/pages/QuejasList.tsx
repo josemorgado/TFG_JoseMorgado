@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { getQuejas } from "../api/quejas";
 import type { Queja } from "../types/queja";
-import "../styles/quejasList.css";
+import "../styles/QuejasList.css";
 import QuejaCard from "../components/QuejaCard";
 import { useSearchParams } from "react-router-dom";
 import type { FiltersShape, SortBy } from "../types/filters";
