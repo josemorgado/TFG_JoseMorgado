@@ -118,7 +118,7 @@ pnpm-debug.log*
 ############################
 # Nunca subir secretos; ofrece un ejemplo
 .env
-.env.*
+
 !.env.example
 
 ############################
