@@ -111,7 +111,6 @@ const COLORS = [
 export default function Stats() {
   const { user, isAuthenticated } = useAuth();
 
-  const [resetKey, setResetKey] = useState(0);
 
   // --- Cargar catálogos ---
   const {

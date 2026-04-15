@@ -1,7 +1,6 @@
 // src/components/notifications/NotificationDropdown.tsx
 import { useNavigate } from "react-router-dom";
 import { useNotificaciones } from "../hooks/useNotificaciones";
-import { formatDateTime } from "../utils/format";
 
 interface Props {
   onClose: () => void;
@@ -72,7 +71,7 @@ export default function NotificacionDropdown({ onClose }: Props) {
             >
               <div style={{ display: "flex", justifyContent: "space-between" }}>
                 <span style={{ fontWeight: 600 }}>{n.title}</span>
-                <small style={{ color: "#6b7280" }}>{formatDateTime(n.created_at)}</small>
+                <small style={{ color: "#6b7280" }}>{(n.created_at)}</small>
               </div>
               <span style={{ color: "#374151" }}>{n.message}</span>
             </div>
