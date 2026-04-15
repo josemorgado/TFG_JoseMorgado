@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { Usuario } from "../types/perfil";
 import { getUsuarioById } from "../api/perfil";
-import "../styles/perfilDetail.css";
+import "../styles/PerfilDetail.css";
 import type { Queja } from "../types/queja";
 import { getQuejasByUser } from "../api/quejas";
 import { useAuth } from "../context/AuthContext";
