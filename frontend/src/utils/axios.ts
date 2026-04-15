@@ -2,7 +2,7 @@ import axios from "axios";
 import { storage } from "./storage";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api",
+  baseURL: import.meta.env.VITE_API_BASE_URL || "https://alcalde-escuchame-backend.onrender.com/api",
 });
 
 // --- (1) Añadir el access token a cada request ---
