@@ -1,4 +1,4 @@
-const API_ORIGIN = "http://localhost:8000";
+const API_ORIGIN = "https://alcalde-escuchame-backend.onrender.com";
 
 export function mediaUrl(url: string): string {
   if (!url) return "";

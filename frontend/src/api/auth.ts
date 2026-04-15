@@ -36,7 +36,7 @@ export async function loginRequest(data: LoginRequest) {
 export async function apiLogout() {
   const refresh = storage.getRefresh();
   try {
-    await fetch("http://localhost:8000/api/usuarios/logout/", {
+    await fetch("https://alcalde-escuchame-backend.onrender.com/api/usuarios/logout/", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh }),
