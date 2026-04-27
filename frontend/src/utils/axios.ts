@@ -11,7 +11,7 @@ if (!BASE_URL) {
 const api = axios.create({
   baseURL: `${BASE_URL}/api`,
 });
-
+console.log("✅ AXIOS BASE:", api.defaults.baseURL);
 // 3️⃣ Interceptor: añadir access token a cada request
 api.interceptors.request.use((config) => {
   const access = storage.getAccess?.();
