@@ -1,11 +1,18 @@
+// src/utils/axios.ts
 import axios from "axios";
 import { storage } from "./storage";
 
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+if (!BASE_URL) {
+  throw new Error("VITE_API_BASE_URL no está definida");
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || "https://alcalde-escuchame-backend.onrender.com/api",
+  baseURL: `${BASE_URL}/api`,
 });
 
-// --- (1) Añadir el access token a cada request ---
+// 3️⃣ Interceptor: añadir access token a cada request
 api.interceptors.request.use((config) => {
   const access = storage.getAccess?.();
   if (access) {
@@ -15,38 +22,37 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// --- (2) REFRESCAR TOKEN AUTOMÁTICAMENTE SI EXPIRA ---
+// 4️⃣ Interceptor: refresh automático del token
 api.interceptors.response.use(
   (response) => response,
 
   async (error) => {
     const original = error.config;
 
-    // Solo entramos aquí si: (1) es 401, (2) no se ha reintentado antes
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true;
 
       const refresh = storage.getRefresh?.();
       if (!refresh) {
+        storage.clearAll?.();
         return Promise.reject(error);
       }
 
       try {
+        // OJO: aquí NO se pone /api otra vez
         const res = await axios.post(
-          `${api.defaults.baseURL}/token/refresh/`,
+          `${BASE_URL}/api/token/refresh/`,
           { refresh }
         );
 
-        // Guardar el nuevo access token
         storage.setAccess(res.data.access);
 
-        // Repetir la petición original con el nuevo access
         original.headers.Authorization = `Bearer ${res.data.access}`;
         return api(original);
 
       } catch (refreshError) {
-        // Si el refresh también expira → cerrar sesión
         storage.clearAll?.();
+        return Promise.reject(refreshError);
       }
     }
 
@@ -55,4 +61,3 @@ api.interceptors.response.use(
 );
 
 export default api;
-export { api };
