@@ -11,7 +11,6 @@ import ContactButton from "./ContactButton";
 
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
-import LogoutButton from "./LogoutButton";
 
 const Navbar: React.FC = () => {
   const { user } = useAuth();
@@ -30,7 +29,6 @@ const Navbar: React.FC = () => {
         <QuejasButton />
         <StatsButton />
         <ContactButton />
-        <LogoutButton />
 
         {user && (
           <NotificacionesButton unreadNCount={unreadCount} />
