@@ -1,10 +1,14 @@
+/* =====================
+   NAVBAR BASE
+   ===================== */
+
 .navbar {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  height: var(--navbar-height);
-  padding: 0 36px;
+  height: var(--navbar-height, 64px);
+  padding: 0 1rem;
 
   display: flex;
   align-items: center;
@@ -16,50 +20,104 @@
 }
 
 .logo a {
-  font-size: 22px;
+  font-size: 1.1rem;
   font-weight: 700;
   color: white;
+  white-space: nowrap;
+  text-decoration: none;
 }
 
+/* =====================
+   LINKS
+   ===================== */
+
 .nav-links {
-  display: flex;
-  gap: 24px;
   list-style: none;
+  display: flex;
   align-items: center;
-  margin-right: 50px;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
 }
 
 .nav-links a {
   color: white;
-  transition: 0.25s;
+  transition: color 0.25s;
+  text-decoration: none;
 }
 
 .nav-links a:hover {
   color: var(--color-secondary);
 }
 
+/* =====================
+   AUTH BUTTON
+   ===================== */
+
 .auth-button {
-  background: var(--color-white);
+  background: white;
   border: 2px solid var(--color-primary);
   color: var(--color-primary);
-  padding: 8px 18px;
+  padding: 0.4rem 1rem;
   border-radius: var(--radius);
-  transition: 0.25s;
   cursor: pointer;
 }
-.auth-button:hover {
-  background: var(--color-primary);
+
+/* =====================
+   HAMBURGER BUTTON
+   ===================== */
+
+.menu-toggle {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 1.9rem;
   color: white;
+  cursor: pointer;
+  line-height: 1;
 }
 
-.notification-badge {
-  position: absolute;
-  top: -5px;
-  right: -5px;
-  background-color: red;
-  color: white;
-  border-radius: 50%;
-  padding: 2px 6px;
-  font-size: 12px;
-  font-weight: bold;
+/* =====================
+   MOBILE
+   ===================== */
+
+@media (max-width: 767px) {
+  .menu-toggle {
+    display: block;
+  }
+
+  .nav-links {
+    position: fixed;
+    top: var(--navbar-height, 64px);
+    left: 0;
+    width: 100%;
+
+    background: var(--color-primary);
+    flex-direction: column;
+    gap: 1.25rem;
+    padding: 1.75rem 0;
+
+    display: none;
+    z-index: 999;
+  }
+
+  .nav-links.open {
+    display: flex;
+  }
+
+  .nav-links li {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+  }
+}
+
+/* =====================
+   DESKTOP
+   ===================== */
+
+@media (min-width: 768px) {
+  .navbar {
+    padding: 0 2rem;
+  }
 }

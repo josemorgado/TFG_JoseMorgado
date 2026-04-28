@@ -1,13 +1,19 @@
 import { useNavigate } from "react-router-dom";
 
-export default function LoginButton() {
+type LoginButtonProps = {
+  onClick?: () => void;
+};
+
+export default function LoginButton({ onClick }: LoginButtonProps) {
   const navigate = useNavigate();
-  const handleLogout = async () => {
-      navigate("/stats");
+
+  const handleClick = () => {
+    onClick?.();
+    navigate("/stats");
   };
 
   return (
-    <button className="auth-button"onClick={handleLogout}>
+    <button className="auth-button" onClick={handleClick}>
       Estadísticas
     </button>
   );

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { getQuejas } from "../api/quejas";
 import type { Queja } from "../types/queja";
 import "../styles/QuejasList.css";
@@ -19,7 +19,7 @@ export default function QuejasList() {
   const [searchParams] = useSearchParams();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
-
+  const topRef = useRef<HTMLDivElement>(null);
   // 1) Hidratar desde sessionStorage con tipos correctos
   const saved = loadListState<FiltersShape, SortBy>();
 
@@ -113,7 +113,6 @@ export default function QuejasList() {
     const estado = searchParams.get("estado");
 
     if (categoria || distrito || estado) {
-      // 🔥 LIMPIAR TODO
       clearListState();
 
       setFilters({
@@ -280,19 +279,31 @@ export default function QuejasList() {
     }
     return ordenadas;
   }, [quejas, filters, sortBy]);
+
+
   // 6) Paginación real SOBRE las quejas ya filtradas
   const paginatedQuejas = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     const end = start + itemsPerPage;
     return filteredQuejas.slice(start, end);
   }, [filteredQuejas, currentPage, itemsPerPage]);
+
+
+  useEffect(() => {
+    topRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  }, [currentPage]);
+
+
   if (loading) return <p className="loading">Cargando...</p>;
 
   // 7) Total de páginas calculado desde las filtradas
   const totalPages = Math.ceil(filteredQuejas.length / itemsPerPage);
 
   return (
-    <div className="quejas-layout">
+    <div ref={topRef} className="quejas-layout">
       {/* BARRA LATERAL DE FILTROS */}
       <aside className={`sidebar-filtros ${isFiltersOpen ? "open" : "closed"}`}>
         <div className="sidebar-section">

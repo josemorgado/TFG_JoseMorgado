@@ -1,16 +1,15 @@
 import { useNavigate } from "react-router-dom";
 
-export default function ContactButton() {
+type ContactButtonProps = {
+  onClick?: () => void;
+};
+
+export default function ContactButton({ onClick }: ContactButtonProps) {
   const navigate = useNavigate();
 
-  const handleContact = async () => {
-    try {
-      navigate("/contact");
-    }catch (error) {
-      console.error("Error al navegar a contacto", error);
-      alert("No se pudo navegar a contacto");
-    }
-
+  const handleContact = () => {
+    onClick?.();
+    navigate("/contact");
   };
 
   return (

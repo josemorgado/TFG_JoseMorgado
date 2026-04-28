@@ -1,9 +1,15 @@
 // QuejasButton.tsx
 import { useNavigate } from "react-router-dom";
 
-export default function QuejasButton() {
+type QuejasButtonProps = {
+  onClick?: () => void;
+};
+
+export default function QuejasButton({ onClick }: QuejasButtonProps) {
   const navigate = useNavigate();
+
   const handleClick = () => {
+    onClick?.();
     navigate("/quejas");
   };
 

@@ -14,12 +14,6 @@
 }
 
 /* ===========================
-   Filtros
-   =========================== */
-
-
-
-/* ===========================
    KPIs
    =========================== */
 .kpi-grid {
@@ -81,24 +75,6 @@
 }
 
 /* ===========================
-   Responsive
-   =========================== */
-@media (max-width: 1024px) {
-  .kpi-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .chart-card,
-  .chart-card--full {
-    grid-column: 1 / -1;
-  }
-}
-
-/* ===========================
    Gráfico "Por estado"
    =========================== */
 .card-3 {
@@ -117,7 +93,6 @@
   display: flex;
   flex-direction: row;
   justify-content: center;
-
 }
 
 /* ===========================
@@ -193,7 +168,9 @@ select.input[multiple] {
   line-height: 1.4;
 }
 
-/* CONTENEDOR GENERAL DE FILTROS + BOTÓN */
+/* ===========================
+   Contenedor filtros
+   =========================== */
 .filters-wrapper {
   display: flex;
   justify-content: space-between;
@@ -224,5 +201,129 @@ select.input[multiple] {
   display: flex;
   justify-content: center;
   align-items: center;
+}
 
+/* =================================================
+   RESPONSIVE
+   ================================================= */
+
+/* ===== KPIs responsive ===== */
+
+/* Desktop grande */
+@media (min-width: 1280px) {
+  .kpi-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+/* Laptop / tablet grande */
+@media (max-width: 1279px) and (min-width: 1024px) {
+  .kpi-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Tablet */
+@media (max-width: 1023px) and (min-width: 640px) {
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Móvil */
+@media (max-width: 639px) {
+  .kpi-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-card {
+    padding: 14px;
+  }
+
+  .kpi-value {
+    font-size: 22px;
+  }
+}
+
+/* ===== Gráficos responsive ===== */
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .stats-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+
+  .chart-card {
+    grid-column: span 6;
+  }
+
+  .chart-card--full {
+    grid-column: 1 / -1;
+  }
+
+  .card-3 {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Móvil */
+@media (max-width: 640px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-card,
+  .chart-card--full {
+    grid-column: 1 / -1;
+    padding: 12px;
+  }
+
+  .chart-title {
+    font-size: 15px;
+  }
+
+  .evolucion-temporal {
+    flex-direction: column;
+    align-items: stretch;
+  }
+}
+
+/* ===== Filtros responsive ===== */
+@media (max-width: 768px) {
+  .filters-wrapper {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .filters-left {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .filters-right {
+    width: 100%;
+  }
+
+  .filter-clear-btn {
+    width: 100%;
+  }
+}
+
+/* ===== Sticky solo en desktop ===== */
+@media (max-width: 1024px) {
+  .stats-filters.card {
+    position: static;
+  }
+}
+
+.chart-card {
+  position: relative;
+  min-height: 320px;
+}
+
+/* En móvil dar más aire */
+@media (max-width: 640px) {
+  .chart-card {
+    min-height: 360px;
+  }
 }

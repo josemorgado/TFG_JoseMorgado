@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import "../styles/Navbar.css";
 
 import LoginButton from "./LoginButton";
@@ -17,25 +18,49 @@ const Navbar: React.FC = () => {
   const { unreadCount } = useNotifications();
   const location = useLocation();
 
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const isLoginPage = location.pathname === "/login";
+
+  const closeMenu = () => setMenuOpen(false);
+
+  /* ✅ Cerrar menú automáticamente al cambiar de ruta */
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   return (
     <nav className="navbar">
       <div className="logo">
-        <Link to="/">ALCALDE ESCÚCHAME</Link>
+        <Link to="/" onClick={closeMenu}>
+          ALCALDE ESCÚCHAME
+        </Link>
       </div>
 
-      <ul className="nav-links">
-        <QuejasButton />
-        <StatsButton />
-        <ContactButton />
+      {/* HAMBURGER */}
+      <button
+        className="menu-toggle"
+        onClick={() => setMenuOpen((prev) => !prev)}
+        aria-label="Abrir menú"
+        aria-expanded={menuOpen}
+      >
+        ☰
+      </button>
+
+      <ul className={`nav-links ${menuOpen ? "open" : ""}`}>
+        <QuejasButton onClick={closeMenu} />
+        <StatsButton onClick={closeMenu} />
+        <ContactButton onClick={closeMenu} />
 
         {user && (
-          <NotificacionesButton unreadNCount={unreadCount} />
+          <NotificacionesButton
+            unreadNCount={unreadCount}
+            onClick={closeMenu}
+          />
         )}
 
         {!user && (
-          <li>
+          <li onClick={closeMenu}>
             {isLoginPage ? (
               <CreateAccountButton />
             ) : (
@@ -44,7 +69,7 @@ const Navbar: React.FC = () => {
           </li>
         )}
 
-        {user && <MiPerfilButton />}
+        {user && <MiPerfilButton onClick={closeMenu} />}
       </ul>
     </nav>
   );
