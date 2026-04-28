@@ -11,7 +11,7 @@ import ContactButton from "./ContactButton";
 
 import { useAuth } from "../context/AuthContext";
 import { useNotifications } from "../context/NotificationsContext";
-import LogoutButton from "./ContactButton";
+import LogoutButton from "./LogoutButton";
 
 const Navbar: React.FC = () => {
   const { user } = useAuth();

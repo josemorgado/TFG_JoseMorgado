@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 
-export default function LogoutButton() {
+export default function ContactButton() {
   const navigate = useNavigate();
 
   const handleContact = async () => {
