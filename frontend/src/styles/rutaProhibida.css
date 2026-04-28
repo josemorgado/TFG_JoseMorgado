@@ -1,32 +1,47 @@
+/* ================================
+   RUTA PROHIBIDA – RESPONSIVE
+================================ */
+
 .ruta-prohibida-page {
+  min-height: calc(100vh - var(--navbar-height, 60px));
   display: flex;
   justify-content: center;
-  padding: 40px 20px;
+  align-items: flex-start;
+  padding: 2rem 1rem;
 }
 
 .ruta-prohibida-card {
-  max-width: 500px;
   width: 100%;
+  max-width: 500px;
   text-align: center;
 }
 
 .ruta-prohibida-title {
   color: var(--color-primary);
-  margin-bottom: 10px;
+  margin-bottom: 0.5rem;
+  font-size: clamp(1.4rem, 4.5vw, 1.9rem);
 }
 
 .ruta-prohibida-msg {
-  font-size: 1.1rem;
-  margin-bottom: 8px;
+  font-size: clamp(1rem, 3.5vw, 1.1rem);
+  margin-bottom: 0.4rem;
 }
 
 .ruta-prohibida-sub {
   color: var(--color-primary-light);
-  font-size: 0.9rem;
-  margin-bottom: 20px;
+  font-size: clamp(0.85rem, 3vw, 0.95rem);
+  margin-bottom: 1.25rem;
 }
 
 .ruta-prohibida-btn {
   width: 100%;
-  margin-top: 10px;
+  margin-top: 0.75rem;
+}
+
+/* Desktop */
+@media (min-width: 768px) {
+  .ruta-prohibida-page {
+    align-items: center;
+    padding: 3rem 1.5rem;
+  }
 }

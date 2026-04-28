@@ -1,105 +1,114 @@
 /* ================================
-   NOTIFICATIONS PAGE - Estilo uniforme
+   NOTIFICATIONS PAGE - RESPONSIVE
    ================================ */
 
 .notifications-page {
+  width: 100%;
   max-width: 900px;
-  margin: 24px auto;
-  padding: 0 12px;
+  margin: 1.5rem auto;
+  padding: 0 1rem;
 }
 
-/* HEADER */
+/* =====================
+   HEADER
+   ===================== */
+
 .notifications-header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .notifications-title {
   margin: 0;
   color: var(--color-primary);
-  font-size: 1.8rem;
+  font-size: clamp(1.4rem, 4.5vw, 1.8rem);
   font-weight: 800;
 }
 
-/* Acciones */
 .notifications-actions {
   display: flex;
-  gap: 10px;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
+
+/* =====================
+   LIST
+   ===================== */
 
 .notifications-list {
   list-style: none;
-  margin-top: 20px;
+  margin-top: 1.25rem;
   padding: 0;
 }
 
-/* =====================================
-   TARJETA DE NOTIFICACIÓN (tipo QUEJA)
-   ===================================== */
+/* =====================
+   NOTIFICATION ITEM
+   ===================== */
 
 .notification-item {
   display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 12px;
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
 
-  padding: 18px 20px;
-  margin-bottom: 16px;
+  padding: 1rem 1rem 1rem 1.25rem;
+  margin-bottom: 1rem;
 
   background: var(--color-white);
   border: 1px solid #dbe2f1;
   border-radius: var(--radius);
-
   box-shadow: var(--shadow-soft);
-  transition: 0.25s ease;
 
   position: relative;
   overflow: hidden;
+  transition: 0.2s ease;
 }
 
-/* Borde lateral azul como las QUEJAS */
+/* Lateral */
 .notification-item::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
-  width: 6px;
+  width: 5px;
   height: 100%;
   background: var(--color-primary);
-  border-radius: var(--radius) 0 0 var(--radius);
 }
 
 /* Hover */
 .notification-item:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-medium);
-  border-color: #cbd5e1;
 }
 
-/* Estado no leída */
+/* No leída */
 .notification-item.is-unread {
   background: #eef2ff;
   border-color: #c7d2fe;
 }
+
 .notification-item.is-unread::before {
   background: var(--color-primary-light);
 }
 
-/* Zona clicable */
+/* =====================
+   MAIN CONTENT
+   ===================== */
+
 .notification-main {
   cursor: pointer;
 }
 
-/* HEADER dentro de la tarjeta */
 .notification-head {
   display: flex;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
   align-items: baseline;
 }
 
 .notification-title {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 700;
   color: var(--color-primary);
   margin: 0;
@@ -110,33 +119,35 @@
   color: #6b7280;
 }
 
-/* Mensaje */
 .notification-message {
-  margin-top: 6px;
+  margin-top: 0.35rem;
   color: #25304b;
   font-size: 0.95rem;
   line-height: 1.4;
 }
 
-/* Columna de acciones */
+/* =====================
+   ACTIONS
+   ===================== */
+
 .notification-actions {
   display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-items: flex-end;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-start;
 }
 
-/* Botón pequeño (estilo uniforme) */
+/* Small buttons */
 .btn-sm {
-  padding: 6px 12px;
+  padding: 0.4rem 0.75rem;
   border-radius: var(--radius-small);
   border: 2px solid transparent;
   background: #eef1f8;
   color: var(--color-text);
   cursor: pointer;
-  transition: 0.2s ease;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   font-weight: 600;
+  transition: 0.2s ease;
 }
 
 .btn-sm:hover {
@@ -149,45 +160,58 @@
   border-color: #f8d3d3;
   color: var(--color-danger-dark);
 }
+
 .btn-sm.danger:hover {
   background: #ffe1e1;
 }
 
-/* Paginación */
+/* =====================
+   PAGINATION
+   ===================== */
+
 .notifications-pagination {
   display: flex;
-  gap: 10px;
+  gap: 0.75rem;
   justify-content: center;
-  margin-top: 18px;
+  align-items: center;
+  margin-top: 1.25rem;
 }
 
 .page-label {
-  align-self: center;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-primary);
 }
 
-/* Responsive */
-@media (max-width: 600px) {
+/* =====================
+   EMPTY STATE
+   ===================== */
+
+.notifications-empty {
+  margin-top: 3rem;
+  text-align: center;
+  font-size: 1.05rem;
+  color: #6b7280;
+  opacity: 0.85;
+}
+
+/* =====================
+   DESKTOP
+   ===================== */
+
+@media (min-width: 640px) {
+  .notifications-header {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   .notification-item {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr auto;
+    align-items: start;
   }
 
   .notification-actions {
-    flex-direction: row;
-    justify-content: flex-start;
+    flex-direction: column;
+    align-items: flex-end;
   }
-}
-
-.notifications-empty {
-  margin-top: 4rem;
-  text-align: center;
-  font-size: 1.2rem;
-  color: var(--color-gray-600);
-  opacity: 0.8;
-
-  /* Centrado vertical básico */
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }

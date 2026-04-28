@@ -1,12 +1,17 @@
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-export default function MiPerfilButton() {
+type MiPerfilButtonProps = {
+  onClick?: () => void;
+};
+
+export default function MiPerfilButton({ onClick }: MiPerfilButtonProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
 
   const goToProfile = () => {
     if (!user?.id) return;
+    onClick?.();
     navigate(`/perfil/${user.id}`);
   };
 
@@ -15,7 +20,10 @@ export default function MiPerfilButton() {
     const nombre = `${user.first_name || ""} ${user.last_name || ""}`.trim();
     if (nombre) {
       const partes = nombre.split(/\s+/).filter(Boolean);
-      return partes.slice(0, 2).map(p => p[0]?.toUpperCase()).join("");
+      return partes
+        .slice(0, 2)
+        .map((p) => p[0]?.toUpperCase())
+        .join("");
     }
     return user.username?.slice(0, 2).toUpperCase() ?? "";
   })();

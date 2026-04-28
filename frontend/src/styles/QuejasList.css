@@ -390,3 +390,34 @@
 .queja-author {
   margin: 0;
 }
+/* =========================================
+   GRID RESPONSIVE CONTROLADO (3 QUEJAS)
+   ========================================= */
+
+/* Escritorios grandes → 3 por fila */
+@media (min-width: 1280px) {
+  .quejas-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Escritorio medio / tablet horizontal → 2 por fila */
+@media (max-width: 1279px) and (min-width: 960px) {
+  .quejas-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Tablet vertical → 2 por fila */
+@media (max-width: 959px) and (min-width: 600px) {
+  .quejas-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Móvil → 1 por fila */
+@media (max-width: 599px) {
+  .quejas-grid {
+    grid-template-columns: 1fr;
+  }
+}

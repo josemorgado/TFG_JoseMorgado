@@ -1,9 +1,47 @@
+/* =====================
+   BASE RESPONSIVE RESET
+   ===================== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 16px;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+/* =====================
+   ROOT CONTAINER
+   ===================== */
+
 #root {
+  width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+  padding: 1rem; /* móvil primero */
 }
+
+/* =====================
+   MEDIA QUERIES
+   ===================== */
+
+@media (min-width: 768px) {
+  #root {
+    padding: 2rem;
+  }
+}
+
+/* =====================
+   VITE DEMO STYLES
+   (no afectan al layout)
+   ===================== */
 
 .logo {
   height: 6em;
@@ -11,9 +49,11 @@
   will-change: filter;
   transition: filter 300ms;
 }
+
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
@@ -34,7 +74,7 @@
 }
 
 .card {
-  padding: 2em;
+  padding: 1.5rem;
 }
 
 .read-the-docs {

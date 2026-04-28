@@ -30,7 +30,8 @@ body,
 
 /* Botones */
 .btn {
-  padding: 10px 18px;
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
   border-radius: var(--radius);
   border: 2px solid transparent;
   cursor: pointer;
@@ -61,7 +62,7 @@ body,
 
 /* Inputs globales */
 .input {
-  width: 100%;
+  max-width: 100%;
   padding: 10px;
   border: 2px solid var(--color-primary);
   border-radius: var(--radius-small);
