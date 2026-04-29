@@ -19,13 +19,21 @@
   z-index: 1000;
 }
 
+
 .logo a {
   font-size: 1.1rem;
   font-weight: 700;
   color: white;
   white-space: nowrap;
   text-decoration: none;
+  transition: color 0.25s ease;
 }
+
+.logo a:hover {
+  color: var(--color-secondary);
+}
+
+
 
 /* =====================
    LINKS

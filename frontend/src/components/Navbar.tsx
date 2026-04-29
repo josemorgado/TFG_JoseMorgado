@@ -24,7 +24,6 @@ const Navbar: React.FC = () => {
 
   const closeMenu = () => setMenuOpen(false);
 
-  /* ✅ Cerrar menú automáticamente al cambiar de ruta */
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
