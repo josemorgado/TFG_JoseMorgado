@@ -17,14 +17,14 @@ export default function NotificacionesButton({
   };
 
   return (
-    <div style={{ position: "relative", display: "inline-block" }}>
+    <div className="notification-wrapper">
       <button className="auth-button" onClick={handleClick}>
         Notificaciones
       </button>
 
       {unreadNCount > 0 && (
         <span className="notification-badge">
-          {unreadNCount > 99 ? "+99" : unreadNCount}
+          {unreadNCount > 99 ? "99+" : unreadNCount}
         </span>
       )}
     </div>

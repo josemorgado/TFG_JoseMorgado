@@ -129,3 +129,41 @@
     padding: 0 2rem;
   }
 }
+/* =====================
+   NOTIFICATION WRAPPER
+   ===================== */
+
+.notification-wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+/* =====================
+   NOTIFICATION BADGE
+   ===================== */
+
+.notification-badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+
+  border-radius: 999px;
+  background-color: #e53935;
+  color: white;
+
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  pointer-events: none;
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
