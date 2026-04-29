@@ -169,7 +169,7 @@ export default function PerfilDetail() {
 
               <p className="perfil-data-fields">
                 <strong>Miembro desde:</strong>{" "}
-                {new Date(usuario.date_joined).toLocaleDateString()}
+                {usuario.date_joined}
               </p>
 
               <p className="perfil-data-fields">
