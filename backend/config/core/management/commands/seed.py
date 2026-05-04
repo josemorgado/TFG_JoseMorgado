@@ -1,4 +1,3 @@
-import os
 import random
 from datetime import date, timedelta
 
@@ -6,7 +5,6 @@ from django.apps import apps
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.models import ContentType
-from django.core.files import File
 from django.core.management.base import BaseCommand
 from django.db import connection
 from django.utils import timezone
@@ -14,382 +12,223 @@ from django.utils import timezone
 from categoria.models import Categoria
 from comentario.models import Comentario
 from distrito.models import Distrito
-from imagen.models import Imagen
 from megusta.models import MeGusta
 from perfil.models import Perfil
 from quejas.models import Queja
-from video.models import Video
 from respuesta.models import Respuesta
 
+
 class Command(BaseCommand):
-    help = "Resetea y rellena la BD con datos masivos y heterogéneos para el TFG."
+    help = "Seed optimizado para desarrollo local (rápido, realista y estable)"
 
     def handle(self, *args, **kwargs):
-        import quejas.signals
-        import respuesta.signals
+
         # ============================================================
-        #  TRUNCATE TODAS LAS TABLAS (reinicia IDs)
+        # TRUNCATE TODAS LAS TABLAS
         # ============================================================
         with connection.cursor() as cursor:
             for model in apps.get_models():
-                table = model._meta.db_table
-                cursor.execute(f'TRUNCATE TABLE "{table}" RESTART IDENTITY CASCADE;')
-        self.stdout.write(self.style.SUCCESS("TRUNCATE OK."))
+                cursor.execute(
+                    f'TRUNCATE TABLE "{model._meta.db_table}" RESTART IDENTITY CASCADE;'
+                )
+        self.stdout.write(self.style.SUCCESS("TRUNCATE OK"))
 
         # ============================================================
-        #  CATEGORÍAS
+        # CATEGORÍAS
         # ============================================================
-        categorias = [
-            {
-                "nombre": "Tecnología",
-                "descripcion": "Categoría relacionada con tecnología.",
-            },
-            {
-                "nombre": "Salud",
-                "descripcion": "Categoría relacionada con salud y bienestar.",
-            },
-            {
-                "nombre": "Deportes",
-                "descripcion": "Categoría relacionada con deportes y actividades físicas.",
-            },
-            {
-                "nombre": "Educación",
-                "descripcion": "Categoría relacionada con educación y aprendizaje.",
-            },
-            {
-                "nombre": "Entretenimiento",
-                "descripcion": "Categoría relacionada con entretenimiento y ocio.",
-            },
-            {
-                "nombre": "Igualdad",
-                "descripcion": "Categoría relacionada con igualdad de oportunidades.",
-                "activo": False,
-            },
-            {
-                "nombre": "Infraestructura",
-                "descripcion": "Problemas de calles, alumbrado, obras.",
-            },
-            {
-                "nombre": "Transporte",
-                "descripcion": "Autobuses, metro, tráfico, movilidad.",
-            },
-            {
-                "nombre": "Servicios Públicos",
-                "descripcion": "Limpieza, basuras, ruido, etc.",
-            },
+        categorias_data = [
+            ("Tecnología", "Tecnología y digitalización"),
+            ("Salud", "Salud pública"),
+            ("Educación", "Educación y centros educativos"),
+            ("Infraestructura", "Calles y obras"),
+            ("Transporte", "Movilidad urbana"),
+            ("Servicios Públicos", "Limpieza, alumbrado, ruido"),
         ]
-        for c in categorias:
-            Categoria.objects.get_or_create(**c)
-        self.stdout.write(self.style.SUCCESS("Categorías OK."))
+
+        Categoria.objects.bulk_create(
+            [Categoria(nombre=n, descripcion=d) for n, d in categorias_data]
+        )
+        categorias = list(Categoria.objects.all())
+        self.stdout.write(self.style.SUCCESS("Categorías OK"))
 
         # ============================================================
-        #  DISTRITOS
+        # DISTRITOS
         # ============================================================
-        distritos = [
-            {"nombre": "Centro", "codigo": "CTR"},
-            {"nombre": "Norte", "codigo": "NTE"},
-            {"nombre": "Sur", "codigo": "SUR"},
-            {"nombre": "Este", "codigo": "EST"},
-            {"nombre": "Oeste", "codigo": "OES"},
-            {"nombre": "Ribera", "codigo": "RBR"},
-            {"nombre": "Puerta Real", "codigo": "PRL"},
+        distritos_data = [
+            ("Centro", "CTR"),
+            ("Norte", "NTE"),
+            ("Sur", "SUR"),
+            ("Este", "EST"),
+            ("Oeste", "OES"),
         ]
-        for d in distritos:
-            Distrito.objects.get_or_create(**d)
-        self.stdout.write(self.style.SUCCESS("Distritos OK."))
+
+        Distrito.objects.bulk_create(
+            [Distrito(nombre=n, codigo=c) for n, c in distritos_data]
+        )
+        distritos = list(Distrito.objects.all())
+        self.stdout.write(self.style.SUCCESS("Distritos OK"))
 
         # ============================================================
-        #  USUARIOS (1 admin + 60 extra)
+        # USUARIOS Y PERFILES
         # ============================================================
-        usuarios = [
-            {
-                "username": "josem",
-                "email": "josemaria1.jmmp@gmail.com",
-                "password": "1234",
-                "first_name": "Jose",
-                "last_name": "Morgado Prudencio",
-                "is_superuser": True,
-                "is_staff": True,
-                "perfil": {
-                    "genero": "M",
-                    "biografia": "Desarrollador del TFG.",
-                    "moderator": True,
-                    "telefono": "+34630974036",
-                    "direccion": "Calle Fernando de Rojas",
-                    "fecha_nacimiento": date(2003, 11, 20),
-                },
-            }
-        ]
-        for i in range(1, 61):
-            usuarios.append(
-                {
-                    "username": f"user{i}",
-                    "email": f"user{i}@test.com",
-                    "password": "1234",
-                    "first_name": f"Usuario{i}",
-                    "last_name": "Demo",
-                    "perfil": {
-                        "genero": random.choice(["M", "F"]),
-                        "biografia": f"Biografía del usuario {i}.",
-                        "moderator": False,
-                        "telefono": f"+34600{random.randint(100000, 999999)}",
-                        "direccion": f"Calle Ejemplo {i}",
-                        "fecha_nacimiento": date(
-                            1985 + (i % 20), (i % 12) + 1, (i % 27) + 1
-                        ),
-                    },
-                }
+        usuarios = []
+
+        admin = User(
+            username="josem",
+            email="josemaria1.jmmp@gmail.com",
+            first_name="José María",
+            last_name="Morgado Prudencio",
+            is_superuser=True,
+            is_staff=True,
+        )
+        admin.set_password("1234")
+        usuarios.append(admin)
+
+        for i in range(1, 25):
+            u = User(
+                username=f"user{i}",
+                email=f"user{i}@test.com",
+                first_name=f"Usuario{i}",
+                last_name="Demo",
+            )
+            u.set_password("1234")
+            usuarios.append(u)
+
+        User.objects.bulk_create(usuarios)
+        usuarios = list(User.objects.all())
+
+        perfiles = []
+        for u in usuarios:
+            perfiles.append(
+                Perfil(
+                    user=u,
+                    genero=random.choice(["M", "F"]),
+                    biografia="Usuario de prueba",
+                    moderator=u.is_superuser or random.random() < 0.2,
+                    fecha_nacimiento=date(1995, 1, 1),
+                )
             )
 
-        for data in usuarios:
-            perfil_data = data.pop("perfil")
-            pwd = data.pop("password")
-            username = data["username"]
-
-            user, created = User.objects.get_or_create(username=username, defaults=data)
-            if created:
-                user.set_password(pwd)
-                user.save()
-            Perfil.objects.update_or_create(user=user, defaults=perfil_data)
-
-        otros_usuarios = User.objects.exclude(username="josem")
-        otros_moderadores = random.sample(list(otros_usuarios), 9)
-
-        for u in otros_moderadores:
-            p = u.perfil
-            p.moderator = True
-            p.save()
-
-        usuarios_obj = list(User.objects.all())
-        self.stdout.write(self.style.SUCCESS(f"Usuarios OK ({len(usuarios_obj)})."))
+        Perfil.objects.bulk_create(perfiles)
+        self.stdout.write(self.style.SUCCESS(f"Usuarios OK ({len(usuarios)})"))
 
         # ============================================================
-        #  200 QUEJAS (10 base + 190 auto)
-        # ============================================================
-        categorias_obj = list(Categoria.objects.all())
-        distritos_obj = list(Distrito.objects.all())
-
-        quejas_payload = []
-
-        for i in range(1, 191):
-            quejas_payload.append(
-                {
-                    "titulo": f"Queja generada #{i}",
-                    "descripcion": f"Descripción automática de la queja #{i}",
-                    "categoria": random.choice(categorias_obj),
-                    "distrito": random.choice(distritos_obj),
-                    "estado": random.choice(["PEN", "ENP", "REC", "RES"]),
-                    "ubicacion": f"Zona aleatoria {i}",
-                    "autor": random.choice(usuarios_obj),
-                }
-            )
-        base_quejas = [
-            "Farolas rotas en avenida principal",
-            "Autobuses llegan siempre tarde",
-            "Basura acumulada en la plaza",
-            "Ruidos nocturnos constantes",
-            "Parque infantil en mal estado",
-            "Semáforo averiado durante días",
-            "Aceras resbaladizas",
-            "Cortes de agua frecuentes",
-            "Mal olor procedente de alcantarillado",
-            "Árboles sin podar obstaculizan el paso",
-        ]
-        for titulo in base_quejas:
-            quejas_payload.append(
-                {
-                    "titulo": titulo,
-                    "descripcion": f"Descripción de: {titulo}",
-                    "categoria": random.choice(categorias_obj),
-                    "distrito": random.choice(distritos_obj),
-                    "estado": random.choice(["PEN", "ENP", "REC", "RES"]),
-                    "ubicacion": f"Ubicación específica de {titulo}",
-                    "autor": random.choice(usuarios_obj),
-                }
-            )
-
-        todas_quejas = []
-        for payload in quejas_payload:
-            q = Queja.objects.create(**payload)
-            todas_quejas.append(q)
-
-        self.stdout.write(self.style.SUCCESS(f"Quejas creadas: {len(todas_quejas)}"))
-
-        # ============================================================
-        #  ACTUALIZACIÓN DE FECHAS TRAS CREAR (TZ-AWARE)
+        # QUEJAS
         # ============================================================
         ahora = timezone.now()
-        for q in todas_quejas:
-            creacion = ahora - timedelta(
-                days=random.randint(0, 150),
-                hours=random.randint(0, 23),
-                minutes=random.randint(0, 59),
-            )
-            actualizacion = creacion + timedelta(
-                days=random.randint(0, 20),
-                hours=random.randint(0, 23),
-                minutes=random.randint(0, 59),
-            )
-            q.fecha_creacion = creacion
-            q.fecha_actualizacion = actualizacion
-            q.save(update_fields=["fecha_creacion", "fecha_actualizacion"])
+        quejas = []
 
-        self.stdout.write(self.style.SUCCESS("Fechas de quejas actualizadas (aware)."))
+        for i in range(80):
+            creada = ahora - timedelta(days=random.randint(1, 120))
+            quejas.append(
+                Queja(
+                    titulo=f"Queja #{i}",
+                    descripcion="Descripción de prueba",
+                    categoria=random.choice(categorias),
+                    distrito=random.choice(distritos),
+                    estado=random.choice(["PEN", "ENP", "REC", "RES"]),
+                    ubicacion="Ubicación genérica",
+                    autor=random.choice(usuarios),
+                    fecha_creacion=creada,
+                    fecha_actualizacion=creada + timedelta(days=random.randint(0, 10)),
+                )
+            )
+
+        Queja.objects.bulk_create(quejas)
+        quejas = list(Queja.objects.all())
+        self.stdout.write(self.style.SUCCESS(f"Quejas OK ({len(quejas)})"))
 
         # ============================================================
-        #  COMENTARIOS (heterogéneos con jerarquía)
+        # COMENTARIOS (2 FASES: RAÍZ + RESPUESTAS)
         # ============================================================
-        total_root = 120
-        total_replies = 180
-        total_deep = 80
-        comentarios_creados = []
+        comentarios_root = []
 
-        # 1) Comentarios raíz
-        for i in range(total_root):
-            c = Comentario.objects.create(
-                queja=random.choice(todas_quejas),
-                autor=random.choice(usuarios_obj),
-                contenido=f"Comentario raíz #{i}",
-                parent=None,
-            )
-            comentarios_creados.append(c)
+        for q in quejas:
+            for _ in range(random.randint(0, 2)):
+                comentarios_root.append(
+                    Comentario(
+                        queja=q,
+                        autor=random.choice(usuarios),
+                        contenido="Comentario raíz",
+                        parent=None,
+                    )
+                )
 
-        # 2) Respuestas a raíz
-        for i in range(total_replies):
-            parent = random.choice(comentarios_creados)
-            c = Comentario.objects.create(
-                queja=parent.queja,  # mantenemos coherencia
-                autor=random.choice(usuarios_obj),
-                contenido=f"Respuesta #{i} a comentario {parent.id}",
-                parent=parent,
-            )
-            comentarios_creados.append(c)
+        Comentario.objects.bulk_create(comentarios_root)
+        comentarios_root = list(
+            Comentario.objects.filter(parent__isnull=True)
+        )
 
-        # 3) Respuestas profundas (a cualquiera de los existentes)
-        for i in range(total_deep):
-            parent = random.choice(comentarios_creados)
-            c = Comentario.objects.create(
-                queja=parent.queja,
-                autor=random.choice(usuarios_obj),
-                contenido=f"Respuesta profunda #{i} a comentario {parent.id}",
-                parent=parent,
-            )
-            comentarios_creados.append(c)
+        comentarios_respuestas = []
 
+        for parent in comentarios_root:
+            if random.random() < 0.5:
+                comentarios_respuestas.append(
+                    Comentario(
+                        queja=parent.queja,
+                        autor=random.choice(usuarios),
+                        contenido="Respuesta a comentario",
+                        parent=parent,
+                    )
+                )
+
+        Comentario.objects.bulk_create(comentarios_respuestas)
+
+        comentarios = comentarios_root + comentarios_respuestas
         self.stdout.write(
-            self.style.SUCCESS(f"Comentarios creados: {len(comentarios_creados)}")
+            self.style.SUCCESS(f"Comentarios OK ({len(comentarios)})")
         )
 
         # ============================================================
-        #  ME GUSTA: MASIVOS (quejas + comentarios)
+        # ME GUSTA (BULK_CREATE)
         # ============================================================
         ct_queja = ContentType.objects.get_for_model(Queja)
         ct_comentario = ContentType.objects.get_for_model(Comentario)
 
-        likes_quejas = 0
-        for q in todas_quejas:
-            k = min(random.randint(5, 25), len(usuarios_obj))
-            for u in random.sample(usuarios_obj, k):
-                _, created = MeGusta.objects.get_or_create(
-                    content_type=ct_queja,
-                    object_id=q.id,
-                    autor=u,
-                )
-                if created:
-                    likes_quejas += 1
+        likes = []
 
-        likes_comentarios = 0
-        for c in comentarios_creados:
-            k = min(random.randint(0, 12), len(usuarios_obj))
-            for u in random.sample(usuarios_obj, k):
-                _, created = MeGusta.objects.get_or_create(
-                    content_type=ct_comentario,
-                    object_id=c.id,
-                    autor=u,
-                )
-                if created:
-                    likes_comentarios += 1
-
-        self.stdout.write(
-            self.style.SUCCESS(
-                f"Likes OK. Quejas: {likes_quejas} | Comentarios: {likes_comentarios}"
-            )
-        )
-
-        # ============================================================
-        #  IMÁGENES ALEATORIAS
-        # ============================================================
-        imagenes_prueba = ["1.png", "2.png", "3.png", "4.png"]
-        imagenes_creadas = 0
-        for q in todas_quejas:
-            num_img = random.randint(0, 4)
-            for _ in range(num_img):
-                img_name = random.choice(imagenes_prueba)
-                ruta = os.path.join(settings.MEDIA_ROOT, "imagenes_prueba", img_name)
-                if os.path.exists(ruta):
-                    with open(ruta, "rb") as f:
-                        Imagen.objects.create(
-                            content_type=ct_queja,
-                            object_id=q.id,
-                            imagen=File(f, name=img_name),
-                        )
-                        imagenes_creadas += 1
-
-        self.stdout.write(self.style.SUCCESS(f"Imágenes creadas: {imagenes_creadas}"))
-
-        # ============================================================
-        #  VÍDEOS ALEATORIOS
-        # ============================================================
-        videos_prueba = ["video_ejemplo.mp4"]
-        videos_creados = 0
-        for q in todas_quejas:
-            if random.random() < 0.45:
-                vid_name = random.choice(videos_prueba)
-                ruta = os.path.join(settings.MEDIA_ROOT, "videos_prueba", vid_name)
-                if os.path.exists(ruta):
-                    with open(ruta, "rb") as f:
-                        Video.objects.create(
-                            content_type=ct_queja,
-                            object_id=q.id,
-                            video=File(f, name=vid_name),
-                        )
-                        videos_creados += 1
-
-        self.stdout.write(self.style.SUCCESS(f"Vídeos creados: {videos_creados}"))
-
-
-
-        respuestas_creadas = 0
-        moderadores = [u for u in usuarios_obj if u.perfil.moderator]
-
-        for q in todas_quejas:
-            num_respuestas = random.randint(0, 4)
-
-            for _ in range(num_respuestas):
-
-                # --- Obtener fecha real de la queja ya actualizada ---
-                fecha_base = timezone.localtime(q.fecha_creacion)
-
-                # --- Generar fecha aleatoria posterior ---
-                fecha_resp = fecha_base + timedelta(
-                    days=random.randint(1, 40),
-                    hours=random.randint(0, 23),
-                    minutes=random.randint(0, 59)
+        for q in random.sample(quejas, k=min(40, len(quejas))):
+            for u in random.sample(usuarios, k=5):
+                likes.append(
+                    MeGusta(
+                        content_type=ct_queja,
+                        object_id=q.id,
+                        autor=u,
+                    )
                 )
 
-                # Garantizar timezone-aware siempre
-                if fecha_resp.tzinfo is None:
-                    fecha_resp = timezone.make_aware(fecha_resp)
+        for c in random.sample(comentarios, k=min(60, len(comentarios))):
+            for u in random.sample(usuarios, k=3):
+                likes.append(
+                    MeGusta(
+                        content_type=ct_comentario,
+                        object_id=c.id,
+                        autor=u,
+                    )
+                )
 
-                Respuesta.objects.create(
+        MeGusta.objects.bulk_create(likes, ignore_conflicts=True)
+        self.stdout.write(self.style.SUCCESS(f"Likes OK ({len(likes)})"))
+
+        # ============================================================
+        # RESPUESTAS OFICIALES
+        # ============================================================
+        moderadores = [u for u in usuarios if u.perfil.moderator]
+        respuestas = []
+
+        for q in random.sample(quejas, k=min(40, len(quejas))):
+            respuestas.append(
+                Respuesta(
                     queja=q,
                     moderador=random.choice(moderadores),
-                    contenido=f"Respuesta automática a la queja #{q.id}",
-                    nuevo_estado=random.choice(["PEN", "ENP", "REC", "RES"]),
-                    fecha_respuesta=fecha_resp,
+                    contenido="Respuesta oficial del ayuntamiento",
+                    nuevo_estado=random.choice(["ENP", "REC", "RES"]),
+                    fecha_respuesta=q.fecha_creacion
+                    + timedelta(days=random.randint(1, 30)),
                 )
+            )
 
-                respuestas_creadas += 1
+        Respuesta.objects.bulk_create(respuestas)
+        self.stdout.write(self.style.SUCCESS(f"Respuestas OK ({len(respuestas)})"))
 
-        self.stdout.write(self.style.SUCCESS(f"Respuestas creadas: {respuestas_creadas}"))
-        self.stdout.write(self.style.SUCCESS("✅ SEED COMPLETADO."))
+        self.stdout.write(self.style.SUCCESS("✅ SEED FAST COMPLETADO"))

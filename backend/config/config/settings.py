@@ -3,13 +3,14 @@ from pathlib import Path
 import os
 from dotenv import load_dotenv
 import dj_database_url
+from decouple import config
 
 # ======================
 # BASE
 # ======================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / '.env')
+load_dotenv(BASE_DIR / '.env',override=True)
 
 
 # ======================
@@ -110,13 +111,19 @@ TEMPLATES = [
 # DATABASE
 # ======================
 
+
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('DATABASE_URL'),
+        default=(
+            config('DATABASE_URL')
+            if config('DATABASE_URL', default=None)
+            else f"postgresql://{config('DB_USER')}:{config('DB_PASSWORD')}@{config('DB_HOST')}:{config('DB_PORT')}/{config('DB_NAME')}"
+        ),
         conn_max_age=600,
-        ssl_require=True
+        ssl_require=config('DJANGO_ENV', default='local') == 'production'
     )
 }
+
 
 # ======================
 # AUTH
