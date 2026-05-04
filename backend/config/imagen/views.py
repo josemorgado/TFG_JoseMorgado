@@ -38,7 +38,7 @@ from .serializers import ImagenSerializer
 @permission_classes([AllowAny])
 def imagen_list(request):
     qs = Imagen.objects.all().order_by('id')
-    serializer = ImagenSerializer(qs, many=True)
+    serializer = ImagenSerializer(qs, many=True, context={"request": request})
     return Response(serializer.data)
 
 
@@ -98,7 +98,7 @@ def imagen_detail(request, pk):
 def imagenes_por_queja(request, queja_id):
     queja_ct = ContentType.objects.get(app_label='quejas', model='queja')
     qs = Imagen.objects.filter(content_type=queja_ct, object_id=queja_id).order_by('orden')
-    serializer = ImagenSerializer(qs, many=True)
+    serializer = ImagenSerializer(qs, many=True, context={"request": request})
     return Response(serializer.data)
 
 
@@ -128,7 +128,7 @@ def imagenes_por_queja(request, queja_id):
 def imagenes_por_comentario(request, comentario_id):
     comentario_ct = ContentType.objects.get(app_label='comentario', model='comentario')
     qs = Imagen.objects.filter(content_type=comentario_ct, object_id=comentario_id).order_by('orden')
-    serializer = ImagenSerializer(qs, many=True)
+    serializer = ImagenSerializer(qs, many=True, context={"request": request})
     return Response(serializer.data)
 
 

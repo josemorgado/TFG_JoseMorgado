@@ -11,7 +11,7 @@ MAX_VIDEOS = 1
 def media_upload_to(instance, filename):
     # Cada objeto guarda sus videos en una carpeta por tipo y su ID
     tipo = instance.content_type.model
-    return f'media/{tipo}/{instance.object_id}/videos/{filename}'
+    return f'{tipo}/{instance.object_id}/videos/{filename}'
 
 
 class Video(models.Model):

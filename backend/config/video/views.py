@@ -35,7 +35,7 @@ from drf_spectacular.utils import (
 @permission_classes([AllowAny])  # Cualquiera puede acceder
 def video_list(request):
     qs = Video.objects.all().order_by('id')
-    serializer = VideoSerializer(qs, many=True)
+    serializer = VideoSerializer(qs, many=True, context={"request": request})
     return Response(serializer.data)
 
 
@@ -93,7 +93,7 @@ def video_detail(request, pk):
 def videos_por_queja(request, queja_id):
     queja_ct = ContentType.objects.get(app_label='quejas', model='queja')
     qs = Video.objects.filter(content_type=queja_ct, object_id=queja_id).order_by('orden')
-    serializer = VideoSerializer(qs, many=True)
+    serializer = VideoSerializer(qs, many=True, context={"request": request})
     return Response(serializer.data)
 
 
@@ -121,7 +121,7 @@ def videos_por_queja(request, queja_id):
 def videos_por_comentario(request, comentario_id):
     comentario_ct = ContentType.objects.get(app_label='comentario', model='comentario')
     qs = Video.objects.filter(content_type=comentario_ct, object_id=comentario_id).order_by('orden')
-    serializer = VideoSerializer(qs, many=True)
+    serializer = VideoSerializer(qs, many=True, context={"request": request})
     return Response(serializer.data)
 
 

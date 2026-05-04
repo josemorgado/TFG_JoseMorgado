@@ -92,7 +92,8 @@ export default function PerfilDetail() {
   if (error) return <p className="error">{error}</p>;
   if (!usuario) return <p>No hay datos de usuario</p>;
 
-  const fotoPerfil = (usuario as any)?.perfil?.foto_perfil || null;
+  const fotoPerfil = usuario?.perfil?.foto_perfil ?? null;
+
   const esMiPerfil = userActivo?.id === usuario.id;
   if (!usuario) return <p>No hay datos de usuario</p>;
   if (!userActivo) return <p>No hay datos de usuario</p>;
@@ -100,17 +101,29 @@ export default function PerfilDetail() {
     usuario.perfil?.moderator ||
     userActivo.is_staff ||
     userActivo.is_superuser;
+
+  console.log("API_URL =", import.meta.env.VITE_API_URL);
+  console.log("foto_perfil =", usuario?.perfil?.foto_perfil);
+
   return (
     <div className="perfil-detail-page">
       <div className="perfil-detail">
         <div className="perfil-card">
           <div className="perfil-avatar-wrapper">
             <div className="perfil-avatar">
+
+
               {fotoPerfil ? (
-                <img src={fotoPerfil} className="perfil-avatar__img" alt="foto" />
+                <img
+                  src={fotoPerfil}
+                  className="perfil-avatar__img"
+                  alt="Foto de perfil"
+                />
               ) : (
                 <div className="perfil-avatar__fallback">{iniciales}</div>
               )}
+
+
 
               {esMiPerfil && (
                 <button

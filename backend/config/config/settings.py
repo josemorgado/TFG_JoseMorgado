@@ -17,7 +17,7 @@ load_dotenv(BASE_DIR / '.env')
 # ======================
 ENABLE_AI_MODERATION= os.getenv("ENABLE_AI_MODERATION","false")=="true"
 SECRET_KEY = os.environ.get('SECRET_KEY')
-DEBUG = os.environ.get('DEBUG') == 'True'
+DEBUG = 'True'
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 if not DEBUG:
     ALLOWED_HOSTS += ['.onrender.com']

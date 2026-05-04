@@ -37,7 +37,7 @@ export default function EditarDistrito() {
 
     const handleDelete = async () => {
         const ok = window.confirm(
-            "¿Seguro que quieres eliminar este distrito? Esta acción no se puede deshacer."
+            "¿Seguro que quieres eliminar este distrito? Esta acción no se puede deshacer. Si lo eleimna, se eliminaran todas las quejas asociadas a este distrito."
         );
         if (!ok) return;
 

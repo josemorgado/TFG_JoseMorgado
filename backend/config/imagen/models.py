@@ -17,7 +17,7 @@ def media_upload_to(instance, filename):
         media/queja/42/imagenes/foto.png
     """
     tipo = instance.content_type.model
-    return f"media/{tipo}/{instance.object_id}/imagenes/{filename}"
+    return f"{tipo}/{instance.object_id}/imagenes/{filename}"
 
 
 class Imagen(models.Model):

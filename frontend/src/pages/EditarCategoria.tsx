@@ -38,7 +38,7 @@ export default function EditarCategoria() {
 
     const handleDelete = async () => {
         const ok = window.confirm(
-            "¿Seguro que quieres eliminar esta categoría? Esta acción no se puede deshacer."
+            "¿Seguro que quieres eliminar esta categoría? Esta acción no se puede deshacer.Si la elimina, se eliminaran todas las quejas asociadas a esta categoria."
         );
         if (!ok) return;
 
