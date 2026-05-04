@@ -4,7 +4,7 @@ from distrito.models import (
     long_minima_codigo,
     long_minima_nombre,
     long_max_codigo,
-    long_max_nombre
+    long_max_nombre,
 )
 import re
 
@@ -18,8 +18,8 @@ class DistritoSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Distrito
-        fields = ['id', 'nombre', 'codigo']
-        read_only_fields = ['id']
+        fields = ["id", "nombre", "codigo"]
+        read_only_fields = ["id"]
         extra_kwargs = {
             "nombre": {
                 "help_text": f"Nombre del distrito. Entre {long_minima_nombre} y {long_max_nombre} caracteres."
@@ -29,7 +29,7 @@ class DistritoSerializer(serializers.ModelSerializer):
                     f"Código identificativo. Entre {long_minima_codigo} y {long_max_codigo} caracteres, "
                     "sin espacios y solo letras, números, guiones y guiones bajos."
                 )
-            }
+            },
         }
 
     # ------------------------------
@@ -87,24 +87,40 @@ class DistritoSerializer(serializers.ModelSerializer):
     # ------------------------------
     # VALIDACIÓN GLOBAL (UNICIDAD)
     # ------------------------------
-    def validate(self, data):
-        """Valida unicidad sin interferir en updates del mismo objeto."""
 
-        instance = getattr(self, 'instance', None)
 
-        nombre = data.get("nombre", instance.nombre if instance else None)
-        codigo = data.get("codigo", instance.codigo if instance else None)
+def validate(self, data):
+    instance = getattr(self, "instance", None)
 
-        # Validación de nombre único
-        if Distrito.objects.exclude(id=instance.id if instance else None).filter(nombre=nombre).exists():
-            raise serializers.ValidationError({
-                "nombre": "Ya existe un distrito con este nombre."
-            })
+    nombre = data.get("nombre")
+    codigo = data.get("codigo")
 
-        # Validación de código único
-        if Distrito.objects.exclude(id=instance.id if instance else None).filter(codigo=codigo).exists():
-            raise serializers.ValidationError({
-                "codigo": "Ya existe un distrito con este código."
-            })
+    # Normalizar explícitamente
+    if nombre:
+        nombre = nombre.strip()
 
-        return data
+    if codigo:
+        codigo = codigo.strip().upper()
+
+    if (
+        Distrito.objects.exclude(id=instance.id if instance else None)
+        .filter(nombre=nombre)
+        .exists()
+    ):
+        raise serializers.ValidationError(
+            {"nombre": "Ya existe un distrito con este nombre."}
+        )
+
+    if (
+        Distrito.objects.exclude(id=instance.id if instance else None)
+        .filter(codigo=codigo)
+        .exists()
+    ):
+        raise serializers.ValidationError(
+            {"codigo": "Ya existe un distrito con este código."}
+        )
+
+    data["codigo"] = codigo
+    data["nombre"] = nombre
+
+    return data

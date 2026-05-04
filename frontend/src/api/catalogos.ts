@@ -1,6 +1,5 @@
 // src/api/catalogos.ts
-import { api } from "./client";
-
+import api from "../utils/axios";
 export type OpcionBasica = {
   id: number;
   nombre: string;
@@ -19,3 +18,4 @@ export async function fetchDistritos(): Promise<OpcionBasica[]> {
   const { data } = await api.get("/distritos/");
   return unwrap<OpcionBasica>(data);
 }
+

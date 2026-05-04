@@ -11,6 +11,7 @@ import editIcon from "../assets/icons/pencil-icon.png";
 import { getTopCategorias } from "../api/stats";
 import type { CategoriaStats } from "../api/stats";
 import LogoutButton from "../components/LogoutButton";
+import ModeradorButton from "../components/ModeradorButton";
 import ModButton from "../components/ModButton";
 export default function PerfilDetail() {
   const { id } = useParams();
@@ -93,7 +94,12 @@ export default function PerfilDetail() {
 
   const fotoPerfil = (usuario as any)?.perfil?.foto_perfil || null;
   const esMiPerfil = userActivo?.id === usuario.id;
-
+  if (!usuario) return <p>No hay datos de usuario</p>;
+  if (!userActivo) return <p>No hay datos de usuario</p>;
+  const puedeVerPanelModerador =
+    usuario.perfil?.moderator ||
+    userActivo.is_staff ||
+    userActivo.is_superuser;
   return (
     <div className="perfil-detail-page">
       <div className="perfil-detail">
@@ -120,6 +126,13 @@ export default function PerfilDetail() {
             {esMiPerfil && (
               <div className="logout-wrapper">
                 <LogoutButton />
+              </div>
+            )}
+
+
+            {puedeVerPanelModerador && (
+              <div className="logout-wrapper">
+                <ModeradorButton />
               </div>
             )}
 

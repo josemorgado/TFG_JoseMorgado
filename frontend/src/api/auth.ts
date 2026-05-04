@@ -1,4 +1,4 @@
-import { api } from './client';
+import api from "../utils/axios";
 import {storage} from '../utils/storage';
 
 const AUTH_LOGIN = import.meta.env.VITE_AUTH_LOGIN ?? '/token/';

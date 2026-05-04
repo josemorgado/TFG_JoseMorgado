@@ -23,6 +23,9 @@ import Notificaciones from "../pages/Notificaciones";
 import QuejaRespuestasPage from "../pages/QuejaRespuestas";
 import QuejaResponder from "../pages/QuejaResponder";
 import Contacto from "../pages/Contacto";
+import ModeradorOptions from "../pages/ModeradorOptions";
+import EditarCategoria from "../pages/EditarCategoria";
+import EditarDistrito from "../pages/EditarDistrito";
 
 const AppRouter: React.FC = () => (
   <Routes>
@@ -43,6 +46,9 @@ const AppRouter: React.FC = () => (
       <Route path="/notificaciones/" element={<Notificaciones />} />
       <Route path="/quejas/:quejaId/respuestas" element={<QuejaRespuestasPage />} />
       <Route path="/quejas/:quejaId/responder" element={<QuejaResponder />} />
+      <Route path="/moderador" element={<ModeradorOptions />} />
+      <Route path="/moderador/categorias/:id/editar" element={<EditarCategoria />} />
+      <Route path="/moderador/distritos/:id/editar" element={<EditarDistrito />} />
 
       <Route element={<PrivateRouteCrearQueja />}>
         <Route path="/create-queja" element={<QuejaCreate />} />
