@@ -33,9 +33,7 @@ class QuejaSerializer(serializers.ModelSerializer):
 
     # Fecha formateada para consumo en frontend
     fecha_creacion_iso = serializers.DateTimeField(
-        source="fecha_creacion",
-        format="%Y-%m-%dT%H:%M:%S%z",
-        read_only=True
+        source="fecha_creacion", format="%Y-%m-%dT%H:%M:%S%z", read_only=True
     )
 
     # ───────────────
@@ -44,19 +42,17 @@ class QuejaSerializer(serializers.ModelSerializer):
     autor = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
         required=False,
-        help_text="Autor de la queja. Ignorado para usuarios no moderadores."
+        help_text="Autor de la queja. Ignorado para usuarios no moderadores.",
     )
 
     categoria = serializers.PrimaryKeyRelatedField(
-        queryset=Queja._meta.get_field("categoria")
-        .remote_field.model.objects.all(),
-        help_text="Categoría asociada a la queja."
+        queryset=Queja._meta.get_field("categoria").remote_field.model.objects.all(),
+        help_text="Categoría asociada a la queja.",
     )
 
     distrito = serializers.PrimaryKeyRelatedField(
-        queryset=Queja._meta.get_field("distrito")
-        .remote_field.model.objects.all(),
-        help_text="Distrito asociado a la queja."
+        queryset=Queja._meta.get_field("distrito").remote_field.model.objects.all(),
+        help_text="Distrito asociado a la queja.",
     )
 
     # Contadores precalculados (solo lectura)
@@ -108,9 +104,7 @@ class QuejaSerializer(serializers.ModelSerializer):
             "fecha_creacion_iso",
         ]
         extra_kwargs = {
-            "titulo": {
-                "help_text": "Título breve y descriptivo (5–200 caracteres)."
-            },
+            "titulo": {"help_text": "Título breve y descriptivo (5–200 caracteres)."},
             "descripcion": {
                 "help_text": "Descripción detallada de la queja (10–5000 caracteres)."
             },
@@ -151,24 +145,16 @@ class QuejaSerializer(serializers.ModelSerializer):
         - Evitar duplicados por título y distrito.
         """
         titulo = data.get("titulo", getattr(self.instance, "titulo", ""))
-        descripcion = data.get(
-            "descripcion",
-            getattr(self.instance, "descripcion", "")
-        )
+        descripcion = data.get("descripcion", getattr(self.instance, "descripcion", ""))
 
         # 1. Sistema de moderación de contenido
         texto = f"{titulo} {descripcion}"
         moderate_text(texto)
 
         # 2. Prevenir duplicados por título y distrito
-        distrito = data.get(
-            "distrito", getattr(self.instance, "distrito", None)
-        )
+        distrito = data.get("distrito", getattr(self.instance, "distrito", None))
 
-        qs = Queja.objects.filter(
-            titulo__iexact=titulo,
-            distrito=distrito
-        )
+        qs = Queja.objects.filter(titulo__iexact=titulo, distrito=distrito)
 
         if self.instance:
             qs = qs.exclude(pk=self.instance.pk)
@@ -238,4 +224,8 @@ class QuejaSerializer(serializers.ModelSerializer):
         return MeGusta.objects.is_liked_by(obj, user)
 
     def get_num_respuestas(self, obj):
-        return Respuesta.objects.filter(queja=obj).count()
+        return getattr(obj, "num_respuestas", 0)
+
+    def get_num_votos(self, obj):
+        return getattr(obj, "num_votos_db", obj.num_votos)
+

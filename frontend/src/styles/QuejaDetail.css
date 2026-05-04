@@ -268,3 +268,102 @@
     align-items: center;
   }
 }
+
+/* =====================/* =================   CAMBIO DE ESTADO
+   ===================== */
+
+.form-field-inline.state {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.75rem;
+}
+
+/* Etiqueta */
+.form-field-inline.state .meta__label {
+  font-size: 0.85rem;
+  color: #555;
+  white-space: nowrap;
+}
+
+/* Select estilo "pill" */
+.select-pill {
+  appearance: none;
+  border: 2px solid var(--color-primary);
+  background: var(--color-white);
+  color: var(--color-primary);
+  padding: 6px 28px 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-family: var(--font-main);
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: 0.2s ease;
+}
+
+/* Flecha custom */
+
+.select-pill {
+  appearance: none;
+  border: 2px solid var(--color-primary);
+  background-color: var(--color-white);
+  color: var(--color-primary);
+  padding: 6px 10px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-family: var(--font-main);
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+}
+
+/* Hover / focus */
+.select-pill:hover {
+  background-color: #f5f7ff;
+}
+
+.select-pill:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(51, 102, 255, 0.25);
+}
+
+/* =====================
+   COLORES POR ESTADO
+   (opcional y elegante)
+   ===================== */
+
+/* Pendiente */
+.select-pill option[value="PEN"] {
+  color: #b45309;
+}
+
+/* En progreso */
+.select-pill option[value="ENP"] {
+  color: #2563eb;
+}
+
+/* Resuelta */
+.select-pill option[value="RES"] {
+  color: #15803d;
+}
+
+/* Rechazada */
+.select-pill option[value="REC"] {
+  color: #b91c1c;
+}
+
+/* =====================
+   RESPONSIVE
+   ===================== */
+
+@media (max-width: 600px) {
+  .form-field-inline.state {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .select-pill {
+    width: 100%;
+  }
+}

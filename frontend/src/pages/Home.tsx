@@ -1,9 +1,13 @@
 import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { getQuejas } from "../api/quejas";
-import type { Queja } from "../types/queja";
-import "../styles/home.css";
 import { getTopCategorias, getTopDistritos } from "../api/stats";
+
+import type { Queja } from "../types/queja";
+
 import QuejaCard from "../components/QuejaCard";
+import CreateQuejaButton from "../components/CreateQuejaButton";
 
 import {
   useCategorias,
@@ -11,84 +15,79 @@ import {
 } from "../modules/catalogos/catalogos.queries";
 
 import HeroImg from "../assets/icons/ImagenHome1.png";
-import CreateQuejaButton from "../components/CreateQuejaButton";
-import { useNavigate } from "react-router-dom";
+import "../styles/home.css";
 
 export default function Home() {
-  const [quejas, setQuejas] = useState<Queja[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [topCategoria, setTopCategoria] = useState<string>("");
-  const [topDistrito, setTopDistrito] = useState<string>("");
-  const [totalQuejas, setTotalQuejas] = useState<number>(0);
+  const navigate = useNavigate();
+
+  const [items, setItems] = useState<Queja[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const [totalCount, setTotalCount] = useState(0);
+  const [topCategory, setTopCategory] = useState("");
+  const [topDistrict, setTopDistrict] = useState("");
 
   const [filters, setFilters] = useState({
     texto: "",
     categoria: "",
     distrito: "",
   });
-  const navigate = useNavigate();
 
-  const handleClickVerTodas = () => {
-    navigate("/quejas");
-  };
   const { data: categorias } = useCategorias();
   const { data: distritos } = useDistritos();
 
   useEffect(() => {
     (async () => {
-      const data = await getQuejas();
-      setQuejas(data);
+      const data = await getQuejas({ page: 1, page_size: 9 });
 
-      // Total de quejas
-      setTotalQuejas(data.length);
+      setItems(data.results);
+      setTotalCount(data.count);
 
-      // Top categoría (limit 1)
-      const cat = await getTopCategorias({ limit: 1 });
-      setTopCategoria(cat.length > 0 ? cat[0].nombre : "Sin datos");
+      const topCat = await getTopCategorias({ limit: 1 });
+      setTopCategory(topCat.length ? topCat[0].nombre : "Sin datos");
 
-      // Top distrito (limit 1)
-      const dist = await getTopDistritos({ limit: 1 });
-      setTopDistrito(dist.length > 0 ? dist[0].nombre : "Sin datos");
+      const topDist = await getTopDistritos({ limit: 1 });
+      setTopDistrict(topDist.length ? topDist[0].nombre : "Sin datos");
 
-      setLoading(false);
+      setIsLoading(false);
     })();
   }, []);
-  // Filtrado
-  const filteredQuejas = useMemo(() => {
-    return quejas
-      .filter((q) => {
-        if (filters.texto) {
-          const text = filters.texto.toLowerCase();
-          if (
-            !q.titulo.toLowerCase().includes(text) &&
-            !q.descripcion.toLowerCase().includes(text)
-          ) {
-            return false;
-          }
+
+  const visibleItems = useMemo(() => {
+    return items.filter((q) => {
+      if (filters.texto) {
+        const text = filters.texto.toLowerCase();
+        if (
+          !q.titulo.toLowerCase().includes(text) &&
+          !q.descripcion.toLowerCase().includes(text)
+        ) {
+          return false;
         }
+      }
 
-        if (filters.categoria && q.categoria_nombre !== filters.categoria)
-          return false;
+      if (filters.categoria && q.categoria_nombre !== filters.categoria) {
+        return false;
+      }
 
-        if (filters.distrito && q.distrito_nombre !== filters.distrito)
-          return false;
+      if (filters.distrito && q.distrito_nombre !== filters.distrito) {
+        return false;
+      }
 
-        return true;
-      })
-      .sort(
-        (a, b) =>
-          new Date(b.fecha_creacion_iso).getTime() -
-          new Date(a.fecha_creacion_iso).getTime(),
-      );
-  }, [quejas, filters]);
+      return true;
+    });
+  }, [items, filters]);
 
   const handleFilterChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    setFilters({
-      ...filters,
+    setFilters((prev) => ({
+      ...prev,
       [e.target.name]: e.target.value,
-    });
+    }));
+  };
+
+  const handleGoToList = () => {
+    navigate("/quejas");
   };
 
   return (
@@ -156,18 +155,21 @@ export default function Home() {
       <section className="card">
         <h2 className="home-section-title">Últimas quejas</h2>
 
-        {loading ? (
+        {isLoading ? (
           <p>Cargando...</p>
         ) : (
           <>
             <div className="quejas-grid-home">
-              {filteredQuejas.slice(0, 9).map((q) => (
+              {visibleItems.map((q) => (
                 <QuejaCard key={q.id} q={q} />
               ))}
 
-              {filteredQuejas.length > 9 && (
+              {totalCount > 9 && (
                 <div className="grid-cta">
-                  <button className="auth-button" onClick={handleClickVerTodas}>
+                  <button
+                    className="auth-button"
+                    onClick={handleGoToList}
+                  >
                     Ver todas
                   </button>
                 </div>
@@ -177,19 +179,19 @@ export default function Home() {
             <div className="stats-card-home">
               <div className="stats-item">
                 <div className="stats-number">
-                  {topCategoria || "Sin datos"}
+                  {topCategory || "Sin datos"}
                 </div>
                 <div className="stats-label">Categoría más activa</div>
               </div>
 
               <div className="stats-item">
-                <div className="stats-number">{totalQuejas}</div>
+                <div className="stats-number">{totalCount}</div>
                 <div className="stats-label">Total de quejas</div>
               </div>
 
               <div className="stats-item">
                 <div className="stats-number">
-                  {topDistrito || "Sin datos"}
+                  {topDistrict || "Sin datos"}
                 </div>
                 <div className="stats-label">Distrito más activo</div>
               </div>

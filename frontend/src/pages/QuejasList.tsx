@@ -1,12 +1,19 @@
-import { useEffect, useState, useMemo, useRef } from "react";
-import { getQuejas } from "../api/quejas";
+import { useEffect, useState, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
+
+import { getQuejasFiltered } from "../api/quejas";
 import type { Queja } from "../types/queja";
+
 import "../styles/QuejasList.css";
 import QuejaCard from "../components/QuejaCard";
-import { useSearchParams } from "react-router-dom";
+
 import type { FiltersShape, SortBy } from "../types/filters";
 import { defaultFilters } from "../types/filters";
-import { loadListState, saveListState, clearListState } from "../utils/storage";
+import {
+  loadListState,
+  saveListState,
+  clearListState,
+} from "../utils/storage";
 
 import {
   useCategorias,
@@ -14,98 +21,77 @@ import {
 } from "../modules/catalogos/catalogos.queries";
 
 export default function QuejasList() {
-  const [quejas, setQuejas] = useState<Queja[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchParams] = useSearchParams();
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
   const topRef = useRef<HTMLDivElement>(null);
-  // 1) Hidratar desde sessionStorage con tipos correctos
+  const [searchParams] = useSearchParams();
+
   const saved = loadListState<FiltersShape, SortBy>();
+
+  const [items, setItems] = useState<Queja[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [totalCount, setTotalCount] = useState(0);
 
   const [filters, setFilters] = useState<FiltersShape>(
     saved?.filters ?? defaultFilters
   );
   const [sortBy, setSortBy] = useState<SortBy>(saved?.sortBy ?? "");
-  const [isFiltersOpen, setIsFiltersOpen] = useState<boolean>(
+
+  const [isFiltersOpen, setIsFiltersOpen] = useState(
     saved?.isFiltersOpen ?? false
   );
-  const [isSortOpen, setIsSortOpen] = useState<boolean>(
+  const [isSortOpen, setIsSortOpen] = useState(
     saved?.isSortOpen ?? false
   );
 
-  const handleFilter = (
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 12;
+
+  const [textoDraft, setTextoDraft] = useState(filters.texto);
+  const [autorDraft, setAutorDraft] = useState(filters.autor);
+  const [ubicacionDraft, setUbicacionDraft] = useState(filters.ubicacion);
+
+  const { data: categorias, isLoading: catLoading, error: catError } =
+    useCategorias();
+  const { data: distritos, isLoading: disLoading, error: disError } =
+    useDistritos();
+
+  const buildApiFilters = (f: FiltersShape) => ({
+    ...f,
+    votosMin: f.votosMin ? Number(f.votosMin) : undefined,
+    votosMax: f.votosMax ? Number(f.votosMax) : undefined,
+    comentariosMin: f.comentariosMin
+      ? Number(f.comentariosMin)
+      : undefined,
+    comentariosMax: f.comentariosMax
+      ? Number(f.comentariosMax)
+      : undefined,
+  });
+
+  const handleFilterChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    const { name, value, type } = e.target;
-
-    if (type === "number") {
-      const num = Number(value);
-      if (num < 0) {
-        setFilters({ ...filters, [name]: "" } as FiltersShape);
-        return;
-      }
-    }
-
-    let updated = { ...filters, [name]: value } as FiltersShape;
-
-    if (name === "votosMin" && Number(value) > Number(filters.votosMax)) {
-      updated.votosMax = "";
-    }
-    if (name === "votosMax" && Number(value) < Number(filters.votosMin)) {
-      updated.votosMin = "";
-    }
-    if (
-      name === "comentariosMin" &&
-      Number(value) > Number(filters.comentariosMax)
-    ) {
-      updated.comentariosMax = "";
-    }
-    if (
-      name === "comentariosMax" &&
-      Number(value) < Number(filters.comentariosMin)
-    ) {
-      updated.comentariosMin = "";
-    }
-
-    if (name === "fechaDesde") {
-      const desde = new Date(value);
-      const hasta = new Date(filters.fechaHasta);
-      const hoy = new Date();
-      if (desde > hoy) {
-        updated.fechaDesde = hoy.toISOString().slice(0, 10);
-      }
-      if (filters.fechaHasta && desde > hasta) {
-        updated.fechaHasta = value;
-      }
-    }
-
-    if (name === "fechaHasta") {
-      const hasta = new Date(value);
-      const desde = new Date(filters.fechaDesde);
-      const hoy = new Date();
-      if (hasta > hoy) {
-        updated.fechaHasta = hoy.toISOString().slice(0, 10);
-      }
-      if (filters.fechaDesde && hasta < desde) {
-        updated.fechaDesde = value;
-      }
-    }
-
-    setFilters(updated);
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
   };
 
-  const {
-    data: categorias,
-    isLoading: catLoading,
-    error: catError,
-  } = useCategorias();
+  const handleEnterApply = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    field: "texto" | "autor" | "ubicacion"
+  ) => {
+    if (e.key === "Enter") {
+      setFilters((prev) => ({
+        ...prev,
+        ...(field === "texto" && { texto: textoDraft }),
+        ...(field === "autor" && { autor: autorDraft }),
+        ...(field === "ubicacion" && { ubicacion: ubicacionDraft }),
+      }));
+    }
+  };
 
-  const {
-    data: distritos,
-    isLoading: disLoading,
-    error: disError,
-  } = useDistritos();
+  useEffect(() => {
+    setTextoDraft(filters.texto);
+    setAutorDraft(filters.autor);
+    setUbicacionDraft(filters.ubicacion);
+  }, [filters.texto, filters.autor, filters.ubicacion]);
 
   useEffect(() => {
     const categoria = searchParams.get("categoria");
@@ -114,14 +100,12 @@ export default function QuejasList() {
 
     if (categoria || distrito || estado) {
       clearListState();
-
       setFilters({
         ...defaultFilters,
         categoria: categoria ?? "",
         distrito: distrito ?? "",
         estado: estado ?? "",
       });
-
       setSortBy("");
       setIsFiltersOpen(true);
       setIsSortOpen(false);
@@ -129,16 +113,6 @@ export default function QuejasList() {
     }
   }, []);
 
-  // 2) Cargar quejas SOLO al montar
-  useEffect(() => {
-    (async () => {
-      const data = await getQuejas();
-      setQuejas(data);
-      setLoading(false);
-    })();
-  }, []);
-
-  // 3) Guardar en sesión cuando cambien filtros/orden/paneles
   useEffect(() => {
     saveListState<FiltersShape, SortBy>({
       filters,
@@ -146,173 +120,52 @@ export default function QuejasList() {
       isFiltersOpen,
       isSortOpen,
     });
-    setCurrentPage(1); // volver a la primera página tras filtrar
+    setCurrentPage(1);
   }, [filters, sortBy, isFiltersOpen, isSortOpen]);
 
-  // 4) Reset único que también limpia el storage
+  useEffect(() => {
+    setIsLoading(true);
+
+    getQuejasFiltered({
+      page: currentPage,
+      page_size: itemsPerPage,
+      ordering: sortBy || undefined,
+      ...buildApiFilters(filters),
+    }).then((data) => {
+      setItems(data.results);
+      setTotalCount(data.count);
+      setIsLoading(false);
+    });
+  }, [filters, sortBy, currentPage]);
+
+  useEffect(() => {
+    topRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [currentPage]);
+
+  const totalPages = Math.ceil(totalCount / itemsPerPage);
+
   const resetFilters = () => {
     setFilters(defaultFilters);
     setIsFiltersOpen(false);
     clearListState();
   };
+
   const resetSort = () => {
     setSortBy("");
     setIsSortOpen(false);
     clearListState();
   };
-  // 5) Filtrado avanzado
-  const filteredQuejas = useMemo(() => {
-    const filtradas = quejas.filter((q) => {
-      if (filters.estado && q.estado !== filters.estado) return false;
 
-      if (filters.categoria && q.categoria_nombre !== filters.categoria)
-        return false;
-
-      if (filters.distrito && q.distrito_nombre !== filters.distrito)
-        return false;
-
-      if (filters.autor) {
-        const autor = q.autor_nombre?.toLowerCase() || "";
-        if (!autor.includes(filters.autor.toLowerCase())) return false;
-      }
-
-      if (filters.ubicacion) {
-        if (
-          !q.ubicacion ||
-          !q.ubicacion.toLowerCase().includes(filters.ubicacion.toLowerCase())
-        )
-          return false;
-      }
-
-      if (filters.texto) {
-        const txt = filters.texto.toLowerCase();
-        if (
-          !q.titulo.toLowerCase().includes(txt) &&
-          !q.descripcion.toLowerCase().includes(txt)
-        )
-          return false;
-      }
-
-      if (filters.fechaDesde) {
-        if (new Date(q.fecha_creacion) < new Date(filters.fechaDesde))
-          return false;
-      }
-
-      if (filters.fechaHasta) {
-        if (new Date(q.fecha_creacion) > new Date(filters.fechaHasta))
-          return false;
-      }
-
-      if (filters.votosMin && q.num_votos < Number(filters.votosMin))
-        return false;
-      if (filters.votosMax && q.num_votos > Number(filters.votosMax))
-        return false;
-
-      if (
-        filters.comentariosMin &&
-        q.num_comentarios < Number(filters.comentariosMin)
-      )
-        return false;
-      if (
-        filters.comentariosMax &&
-        q.num_comentarios > Number(filters.comentariosMax)
-      )
-        return false;
-
-      // ---------- FILTRO MULTIMEDIA ÚNICO ----------
-      const img = Number(q.imagenes_count ?? 0);
-      const vid = Number(q.videos_count ?? 0);
-      const totalMedia = img + vid;
-
-      switch (filters.media) {
-        case "con":
-          if (totalMedia === 0) return false;
-          break;
-        case "sin":
-          if (totalMedia > 0) return false;
-          break;
-        case "videos":
-          if (vid === 0) return false;
-          break;
-        case "imagenes":
-          if (img === 0) return false;
-          break;
-        case "ambos":
-          if (img === 0 || vid === 0) return false;
-          break;
-        default:
-          break;
-      }
-      return true;
-    });
-
-    let ordenadas = [...filtradas];
-    switch (sortBy) {
-      case "fecha_asc":
-        ordenadas.sort(
-          (a, b) =>
-            new Date(a.fecha_creacion_iso).getTime() -
-            new Date(b.fecha_creacion_iso).getTime()
-        );
-        break;
-
-      case "fecha_desc":
-        ordenadas.sort(
-          (a, b) =>
-            new Date(b.fecha_creacion_iso).getTime() -
-            new Date(a.fecha_creacion_iso).getTime()
-        );
-        break;
-
-      case "votos":
-        ordenadas.sort((a, b) => b.num_votos - a.num_votos);
-        break;
-
-      case "comentarios":
-        ordenadas.sort((a, b) => b.num_comentarios - a.num_comentarios);
-        break;
-      case "respuestas":
-        ordenadas.sort((a, b) => b.num_respuestas - a.num_respuestas);
-        break;
-      default:
-        break;
-    }
-    return ordenadas;
-  }, [quejas, filters, sortBy]);
-
-
-  // 6) Paginación real SOBRE las quejas ya filtradas
-  const paginatedQuejas = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    const end = start + itemsPerPage;
-    return filteredQuejas.slice(start, end);
-  }, [filteredQuejas, currentPage, itemsPerPage]);
-
-
-  useEffect(() => {
-    topRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  }, [currentPage]);
-
-
-  if (loading) return <p className="loading">Cargando...</p>;
-
-  // 7) Total de páginas calculado desde las filtradas
-  const totalPages = Math.ceil(filteredQuejas.length / itemsPerPage);
+  if (isLoading) return <p className="loading">Cargando...</p>;
 
   return (
     <div ref={topRef} className="quejas-layout">
-      {/* BARRA LATERAL DE FILTROS */}
       <aside className={`sidebar-filtros ${isFiltersOpen ? "open" : "closed"}`}>
         <div className="sidebar-section">
           <div className="sidebar-header">
             <button
               className="sidebar-title-btn"
               onClick={() => setIsSortOpen((p) => !p)}
-              aria-expanded={isSortOpen}
-              title={isSortOpen ? "Ocultar ordenación" : "Mostrar ordenación"}
             >
               Ordenar por
               <span className={`chevron ${isSortOpen ? "up" : "down"}`} />
@@ -321,70 +174,32 @@ export default function QuejasList() {
               className="btn btn-secondary btn-small btn-filter"
               onClick={resetSort}
               style={{ marginTop: "10px" }}
-              title="Reiniciar ordenación"
             >
               Reiniciar
             </button>
           </div>
 
           {isSortOpen && (
-            <div className="filtros-panel">
-              <div className="options-list">
-                <label className="option-item">
+            <div className="filtros-panel options-list">
+              {[
+                ["fecha_desc", "Fecha (más recientes primero)"],
+                ["fecha_asc", "Fecha (más antiguas primero)"],
+                ["votos", "Más votos"],
+                ["comentarios", "Más comentarios"],
+                ["respuestas", "Más respuestas"],
+              ].map(([value, label]) => (
+                <label className="option-item" key={value}>
                   <input
                     type="radio"
-                    name="sort"
-                    value="fecha_asc"
-                    checked={sortBy === "fecha_asc"}
-                    onChange={(e) => setSortBy(e.target.value as SortBy)}
+                    value={value}
+                    checked={sortBy === value}
+                    onChange={(e) =>
+                      setSortBy(e.target.value as SortBy)
+                    }
                   />
-                  <span>Fecha (más antiguas primero)</span>
+                  <span>{label}</span>
                 </label>
-
-                <label className="option-item">
-                  <input
-                    type="radio"
-                    name="sort"
-                    value="fecha_desc"
-                    checked={sortBy === "fecha_desc"}
-                    onChange={(e) => setSortBy(e.target.value as SortBy)}
-                  />
-                  <span>Fecha (más recientes primero)</span>
-                </label>
-
-                <label className="option-item">
-                  <input
-                    type="radio"
-                    name="sort"
-                    value="votos"
-                    checked={sortBy === "votos"}
-                    onChange={(e) => setSortBy(e.target.value as SortBy)}
-                  />
-                  <span>Más votos</span>
-                </label>
-
-                <label className="option-item">
-                  <input
-                    type="radio"
-                    name="sort"
-                    value="comentarios"
-                    checked={sortBy === "comentarios"}
-                    onChange={(e) => setSortBy(e.target.value as SortBy)}
-                  />
-                  <span>Más comentarios</span>
-                </label>
-
-                <label className="option-item">
-                  <input
-                    type="radio"
-                    name="sort"
-                    value="respuestas"
-                    checked={sortBy === "respuestas"}
-                    onChange={(e) => setSortBy(e.target.value as SortBy)}
-                  />
-                  <span>Más respuestas</span>
-                </label>
-              </div>
+              ))}
             </div>
           )}
         </div>
@@ -394,81 +209,54 @@ export default function QuejasList() {
             <button
               className="sidebar-title-btn"
               onClick={() => setIsFiltersOpen((p) => !p)}
-              aria-expanded={isFiltersOpen}
-              aria-controls="filtros-panel"
-              title={isFiltersOpen ? "Ocultar filtros" : "Mostrar filtros"}
             >
               Filtros
               <span className={`chevron ${isFiltersOpen ? "up" : "down"}`} />
             </button>
-
             <button
               className="btn btn-secondary btn-small btn-filter"
               onClick={resetFilters}
               style={{ marginTop: "10px" }}
-              title="Reiniciar filtros"
             >
               Reiniciar
             </button>
           </div>
 
           {isFiltersOpen && (
-            <div id="filtros-panel" className="filtros-panel">
-              {/* TEXTO */}
+            <div className="filtros-panel">
               <div className="filtro-item">
                 <label>Texto</label>
                 <input
                   className="input"
-                  name="texto"
-                  onChange={handleFilter}
-                  placeholder="Buscar…"
-                  value={filters.texto}
+                  placeholder="Pulsa Enter para buscar"
+                  value={textoDraft}
+                  onChange={(e) => setTextoDraft(e.target.value)}
+                  onKeyDown={(e) => handleEnterApply(e, "texto")}
                 />
               </div>
-
-              {/* MULTIMEDIA */}
-              <div className="filtro-item">
-                <label>Multimedia</label>
-                <select
-                  className="input"
-                  name="media"
-                  onChange={handleFilter}
-                  value={filters.media}
-                >
-                  <option value="">Todas</option>
-                  <option value="con">Con media</option>
-                  <option value="sin">Sin media</option>
-                  <option value="videos">Con vídeos</option>
-                  <option value="imagenes">Con imágenes</option>
-                  <option value="ambos">Con imágenes y videos</option>
-                </select>
-              </div>
-
-              {/* ESTADO */}
               <div className="filtro-item">
                 <label>Estado</label>
                 <select
                   className="input"
                   name="estado"
-                  onChange={handleFilter}
                   value={filters.estado}
+                  onChange={handleFilterChange}
                 >
                   <option value="">Todos</option>
                   <option value="PEN">Pendiente</option>
-                  <option value="ENP">En Progreso</option>
+                  <option value="ENP">En progreso</option>
                   <option value="RES">Resuelta</option>
                   <option value="REC">Rechazada</option>
                 </select>
               </div>
 
-              {/* CATEGORÍA */}
               <div className="filtro-item">
                 <label>Categoría</label>
                 <select
                   className="input"
                   name="categoria"
-                  onChange={handleFilter}
                   value={filters.categoria}
+                  onChange={handleFilterChange}
                 >
                   <option value="">Todas</option>
                   {catLoading && <option>Cargando…</option>}
@@ -481,14 +269,13 @@ export default function QuejasList() {
                 </select>
               </div>
 
-              {/* DISTRITO */}
               <div className="filtro-item">
                 <label>Distrito</label>
                 <select
                   className="input"
                   name="distrito"
-                  onChange={handleFilter}
                   value={filters.distrito}
+                  onChange={handleFilterChange}
                 >
                   <option value="">Todos</option>
                   {disLoading && <option>Cargando…</option>}
@@ -501,39 +288,36 @@ export default function QuejasList() {
                 </select>
               </div>
 
-              {/* AUTOR */}
               <div className="filtro-item">
                 <label>Autor</label>
                 <input
                   className="input"
-                  name="autor"
-                  onChange={handleFilter}
-                  placeholder="Nombre del autor"
-                  value={filters.autor}
+                  placeholder="Pulsa Enter para buscar"
+                  value={autorDraft}
+                  onChange={(e) => setAutorDraft(e.target.value)}
+                  onKeyDown={(e) => handleEnterApply(e, "autor")}
                 />
               </div>
 
-              {/* UBICACIÓN */}
               <div className="filtro-item">
                 <label>Ubicación</label>
                 <input
                   className="input"
-                  name="ubicacion"
-                  onChange={handleFilter}
-                  placeholder="Ej: Calle Real"
-                  value={filters.ubicacion}
+                  placeholder="Pulsa Enter para buscar"
+                  value={ubicacionDraft}
+                  onChange={(e) => setUbicacionDraft(e.target.value)}
+                  onKeyDown={(e) => handleEnterApply(e, "ubicacion")}
                 />
               </div>
 
-              {/* FECHAS */}
               <div className="filtro-item">
                 <label>Desde</label>
                 <input
                   type="date"
                   className="input"
                   name="fechaDesde"
-                  onChange={handleFilter}
                   value={filters.fechaDesde}
+                  onChange={handleFilterChange}
                 />
               </div>
 
@@ -543,21 +327,19 @@ export default function QuejasList() {
                   type="date"
                   className="input"
                   name="fechaHasta"
-                  onChange={handleFilter}
                   value={filters.fechaHasta}
+                  onChange={handleFilterChange}
                 />
               </div>
 
-              {/* VOTOS */}
               <div className="filtro-item">
                 <label>Votos min</label>
                 <input
                   type="number"
                   className="input"
                   name="votosMin"
-                  min="0"
-                  onChange={handleFilter}
                   value={filters.votosMin}
+                  onChange={handleFilterChange}
                 />
               </div>
 
@@ -567,22 +349,19 @@ export default function QuejasList() {
                   type="number"
                   className="input"
                   name="votosMax"
-                  min="0"
-                  onChange={handleFilter}
                   value={filters.votosMax}
+                  onChange={handleFilterChange}
                 />
               </div>
 
-              {/* COMENTARIOS */}
               <div className="filtro-item">
                 <label>Com. min</label>
                 <input
                   type="number"
                   className="input"
                   name="comentariosMin"
-                  min="0"
-                  onChange={handleFilter}
                   value={filters.comentariosMin}
+                  onChange={handleFilterChange}
                 />
               </div>
 
@@ -592,9 +371,8 @@ export default function QuejasList() {
                   type="number"
                   className="input"
                   name="comentariosMax"
-                  min="0"
-                  onChange={handleFilter}
                   value={filters.comentariosMax}
+                  onChange={handleFilterChange}
                 />
               </div>
             </div>
@@ -602,14 +380,13 @@ export default function QuejasList() {
         </div>
       </aside>
 
-      {/* LISTA DE QUEJAS */}
       <div className="quejas-content">
         <h2 className="quejas-header">
-          Listado de Quejas ({filteredQuejas.length})
+          Listado de Quejas ({totalCount})
         </h2>
 
         <div className="quejas-grid">
-          {paginatedQuejas.map((q) => (
+          {items.map((q) => (
             <QuejaCard key={q.id} q={q} />
           ))}
         </div>
@@ -623,11 +400,9 @@ export default function QuejasList() {
             >
               ← Anterior
             </button>
-
             <span className="page-indicator">
               {currentPage} / {totalPages}
             </span>
-
             <button
               className="btn"
               disabled={currentPage === totalPages}
