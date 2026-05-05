@@ -1,35 +1,35 @@
-// src/pages/PerfilDetail.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { Usuario } from "../types/perfil";
-import { getUsuarioById } from "../api/perfil";
-import "../styles/PerfilDetail.css";
 import type { Queja } from "../types/queja";
-import { getQuejasByUser } from "../api/quejas";
-import { useAuth } from "../context/AuthContext";
-import editIcon from "../assets/icons/pencil-icon.png";
-import { getTopCategorias } from "../api/stats";
 import type { CategoriaStats } from "../api/stats";
+import { getUsuarioById } from "../api/perfil";
+import { getQuejasByUser } from "../api/quejas";
+import { getTopCategorias } from "../api/stats";
+import { useAuth } from "../context/AuthContext";
 import LogoutButton from "../components/LogoutButton";
 import ModeradorButton from "../components/ModeradorButton";
 import ModButton from "../components/ModButton";
+import editIcon from "../assets/icons/pencil-icon.png";
+import "../styles/PerfilDetail.css";
+
+const MAPEO_ESTADOS: Record<string, string> = {
+  PEN: "Pendiente",
+  ENP: "En Progreso",
+  RES: "Resuelta",
+  REC: "Rechazada",
+};
+
 export default function PerfilDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user: usuarioActual } = useAuth();
 
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quejas, setQuejas] = useState<Queja[]>([]);
-  const { user: userActivo } = useAuth();
-  const [topCategoria, setTopCategoria] = useState<CategoriaStats | null>(null);
-
-  const estadoCompleto: Record<string, string> = {
-    PEN: "Pendiente",
-    ENP: "En Progreso",
-    RES: "Resuelta",
-    REC: "Rechazada",
-  };
+  const [categoriaDestacada, setCategoriaDestacada] = useState<CategoriaStats | null>(null);
 
   useEffect(() => {
     if (!id) {
@@ -38,8 +38,8 @@ export default function PerfilDetail() {
       return;
     }
 
-    const userId = Number(id);
-    if (Number.isNaN(userId)) {
+    const idUsuario = Number(id);
+    if (Number.isNaN(idUsuario)) {
       setError("La ID no es válida.");
       setLoading(false);
       return;
@@ -50,23 +50,22 @@ export default function PerfilDetail() {
         setLoading(true);
         setError(null);
 
-        // Cargamos todo en paralelo
-        const [usuarioData, quejasResp, topCats] = await Promise.all([
-          getUsuarioById(userId),
-          getQuejasByUser(userId),
+        const [datosUsuario, respuestaQuejas, categoriasTop] = await Promise.all([
+          getUsuarioById(idUsuario),
+          getQuejasByUser(idUsuario),
           getTopCategorias({
-            user_id: userId,
+            user_id: idUsuario,
             limit: 1,
             include_zero: false,
             ordering: "-total",
           }),
         ]);
 
-        setUsuario(usuarioData);
-        setQuejas(quejasResp);
-        setTopCategoria(topCats?.[0] ?? null);
-      } catch (e) {
-        console.error(e);
+        setUsuario(datosUsuario);
+        setQuejas(respuestaQuejas);
+        setCategoriaDestacada(categoriasTop?.[0] ?? null);
+      } catch (excepcion) {
+        console.error(excepcion);
         setError("No se pudo cargar el perfil.");
       } finally {
         setLoading(false);
@@ -76,8 +75,7 @@ export default function PerfilDetail() {
 
   const iniciales = useMemo(() => {
     if (!usuario) return "";
-    const nombre =
-      `${usuario.first_name || ""} ${usuario.last_name || ""}`.trim();
+    const nombre = `${usuario.first_name || ""} ${usuario.last_name || ""}`.trim();
     if (nombre.length > 0) {
       const partes = nombre.split(/\s+/).filter(Boolean);
       const letras = partes.slice(0, 2).map((p) => p[0]?.toUpperCase() || "");
@@ -91,19 +89,14 @@ export default function PerfilDetail() {
   if (loading) return <p>Cargando...</p>;
   if (error) return <p className="error">{error}</p>;
   if (!usuario) return <p>No hay datos de usuario</p>;
+  if (!usuarioActual) return <p>Debes iniciar sesión para ver este perfil</p>;
 
-  const fotoPerfil = usuario?.perfil?.foto_perfil ?? null;
-
-  const esMiPerfil = userActivo?.id === usuario.id;
-  if (!usuario) return <p>No hay datos de usuario</p>;
-  if (!userActivo) return <p>No hay datos de usuario</p>;
+  const imagenPerfil = usuario.perfil?.foto_perfil ?? null;
+  const esMiPerfil = usuarioActual.id === usuario.id;
   const puedeVerPanelModerador =
-    usuario.perfil?.moderator ||
-    userActivo.is_staff ||
-    userActivo.is_superuser;
-
-  console.log("API_URL =", import.meta.env.VITE_API_URL);
-  console.log("foto_perfil =", usuario?.perfil?.foto_perfil);
+    esMiPerfil && (usuario.perfil?.moderator ||
+      usuarioActual.is_staff ||
+      usuarioActual.is_superuser);
 
   return (
     <div className="perfil-detail-page">
@@ -111,19 +104,15 @@ export default function PerfilDetail() {
         <div className="perfil-card">
           <div className="perfil-avatar-wrapper">
             <div className="perfil-avatar">
-
-
-              {fotoPerfil ? (
+              {imagenPerfil ? (
                 <img
-                  src={fotoPerfil}
+                  src={imagenPerfil}
                   className="perfil-avatar__img"
                   alt="Foto de perfil"
                 />
               ) : (
                 <div className="perfil-avatar__fallback">{iniciales}</div>
               )}
-
-
 
               {esMiPerfil && (
                 <button
@@ -135,13 +124,11 @@ export default function PerfilDetail() {
               )}
             </div>
 
-
             {esMiPerfil && (
               <div className="logout-wrapper">
                 <LogoutButton />
               </div>
             )}
-
 
             {puedeVerPanelModerador && (
               <div className="logout-wrapper">
@@ -149,20 +136,16 @@ export default function PerfilDetail() {
               </div>
             )}
 
-
-            {!esMiPerfil && userActivo?.perfil?.moderator && usuario && (
+            {!esMiPerfil && usuarioActual.perfil?.moderator && usuario && (
               <div className="logout-wrapper">
                 <ModButton
                   targetUserId={usuario.id}
                   targetIsModerator={usuario.perfil.moderator}
-                  onUpdated={(updatedUser) => setUsuario(updatedUser)}
+                  onUpdated={(usuarioActualizado) => setUsuario(usuarioActualizado)}
                 />
               </div>
             )}
-
-
           </div>
-
 
           <div className="perfil-info">
             <div className="perfil-info-header">
@@ -203,11 +186,10 @@ export default function PerfilDetail() {
               </p>
 
               <p className="perfil-data-fields">
-                {topCategoria && (
+                {categoriaDestacada && (
                   <>
-                    <strong>Categoría más usada:</strong> {topCategoria.nombre}{" "}
-
-                    ({topCategoria.total})
+                    <strong>Categoría más usada:</strong> {categoriaDestacada.nombre}{" "}
+                    ({categoriaDestacada.total})
                   </>
                 )}
               </p>
@@ -215,21 +197,20 @@ export default function PerfilDetail() {
           </div>
         </div>
 
-        {/* ---------- LISTA DE QUEJAS -------- */}
         <h3 className="quejas-title">Quejas del usuario</h3>
 
         {quejas.length > 0 ? (
           <div className="quejas-grid">
-            {quejas.map((q) => (
+            {quejas.map((queja) => (
               <div
                 className="queja-card"
-                key={q.id}
-                onClick={() => navigate(`/quejas/${q.id}`)}
+                key={queja.id}
+                onClick={() => navigate(`/quejas/${queja.id}`)}
               >
-                <h4 className="queja-title">{q.titulo}</h4>
+                <h4 className="queja-title">{queja.titulo}</h4>
                 <p className="queja-meta">
-                  Estado: {estadoCompleto[q.estado] || q.estado} · Fecha:{" "}
-                  {q.fecha_creacion}
+                  Estado: {MAPEO_ESTADOS[queja.estado] || queja.estado} · Fecha:{" "}
+                  {queja.fecha_creacion}
                 </p>
               </div>
             ))}
@@ -240,6 +221,6 @@ export default function PerfilDetail() {
           </div>
         )}
       </div>
-    </div >
+    </div>
   );
 }

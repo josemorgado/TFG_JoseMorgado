@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import axiosInstance from "../utils/axios";
 import axios from "axios";
-import { useParams } from "react-router-dom";
 import type { Queja } from "../types/queja";
 import type { Comentario } from "../types/comentario";
 import type { Imagen } from "../types/imagen";
@@ -15,59 +14,60 @@ import { useAuth } from "../context/AuthContext";
 import { config } from "../config";
 import { deleteQueja } from "../api/quejas";
 import { listarRespuestasPorQueja } from "../api/respuestas";
-import { Link } from "react-router-dom";
 
-/** ---- Comentarios: árbol + tipos ---- */
-type CommentNode = Comentario & { children: CommentNode[] };
+type NodoComentario = Comentario & { children: NodoComentario[] };
 
-const LIMITE_UPDATE_TIME = config.LIMIT_TIME_UPDATE_QUEJA; //declarado en config.ts
-function buildCommentTree(comments: Comentario[]): CommentNode[] {
-  const map = new Map<number, CommentNode>();
-  const roots: CommentNode[] = [];
+const LIMITE_TIEMPO_ACTUALIZACION = config.LIMIT_TIME_UPDATE_QUEJA;
 
-  comments.forEach((c) => map.set(c.id, { ...c, children: [] }));
+function construirArbolComentarios(comentarios: Comentario[]): NodoComentario[] {
+  const mapa = new Map<number, NodoComentario>();
+  const raices: NodoComentario[] = [];
 
-  map.forEach((node) => {
-    if (node.parent) {
-      const parent = map.get(node.parent);
-      if (parent) parent.children.push(node);
-      else roots.push(node);
+  comentarios.forEach((c) => mapa.set(c.id, { ...c, children: [] }));
+
+  mapa.forEach((nodo) => {
+    if (nodo.parent) {
+      const padre = mapa.get(nodo.parent);
+      if (padre) padre.children.push(nodo);
+      else raices.push(nodo);
     } else {
-      roots.push(node);
+      raices.push(nodo);
     }
   });
 
-
-  return roots;
+  return raices;
 }
 
 function QuejaDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
   const [queja, setQueja] = useState<Queja | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
   const [imagenes, setImagenes] = useState<Imagen[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [showAllImages, setShowAllImages] = useState(false);
-  const firstTwo = imagenes.slice(0, 2);
-  const rest = imagenes.slice(2);
-  const remaining = rest.length;
+  const [cargando, setCargando] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [mostrarTodasLasImagenes, setMostrarTodasLasImagenes] = useState(false);
+  const [textoComentario, setTextoComentario] = useState("");
+  const [mostrarFormularioComentario, setMostrarFormularioComentario] = useState(false);
+  const [enviandoComentario, setEnviandoComentario] = useState(false);
+  const [contadorRespuestas, setContadorRespuestas] = useState<number | null>(null);
+  const [cargandoRespuestas, setCargandoRespuestas] = useState<boolean>(false);
+  const [expandidos, setExpandidos] = useState<Set<number>>(new Set());
 
+  const primerosDos = imagenes.slice(0, 2);
+  const restantes = imagenes.slice(2);
+  const cantidadRestantes = restantes.length;
 
-  const isModeratorOrAdmin = Boolean(
+  const esModeradorOAdmin = Boolean(
     user?.is_staff ||
     user?.is_superuser ||
     user?.is_moderator ||
     (user?.groups || []).some((g: any) => (typeof g === "string" ? g : g?.name || "").toLowerCase().includes("moderador"))
   );
 
-  const [respuestasCount, setRespuestasCount] = useState<number | null>(null);
-  const [respuestasCountLoading, setRespuestasCountLoading] = useState<boolean>(false);
-
-  // Estado legible del estado
   const estadoCompleto: Record<string, string> = {
     PEN: "Pendiente",
     ENP: "En Progreso",
@@ -75,20 +75,7 @@ function QuejaDetail() {
     REC: "Rechazada",
   };
 
-  // Comentarios: árbol + toggles por id
-  const tree = useMemo(() => buildCommentTree(comentarios), [comentarios]);
-  const [expanded, setExpanded] = useState<Set<number>>(new Set());
-  const toggleReplies = useCallback((cid: number) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      next.has(cid) ? next.delete(cid) : next.add(cid);
-      return next;
-    });
-  }, []);
-
-  const [commentText, setCommentText] = useState("");
-  const [showCommentBox, setShowCommentBox] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const arbolComentarios = useMemo(() => construirArbolComentarios(comentarios), [comentarios]);
 
   const puedeActualizar = (() => {
     if (!queja?.fecha_creacion_iso) return false;
@@ -96,29 +83,36 @@ function QuejaDetail() {
 
     const fecha = new Date(queja.fecha_creacion_iso);
     const ahora = new Date();
-
     const diffMs = ahora.getTime() - fecha.getTime();
     const diffMin = diffMs / 60000;
-    return diffMin <= LIMITE_UPDATE_TIME;
+    return diffMin <= LIMITE_TIEMPO_ACTUALIZACION;
   })();
+
+  const alternarRespuestas = useCallback((idComentario: number) => {
+    setExpandidos((anterior) => {
+      const siguiente = new Set(anterior);
+      siguiente.has(idComentario) ? siguiente.delete(idComentario) : siguiente.add(idComentario);
+      return siguiente;
+    });
+  }, []);
+
   useEffect(() => {
     if (!id) return;
-    let cancel = false;
+    let cancelado = false;
 
-    async function fetchAll() {
+    async function obtenerDatos() {
       try {
-        setLoading(true);
+        setCargando(true);
         setError(null);
 
-        const [quejaRes, imagenesRes, videosRes, comentarioRes] =
-          await Promise.all([
-            axiosInstance.get<Queja>(`/quejas/${id}/`),
-            axiosInstance.get<Imagen[]>(`/imagenes/queja/${id}/`),
-            axiosInstance.get<Video[]>(`/videos/queja/${id}/`),
-            axiosInstance.get<Comentario[]>(`/comentarios/queja/${id}/`),
-          ]);
+        const [quejaRes, imagenesRes, videosRes, comentarioRes] = await Promise.all([
+          axiosInstance.get<Queja>(`/quejas/${id}/`),
+          axiosInstance.get<Imagen[]>(`/imagenes/queja/${id}/`),
+          axiosInstance.get<Video[]>(`/videos/queja/${id}/`),
+          axiosInstance.get<Comentario[]>(`/comentarios/queja/${id}/`),
+        ]);
 
-        if (!cancel) {
+        if (!cancelado) {
           setQueja(quejaRes.data);
           setImagenes(imagenesRes.data);
           setVideos(videosRes.data);
@@ -126,44 +120,51 @@ function QuejaDetail() {
         }
       } catch (err) {
         if (axios.isAxiosError(err)) {
-          setError("Error cargando los datos de la queja.");
+          setError("La queja no existe.");
         } else {
           setError("Error inesperado");
         }
       } finally {
-        if (!cancel) setLoading(false);
+        if (!cancelado) setCargando(false);
       }
-
     }
 
-    fetchAll();
+    obtenerDatos();
     return () => {
-      cancel = true;
+      cancelado = true;
     };
   }, [id]);
 
   useEffect(() => {
     if (!id) return;
-    let cancel = false;
+    let cancelado = false;
 
     (async () => {
       try {
-        setRespuestasCountLoading(true);
-
+        setCargandoRespuestas(true);
         const qid = Number(id);
-        const data = await listarRespuestasPorQueja(qid, { page: 1, page_size: 1 })
-        if (!cancel) setRespuestasCount(data.count);
+        const datos = await listarRespuestasPorQueja(qid, { page: 1, page_size: 1 });
+        if (!cancelado) setContadorRespuestas(datos.count);
       } catch {
-        if (!cancel) setRespuestasCount(0);
+        if (!cancelado) setContadorRespuestas(0);
       } finally {
-        if (!cancel) setRespuestasCountLoading(false);
+        if (!cancelado) setCargandoRespuestas(false);
       }
     })();
 
-    return () => { cancel = true; };
+    return () => {
+      cancelado = true;
+    };
   }, [id]);
 
-  function handleDelete() {
+  function requerirInicioSesion(mensaje: string) {
+    const irALogin = window.confirm(`${mensaje}\n\n¿Quieres ir a iniciar sesión ahora?`);
+    if (irALogin) {
+      navigate("/login");
+    }
+  }
+
+  function manejadorEliminar() {
     if (!window.confirm("¿Seguro que deseas eliminar esta queja?")) return;
 
     deleteQueja(Number(id))
@@ -174,56 +175,63 @@ function QuejaDetail() {
       });
   }
 
-  const handleQuejaLikeChange = useCallback((liked: boolean, count: number) => {
-    setQueja((prev) =>
-      prev ? { ...prev, is_liked: liked, num_votos: count } : prev,
+  const manejadorCambioMeGustaQueja = useCallback((meGusta: boolean, cantidad: number) => {
+    setQueja((anterior) =>
+      anterior ? { ...anterior, is_liked: meGusta, num_votos: cantidad } : anterior,
     );
   }, []);
-  const handleSubmitComment = async () => {
-    if (!commentText.trim() || !id) return;
+
+  async function manejadorEnviarComentario() {
+    if (!textoComentario.trim() || !id) return;
 
     try {
-      setSubmitting(true);
+      setEnviandoComentario(true);
 
-      const response = await axiosInstance.post("/comentarios/create/", {
+      const respuesta = await axiosInstance.post("/comentarios/create/", {
         queja: Number(id),
-        contenido: commentText.trim(),
+        contenido: textoComentario.trim(),
       });
 
-      setComentarios((prev) => [...prev, response.data]);
-
-      setCommentText("");
-      setShowCommentBox(false);
-    } catch (err) {
-      console.error("Error al enviar comentario", err);
-      alert("Error al enviar el comentario");
+      setComentarios((anterior) => [...anterior, respuesta.data]);
+      setTextoComentario("");
+      setMostrarFormularioComentario(false);
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        requerirInicioSesion("Debes iniciar sesión para comentar.");
+      } else {
+        alert("No se pudo enviar el comentario.");
+      }
     } finally {
-      setSubmitting(false);
+      setEnviandoComentario(false);
     }
-  };
-  const handleSubmitReply = async (parentId: number, text: string) => {
-    if (!text || !id) return;
+  }
+
+  async function manejadorEnviarRespuesta(idPadre: number, texto: string) {
+    if (!texto || !id) return;
 
     try {
-      const response = await axiosInstance.post("/comentarios/create/", {
+      const respuesta = await axiosInstance.post("/comentarios/create/", {
         queja: Number(id),
-        contenido: text,
-        parent: parentId,
+        contenido: texto,
+        parent: idPadre,
       });
 
-      // Añadir respuesta a la lista
-      setComentarios((prev) => [...prev, response.data]);
-    } catch (err) {
-      console.error("Error al responder comentario", err);
-      alert("Error al enviar la respuesta");
+      setComentarios((anterior) => [...anterior, respuesta.data]);
+    } catch (err: any) {
+      if (err?.response?.status === 401) {
+        requerirInicioSesion("Debes iniciar sesión para responder.");
+      } else {
+        alert("Error al enviar la respuesta");
+      }
     }
-  };
-  const handleComentarioLikeChange = useCallback(
-    (comentarioId: number, liked: boolean, count: number) => {
-      setComentarios((prev) =>
-        prev.map((c) =>
-          c.id === comentarioId
-            ? { ...c, is_liked: liked, num_votos: count }
+  }
+
+  const manejadorCambioMeGustaComentario = useCallback(
+    (idComentario: number, meGusta: boolean, cantidad: number) => {
+      setComentarios((anterior) =>
+        anterior.map((c) =>
+          c.id === idComentario
+            ? { ...c, is_liked: meGusta, num_votos: cantidad }
             : c,
         ),
       );
@@ -231,7 +239,7 @@ function QuejaDetail() {
     [],
   );
 
-  if (loading) {
+  if (cargando) {
     return (
       <div className="detail-page">
         <div className="detail">
@@ -263,94 +271,94 @@ function QuejaDetail() {
     );
   }
 
-  function CommentItem({
-    node,
-    level = 0,
+  function ItemComentario({
+    nodo,
+    nivel = 0,
   }: {
-    node: CommentNode;
-    level?: number;
+    nodo: NodoComentario;
+    nivel?: number;
   }) {
-    const [isReplying, setIsReplying] = useState(false);
-    const [replyText, setReplyText] = useState("");
+    const [respondiendo, setRespondiendo] = useState(false);
+    const [textoRespuesta, setTextoRespuesta] = useState("");
 
-    const isOpen = expanded.has(node.id);
-    const repliesCount = node.children.length;
+    const abierto = expandidos.has(nodo.id);
+    const contadorRespuestasLocales = nodo.children.length;
 
-    const handleSendReply = () => {
-      handleSubmitReply(node.id, replyText);
-      setReplyText("");
-      setIsReplying(false);
+    const enviarRespuesta = () => {
+      manejadorEnviarRespuesta(nodo.id, textoRespuesta);
+      setTextoRespuesta("");
+      setRespondiendo(false);
     };
 
     return (
-      <li className="comment" style={{ marginLeft: level ? 16 : 0 }}>
+      <li className="comment" style={{ marginLeft: nivel ? 16 : 0 }}>
         <p>
           <strong>
-            <Link to={`/perfil/${node.autor}`}>{node.autor_nombre}</Link>
+            <Link to={`/perfil/${nodo.autor}`}>{nodo.autor_nombre}</Link>
           </strong>
-          :{node.contenido}
+          :{nodo.contenido}
         </p>
         <div className="comment__footer">
           <div className="comment__meta">
-            <span>{node.fecha_creacion}</span>
+            <span>{nodo.fecha_creacion}</span>
           </div>
 
           <div className="comment__actions">
-            {repliesCount > 0 && (
+            {contadorRespuestasLocales > 0 && (
               <button
                 type="button"
                 className="toggle-replies btn btn-secondary"
-                onClick={() => toggleReplies(node.id)}
-                aria-expanded={isOpen}
+                onClick={() => alternarRespuestas(nodo.id)}
+                aria-expanded={abierto}
               >
-                {isOpen ? "Ocultar" : "Ver"} {repliesCount} respuesta
-                {repliesCount !== 1 ? "s" : ""}
+                {abierto ? "Ocultar" : "Ver"} {contadorRespuestasLocales} respuesta
+                {contadorRespuestasLocales !== 1 ? "s" : ""}
               </button>
             )}
 
             <button
               type="button"
               className="reply-btn btn btn-secondary"
-              onClick={() => setIsReplying(!isReplying)}
+              onClick={() => setRespondiendo(!respondiendo)}
             >
               Responder
             </button>
 
             <LikeButton
-              initialLiked={!!node.is_liked}
-              initialCount={node.num_votos ?? 0}
-              objectId={node.id}
-              contentType={Number(node.content_type)}
-              onChange={(liked, count) =>
-                handleComentarioLikeChange(node.id, liked, count)
+              initialLiked={!!nodo.is_liked}
+              initialCount={nodo.num_votos ?? 0}
+              objectId={nodo.id}
+              contentType={Number(nodo.content_type)}
+              onChange={manejadorCambioMeGustaComentario.bind(null, nodo.id)}
+              onUnauthorized={() =>
+                requerirInicioSesion("Debes iniciar sesión para dar Me gusta.")
               }
             />
           </div>
         </div>
 
-        {/* FORMULARIO LOCAL - NO PIERDE EL FOCO */}
-        {isReplying && (
+        {respondiendo && (
           <div className="reply-form">
             <div className="reply-form__row">
               <textarea
-                value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
-                placeholder={`Responder a ${node.autor_nombre}…`}
+                value={textoRespuesta}
+                onChange={(e) => setTextoRespuesta(e.target.value)}
+                placeholder={`Responder a ${nodo.autor_nombre}…`}
                 className="reply-textarea"
               />
 
               <div className="reply-form__buttons">
                 <button
                   className="btn btn-primary btn-small"
-                  disabled={replyText.trim().length < 3}
-                  onClick={handleSendReply}
+                  disabled={textoRespuesta.trim().length < 3}
+                  onClick={enviarRespuesta}
                 >
                   Enviar
                 </button>
 
                 <button
                   className="btn btn-secondary btn-small"
-                  onClick={() => setIsReplying(false)}
+                  onClick={() => setRespondiendo(false)}
                 >
                   Cancelar
                 </button>
@@ -359,11 +367,10 @@ function QuejaDetail() {
           </div>
         )}
 
-        {/* HIJOS */}
-        {isOpen && repliesCount > 0 && (
+        {abierto && contadorRespuestasLocales > 0 && (
           <ul className="comment-list replies">
-            {node.children.map((child: CommentNode) => (
-              <CommentItem key={child.id} node={child} level={level + 1} />
+            {nodo.children.map((hijo: NodoComentario) => (
+              <ItemComentario key={hijo.id} nodo={hijo} nivel={nivel + 1} />
             ))}
           </ul>
         )}
@@ -374,7 +381,6 @@ function QuejaDetail() {
   return (
     <main className="detail-page">
       <div className="detail">
-        {/* Header */}
         <header className="detail__header card">
           <div className="header_grid">
             <div className="like-title">
@@ -383,7 +389,10 @@ function QuejaDetail() {
                 initialCount={queja.num_votos ?? 0}
                 objectId={queja.id}
                 contentType={Number(queja.content_type)}
-                onChange={handleQuejaLikeChange}
+                onChange={manejadorCambioMeGustaQueja}
+                onUnauthorized={() =>
+                  requerirInicioSesion("Debes iniciar sesión para dar Me gusta.")
+                }
               />
               <h1 className="detail__title">{queja.titulo}</h1>
             </div>
@@ -397,20 +406,20 @@ function QuejaDetail() {
                   Actualizar
                 </button>
               )}
-              {!respuestasCountLoading &&
-                respuestasCount !== null &&
-                respuestasCount > 0 &&
+              {!cargandoRespuestas &&
+                contadorRespuestas !== null &&
+                contadorRespuestas > 0 &&
                 (
                   <Link
                     to={`/quejas/${id}/respuestas`}
                     className="btn btn-secondary btn-small"
                     style={{ marginLeft: 8 }}
                   >
-                    Ver respuestas ({respuestasCount})
+                    Ver respuestas ({contadorRespuestas})
                   </Link>
                 )}
 
-              {isModeratorOrAdmin && (
+              {esModeradorOAdmin && (
                 <button
                   type="button"
                   onClick={() => navigate(`/quejas/${id}/responder`)}
@@ -420,12 +429,11 @@ function QuejaDetail() {
                 </button>
               )}
 
-
               {user && queja.autor === user.id && (
                 <button
                   type="button"
                   className="delete-btn btn btn-primary btn-small"
-                  onClick={handleDelete}
+                  onClick={manejadorEliminar}
                 >
                   Eliminar
                 </button>
@@ -450,7 +458,6 @@ function QuejaDetail() {
               </Link>
             </span>
 
-
             <span className="meta__group">
               <span className="meta__label">Categoría:</span>
               <Link
@@ -461,8 +468,6 @@ function QuejaDetail() {
               </Link>
             </span>
 
-
-
             <span className="meta__group">
               <span className="meta__label">Distrito:</span>
               <Link
@@ -472,7 +477,6 @@ function QuejaDetail() {
                 {queja.distrito_nombre}
               </Link>
             </span>
-
           </div>
           <div className="detail_content">
             {queja.descripcion && (
@@ -491,14 +495,13 @@ function QuejaDetail() {
         </header>
 
         <div className="sections-row">
-          {/* Imágenes */}
           <section className="section_media">
             <h2 className="section__title">Imágenes ({imagenes.length})</h2>
 
             {imagenes.length > 0 ? (
               <>
                 <div className="media-grid-2">
-                  {firstTwo.map((img, index) => (
+                  {primerosDos.map((img, indice) => (
                     <div key={img.id} className="media-card">
                       <div className="media-card__visual">
                         <img
@@ -507,24 +510,22 @@ function QuejaDetail() {
                           alt=""
                         />
 
-                        {index === 1 && remaining > 0 && !showAllImages && (
+                        {indice === 1 && cantidadRestantes > 0 && !mostrarTodasLasImagenes && (
                           <div
                             className="overlay-more"
-                            onClick={() => setShowAllImages(true)}
+                            onClick={() => setMostrarTodasLasImagenes(true)}
                           >
-                            +{remaining}
+                            +{cantidadRestantes}
                           </div>
                         )}
-
                       </div>
                     </div>
                   ))}
                 </div>
 
-
-                {showAllImages && remaining > 0 && (
+                {mostrarTodasLasImagenes && cantidadRestantes > 0 && (
                   <div className="media-grid">
-                    {rest.map((img, i) => (
+                    {restantes.map((img, i) => (
                       <div key={i} className="media-card">
                         <div className="media-card__visual">
                           <img
@@ -533,13 +534,12 @@ function QuejaDetail() {
                             alt=""
                           />
 
-                          {/* -N solo en la última imagen */}
-                          {i === rest.length - 1 && (
+                          {i === restantes.length - 1 && (
                             <div
                               className="overlay-more"
-                              onClick={() => setShowAllImages(false)}
+                              onClick={() => setMostrarTodasLasImagenes(false)}
                             >
-                              -{remaining}
+                              -{cantidadRestantes}
                             </div>
                           )}
                         </div>
@@ -547,14 +547,12 @@ function QuejaDetail() {
                     ))}
                   </div>
                 )}
-
               </>
             ) : (
               <p className="empty-state">No hay imágenes.</p>
             )}
           </section>
 
-          {/* Videos */}
           <section className="section_media">
             <h2 className="section__title">Videos</h2>
 
@@ -578,7 +576,6 @@ function QuejaDetail() {
           </section>
         </div>
 
-        {/* Comentarios */}
         <section className="section">
           <div className="section_title_header">
             <h2 className="section__title">
@@ -586,37 +583,35 @@ function QuejaDetail() {
             </h2>
             <CommentButton
               onClick={() => {
-                setShowCommentBox(true);
+                setMostrarFormularioComentario(true);
               }}
             />
           </div>
 
-          {showCommentBox && (
+          {mostrarFormularioComentario && (
             <div className="comment-form">
               <div className="comment-form__row">
-                {/* TEXTAREA */}
                 <textarea
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
+                  value={textoComentario}
+                  onChange={(e) => setTextoComentario(e.target.value)}
                   placeholder="Escribe tu comentario…"
                   className="comment-textarea"
                 />
 
-                {/* BOTONES VERTICALES */}
                 <div className="comment-form__buttons">
                   <button
                     className="btn btn-primary btn-small"
-                    disabled={submitting || commentText.trim().length < 3}
-                    onClick={handleSubmitComment}
+                    disabled={enviandoComentario || textoComentario.trim().length < 3}
+                    onClick={manejadorEnviarComentario}
                   >
-                    {submitting ? "..." : "Enviar"}
+                    {enviandoComentario ? "..." : "Enviar"}
                   </button>
 
                   <button
                     className="btn btn-secondary btn-small"
                     onClick={() => {
-                      setShowCommentBox(false);
-                      setCommentText("");
+                      setMostrarFormularioComentario(false);
+                      setTextoComentario("");
                     }}
                   >
                     Cancelar
@@ -625,12 +620,12 @@ function QuejaDetail() {
               </div>
             </div>
           )}
-          {tree.length === 0 ? (
+          {arbolComentarios.length === 0 ? (
             <div className="empty-state">No hay comentarios.</div>
           ) : (
             <ul className="comment-list">
-              {tree.map((root) => (
-                <CommentItem key={root.id} node={root} />
+              {arbolComentarios.map((raiz) => (
+                <ItemComentario key={raiz.id} nodo={raiz} />
               ))}
             </ul>
           )}
