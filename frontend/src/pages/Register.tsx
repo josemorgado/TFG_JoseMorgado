@@ -1,21 +1,23 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import { loginRequest, registerRequest } from "../api/auth";
 import { useAuth } from "../context/AuthContext";
 import { storage } from "../utils/storage";
+
 import "../styles/form-layout.css";
 
 const Register: React.FC = () => {
   const navigate = useNavigate();
-  const { login: authLogin } = useAuth();
+  const { login } = useAuth();
 
-  const [form, setForm] = useState({
-    username: "",
-    password: "",
-    confirmPassword: "",
+  const [formulario, setFormulario] = useState({
+    usuario: "",
+    contraseña: "",
+    confirmarContraseña: "",
     email: "",
-    firstName: "",
-    lastName: "",
+    nombre: "",
+    apellidos: "",
     genero: "",
     fechaNacimiento: "",
     biografia: "",
@@ -24,82 +26,95 @@ const Register: React.FC = () => {
     foto: null as File | null,
   });
 
-  const [error, setError] = useState<string | null>(null);
+  const [errorFormulario, setErrorFormulario] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setErrorFormulario(null);
 
-    if (form.password !== form.confirmPassword) {
-      setError("Las contraseñas no coinciden");
+    if (formulario.contraseña !== formulario.confirmarContraseña) {
+      setErrorFormulario("Las contraseñas no coinciden");
       return;
     }
 
-    const required = [
-      ["fecha de nacimiento", form.fechaNacimiento],
-      ["teléfono", form.telefono],
-      ["dirección", form.direccion],
+    const camposObligatorios: [string, string][] = [
+      ["fecha de nacimiento", formulario.fechaNacimiento],
+      ["teléfono", formulario.telefono],
+      ["dirección", formulario.direccion],
     ];
 
-    for (const [label, value] of required) {
-      if (!String(value).trim()) {
-        setError(`El campo ${label} es obligatorio`);
+    for (const [etiqueta, valor] of camposObligatorios) {
+      if (!valor.trim()) {
+        setErrorFormulario(`El campo ${etiqueta} es obligatorio`);
         return;
       }
     }
 
-    const fd = new FormData();
-    fd.append("username", form.username.trim());
-    fd.append("email", form.email.trim());
-    fd.append("first_name", form.firstName.trim());
-    fd.append("last_name", form.lastName.trim());
-    fd.append("password", form.password);
-    fd.append("telefono", form.telefono.trim());
-    fd.append("direccion", form.direccion.trim());
-    fd.append("fecha_nacimiento", form.fechaNacimiento);
+    const formData = new FormData();
+    formData.append("username", formulario.usuario.trim());
+    formData.append("email", formulario.email.trim());
+    formData.append("first_name", formulario.nombre.trim());
+    formData.append("last_name", formulario.apellidos.trim());
+    formData.append("password", formulario.contraseña);
+    formData.append("telefono", formulario.telefono.trim());
+    formData.append("direccion", formulario.direccion.trim());
+    formData.append("fecha_nacimiento", formulario.fechaNacimiento);
 
-    if (form.genero) fd.append("genero", form.genero);
-    if (form.biografia) fd.append("biografia", form.biografia.trim());
-    if (form.foto) fd.append("foto_perfil", form.foto);
+    if (formulario.genero) {
+      formData.append("genero", formulario.genero);
+    }
+
+    if (formulario.biografia) {
+      formData.append("biografia", formulario.biografia.trim());
+    }
+
+    if (formulario.foto) {
+      formData.append("foto_perfil", formulario.foto);
+    }
 
     try {
-      await registerRequest(fd);
+      await registerRequest(formData);
 
       const tokens = await loginRequest({
-        username: form.username,
-        password: form.password,
+        username: formulario.usuario,
+        password: formulario.contraseña,
       });
 
       storage.setAccess(tokens.access);
-      if (tokens.refresh) storage.setRefresh(tokens.refresh);
+      if (tokens.refresh) {
+        storage.setRefresh(tokens.refresh);
+      }
 
-      await authLogin({
-        username: form.username,
-        password: form.password,
+      await login({
+        username: formulario.usuario,
+        password: formulario.contraseña,
       });
 
       navigate("/");
     } catch (err: any) {
-      const data = err?.response?.data?.error?.details || err?.response?.data;
-      if (!data) {
-        setError("No se pudo conectar con el servidor.");
+      const datosError =
+        err?.response?.data?.error?.details || err?.response?.data;
+
+      if (!datosError) {
+        setErrorFormulario("No se pudo conectar con el servidor.");
         return;
       }
 
-      const messages: string[] = [];
+      const mensajes: string[] = [];
 
-      for (const key of Object.keys(data)) {
-        const value = data[key];
-        if (Array.isArray(value)) {
-          messages.push(`${key}: ${value.join(" ")}`);
-        } else if (typeof value === "object") {
-          for (const sub of Object.keys(value)) {
-            messages.push(`${sub}: ${value[sub].join(" ")}`);
+      for (const clave of Object.keys(datosError)) {
+        const valor = datosError[clave];
+
+        if (Array.isArray(valor)) {
+          mensajes.push(`${clave}: ${valor.join(" ")}`);
+        } else if (typeof valor === "object") {
+          for (const subclave of Object.keys(valor)) {
+            mensajes.push(`${subclave}: ${valor[subclave].join(" ")}`);
           }
         }
       }
 
-      setError(messages.join(" · ") || "No se puede crear la cuenta.");
+      setErrorFormulario(mensajes.join(" · ") || "No se puede crear la cuenta.");
     }
   };
 
@@ -109,28 +124,33 @@ const Register: React.FC = () => {
         <h1 className="form-title">Crear cuenta</h1>
 
         <form onSubmit={handleSubmit} className="form-container">
-
           <label className="form-label">Nombre</label>
           <input
             className="form-input"
-            value={form.firstName}
-            onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+            value={formulario.nombre}
+            onChange={(e) =>
+              setFormulario({ ...formulario, nombre: e.target.value })
+            }
             required
           />
 
           <label className="form-label">Apellidos</label>
           <input
             className="form-input"
-            value={form.lastName}
-            onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+            value={formulario.apellidos}
+            onChange={(e) =>
+              setFormulario({ ...formulario, apellidos: e.target.value })
+            }
             required
           />
 
           <label className="form-label">Nombre de usuario</label>
           <input
             className="form-input"
-            value={form.username}
-            onChange={(e) => setForm({ ...form, username: e.target.value })}
+            value={formulario.usuario}
+            onChange={(e) =>
+              setFormulario({ ...formulario, usuario: e.target.value })
+            }
             required
           />
 
@@ -138,16 +158,20 @@ const Register: React.FC = () => {
           <input
             className="form-input"
             type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            value={formulario.email}
+            onChange={(e) =>
+              setFormulario({ ...formulario, email: e.target.value })
+            }
             required
           />
 
           <label className="form-label">Género</label>
           <select
             className="form-input"
-            value={form.genero}
-            onChange={(e) => setForm({ ...form, genero: e.target.value })}
+            value={formulario.genero}
+            onChange={(e) =>
+              setFormulario({ ...formulario, genero: e.target.value })
+            }
           >
             <option value="">Selecciona una opción</option>
             <option value="M">Hombre</option>
@@ -159,8 +183,13 @@ const Register: React.FC = () => {
           <input
             className="form-input"
             type="date"
-            value={form.fechaNacimiento}
-            onChange={(e) => setForm({ ...form, fechaNacimiento: e.target.value })}
+            value={formulario.fechaNacimiento}
+            onChange={(e) =>
+              setFormulario({
+                ...formulario,
+                fechaNacimiento: e.target.value,
+              })
+            }
             required
           />
 
@@ -169,25 +198,31 @@ const Register: React.FC = () => {
             className="form-input"
             type="tel"
             pattern="^\+?\d{7,15}$"
-            value={form.telefono}
-            onChange={(e) => setForm({ ...form, telefono: e.target.value })}
+            value={formulario.telefono}
+            onChange={(e) =>
+              setFormulario({ ...formulario, telefono: e.target.value })
+            }
             required
           />
 
           <label className="form-label">Dirección</label>
           <input
             className="form-input"
-            value={form.direccion}
-            onChange={(e) => setForm({ ...form, direccion: e.target.value })}
+            value={formulario.direccion}
+            onChange={(e) =>
+              setFormulario({ ...formulario, direccion: e.target.value })
+            }
             required
           />
 
           <label className="form-label">Biografía (opcional)</label>
           <textarea
             className="form-input"
-            value={form.biografia}
-            onChange={(e) => setForm({ ...form, biografia: e.target.value })}
             rows={4}
+            value={formulario.biografia}
+            onChange={(e) =>
+              setFormulario({ ...formulario, biografia: e.target.value })
+            }
           />
 
           <label className="form-label">Foto de perfil (opcional)</label>
@@ -196,7 +231,10 @@ const Register: React.FC = () => {
             type="file"
             accept="image/*"
             onChange={(e) =>
-              setForm({ ...form, foto: e.target.files?.[0] || null })
+              setFormulario({
+                ...formulario,
+                foto: e.target.files?.[0] || null,
+              })
             }
           />
 
@@ -204,8 +242,10 @@ const Register: React.FC = () => {
           <input
             className="form-input"
             type="password"
-            value={form.password}
-            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            value={formulario.contraseña}
+            onChange={(e) =>
+              setFormulario({ ...formulario, contraseña: e.target.value })
+            }
             required
           />
 
@@ -213,9 +253,12 @@ const Register: React.FC = () => {
           <input
             className="form-input"
             type="password"
-            value={form.confirmPassword}
+            value={formulario.confirmarContraseña}
             onChange={(e) =>
-              setForm({ ...form, confirmPassword: e.target.value })
+              setFormulario({
+                ...formulario,
+                confirmarContraseña: e.target.value,
+              })
             }
             required
           />
@@ -224,8 +267,11 @@ const Register: React.FC = () => {
             Crear cuenta
           </button>
 
-          {error && <p className="form-error">{error}</p>}
+          {errorFormulario && (
+            <p className="form-error">{errorFormulario}</p>
+          )}
         </form>
+
         <p className="form-link-center" style={{ marginTop: 12 }}>
           ¿Ya tienes una cuenta?
           <button className="link" onClick={() => navigate("/login")}>
