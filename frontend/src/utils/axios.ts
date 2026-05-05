@@ -1,4 +1,3 @@
-// src/utils/axios.ts
 import axios from "axios";
 import { storage } from "./storage";
 
@@ -11,8 +10,7 @@ if (!BASE_URL) {
 const api = axios.create({
   baseURL: `${BASE_URL}/api`,
 });
-console.log("✅ AXIOS BASE:", api.defaults.baseURL);
-// 3️⃣ Interceptor: añadir access token a cada request
+
 api.interceptors.request.use((config) => {
   const access = storage.getAccess?.();
   if (access) {
@@ -22,14 +20,13 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// 4️⃣ Interceptor: refresh automático del token
 api.interceptors.response.use(
   (response) => response,
 
   async (error) => {
     const original = error.config;
 
-    if (error.response?.status === 401 && !original._retry) {
+    if (error.response?.status === 401 && !original?._retry) {
       original._retry = true;
 
       const refresh = storage.getRefresh?.();
@@ -39,22 +36,31 @@ api.interceptors.response.use(
       }
 
       try {
-        // OJO: aquí NO se pone /api otra vez
         const res = await axios.post(
           `${BASE_URL}/api/token/refresh/`,
           { refresh }
         );
 
         storage.setAccess(res.data.access);
-
         original.headers.Authorization = `Bearer ${res.data.access}`;
         return api(original);
 
-      } catch (refreshError) {
+      } catch {
         storage.clearAll?.();
-        return Promise.reject(refreshError);
+        return Promise.reject(error);
       }
     }
+
+    const data = error.response?.data;
+
+    error.normalized = {
+      status: error.response?.status,
+      message:
+        data?.error?.message ||
+        data?.detail ||
+        "Se ha producido un error inesperado",
+      details: data?.error?.details || data || null,
+    };
 
     return Promise.reject(error);
   }

@@ -37,11 +37,21 @@ const Login: React.FC = () => {
         navigate(from, { replace: true });
       }
     } catch (err: any) {
-      if (err?.response?.status === 401) {
+      const rawMessage =
+        err?.normalized?.message ||
+        err?.response?.data?.error?.message ||
+        "";
+
+      if (
+        rawMessage.toLowerCase().includes("account") ||
+        rawMessage.toLowerCase().includes("credential") ||
+        rawMessage.toLowerCase().includes("credentials")
+      ) {
         setError("Usuario o contraseña incorrectos");
       } else {
         setError("Error del servidor, inténtalo más tarde");
       }
+
       setForm((f) => ({ ...f, password: "" }));
     } finally {
       setLoading(false);
@@ -51,11 +61,11 @@ const Login: React.FC = () => {
   return (
     <div className="form-page">
       <div className="form-card">
-          {reason === "create-queja" && (
-            <p className="form-error" style={{ marginBottom: 12 }}>
-              Debes iniciar sesión para poder crear una queja.
-            </p>
-          )}
+        {reason === "create-queja" && (
+          <p className="form-error" style={{ marginBottom: 12 }}>
+            Debes iniciar sesión para poder crear una queja.
+          </p>
+        )}
         <h1 className="form-title">Iniciar sesión</h1>
 
         <form onSubmit={onSubmit} noValidate className="form-container">
@@ -82,7 +92,8 @@ const Login: React.FC = () => {
             disabled={loading}
           />
 
-          <p style={{ marginTop: 8 }}>
+
+          <p className="form-link-center" style={{ marginTop: 8 }}>
             <button
               type="button"
               className="link"
@@ -91,6 +102,7 @@ const Login: React.FC = () => {
               ¿Has olvidado tu contraseña?
             </button>
           </p>
+
 
           <button
             type="submit"

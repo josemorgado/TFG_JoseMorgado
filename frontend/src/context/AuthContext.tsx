@@ -50,14 +50,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
 
   // Login
   const login = async (credentials: LoginRequest) => {
-    const tokens = await loginRequest(credentials);
+    try {
+      const tokens = await loginRequest(credentials);
 
-    storage.setAccess(tokens.access);
-    if (tokens.refresh) storage.setRefresh(tokens.refresh);
+      storage.setAccess(tokens.access);
+      if (tokens.refresh) storage.setRefresh(tokens.refresh);
 
-    const me = await fetchMe(tokens.access);
-    setUser(me);
+      const me = await fetchMe(tokens.access);
+      setUser(me);
+    } catch (err) {
+      throw err;
+    }
   };
+
 
   // Logout
   const logout = () => {
