@@ -196,11 +196,15 @@ function QuejaDetail() {
       setTextoComentario("");
       setMostrarFormularioComentario(false);
     } catch (err: any) {
+
       if (err?.response?.status === 401) {
         requerirInicioSesion("Debes iniciar sesión para comentar.");
+      } else if (err?.response?.status === 403) {
+        alert("No tienes permiso para realizar esta acción.");
       } else {
         alert("No se pudo enviar el comentario.");
       }
+
     } finally {
       setEnviandoComentario(false);
     }
@@ -251,23 +255,30 @@ function QuejaDetail() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="detail-page">
-        <div className="detail">
-          <div className="alert alert--error">{error}</div>
+
+
+if (error) {
+  return (
+    <div className="page-center">
+      <div className="page-center__content">
+        <div className="page-message page-message--error">
+          {error}
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
 
   if (!queja) {
     return (
-      <div className="detail-page">
-        <div className="detail">
-          <div className="empty-state">No hay datos.</div>
+    <div className="page-center">
+      <div className="page-center__content">
+        <div className="page-message page-message--error">
+          NO HAY DATOS PARA ESTA QUEJA.
         </div>
       </div>
+    </div>
     );
   }
 

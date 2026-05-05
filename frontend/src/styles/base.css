@@ -112,3 +112,53 @@ svg {
   background: var(--color-danger-dark);
   box-shadow: var(--shadow-medium);
 }
+
+/* ===== Estados de pantalla ===== */
+
+.page-center {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.page-center__content {
+  text-align: center;
+  max-width: 600px;
+}
+
+/* ===== Mensajes genéricos ===== */
+
+.page-message {
+  padding: 2.5rem 3rem;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+  line-height: 1.4;
+}
+
+
+.page-message--empty {
+  font-size: 2.8rem;
+  color: #666;
+}
+
+.page-message--info {
+  font-size: 2.2rem;
+  color: #444;
+}
+
+.page-message--error {
+  font-size: 2.6rem;
+  color: #8b0000;
+  background: #fff5f5;
+  border: 2px solid #f3c2c2;
+}
+
+.page-message--error::before {
+  content: "⚠️";
+  display: block;
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
