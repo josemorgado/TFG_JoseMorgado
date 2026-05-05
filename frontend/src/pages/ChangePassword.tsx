@@ -1,45 +1,67 @@
-import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+
 import { changePassword } from "../api/perfil";
+import PageError from "../components/PageError";
+
 export default function ChangePassword() {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  // Recuperamos los datos del formulario de update perfil
   const location = useLocation();
-  const previousFormData = location.state?.formData || null;
 
-  const [currentPassword, setCurrentPassword] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-  const [repeatPassword, setRepeatPassword] = useState("");
+  if (!id) {
+    return <PageError message="Falta la ID del usuario en la URL." />;
+  }
 
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const idUsuario = Number(id);
+
+  if (Number.isNaN(idUsuario)) {
+    return <PageError message="La ID del usuario no es válida." />;
+  }
+
+  const formularioAnterior = location.state?.formData || null;
+
+  const [contrasenaActual, setContrasenaActual] = useState("");
+  const [nuevaContrasena, setNuevaContrasena] = useState("");
+  const [repetirContrasena, setRepetirContrasena] = useState("");
+
+  const [errorFormulario, setErrorFormulario] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setErrorFormulario(null);
 
-    if (newPassword !== repeatPassword) {
-      setError("Las nuevas contraseñas no coinciden.");
+    if (nuevaContrasena !== repetirContrasena) {
+      setErrorFormulario("Las nuevas contraseñas no coinciden.");
       return;
     }
-    if (! window.confirm("¿Estas seguro de que quieres cambiar la contraseña?")){
-        return;
-    }
-    setLoading(true);
+
+    const confirmado = window.confirm(
+      "¿Estás seguro de que quieres cambiar la contraseña?",
+    );
+    if (!confirmado) return;
 
     try {
-      await changePassword(id!, currentPassword, newPassword);
+      setGuardando(true);
+      await changePassword(idUsuario, contrasenaActual, nuevaContrasena);
 
-      navigate(`/perfil/${id}/update`, {
-        state: { formData: previousFormData },
+      navigate(`/perfil/${idUsuario}/update`, {
+        state: { formData: formularioAnterior },
       });
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Error al cambiar la contraseña.");
+      const mensajeBackend =
+        err?.response?.data?.detail || "Error al cambiar la contraseña.";
+      setErrorFormulario(mensajeBackend);
     } finally {
-      setLoading(false);
+      setGuardando(false);
     }
+  };
+
+  const handleDescartar = () => {
+    navigate(`/perfil/${idUsuario}/update`, {
+      state: { formData: formularioAnterior },
+    });
   };
 
   return (
@@ -52,8 +74,8 @@ export default function ChangePassword() {
           <input
             type="password"
             className="form-input"
-            value={currentPassword}
-            onChange={(e) => setCurrentPassword(e.target.value)}
+            value={contrasenaActual}
+            onChange={(e) => setContrasenaActual(e.target.value)}
             required
           />
 
@@ -61,8 +83,8 @@ export default function ChangePassword() {
           <input
             type="password"
             className="form-input"
-            value={newPassword}
-            onChange={(e) => setNewPassword(e.target.value)}
+            value={nuevaContrasena}
+            onChange={(e) => setNuevaContrasena(e.target.value)}
             required
           />
 
@@ -70,29 +92,30 @@ export default function ChangePassword() {
           <input
             type="password"
             className="form-input"
-            value={repeatPassword}
-            onChange={(e) => setRepeatPassword(e.target.value)}
+            value={repetirContrasena}
+            onChange={(e) => setRepetirContrasena(e.target.value)}
             required
           />
 
-          {error && <p className="form-error">{error}</p>}
+          {errorFormulario && (
+            <p className="form-error">{errorFormulario}</p>
+          )}
+
           <button
             type="button"
             className="btn btn-secondary form-button"
-            onClick={() =>
-              navigate(`/perfil/${id}/update`, {
-                state: { formData: previousFormData },
-              })
-            }
+            onClick={handleDescartar}
+            disabled={guardando}
           >
             Descartar cambios
           </button>
+
           <button
             type="submit"
             className="btn btn-primary form-button"
-            disabled={loading}
+            disabled={guardando}
           >
-            {loading ? "Guardando..." : "Guardar cambios"}
+            {guardando ? "Guardando..." : "Guardar cambios"}
           </button>
         </form>
       </div>

@@ -1,97 +1,117 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+
 import { useAuth } from "../context/AuthContext";
 
 import "../styles/form-layout.css";
 
-type LoginState = {
+type EstadoLogin = {
   reason?: "create-queja";
   from?: { pathname?: string };
 };
 
-const Login: React.FC = () => {
+export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const state = location.state as LoginState | undefined;
+  const estado = location.state as EstadoLogin | undefined;
 
-  const reason = state?.reason;
-  const from = state?.from?.pathname ?? "/";
+  const motivoRedireccion = estado?.reason;
+  const rutaDestino = estado?.from?.pathname ?? "/";
 
-  const [form, setForm] = useState({ username: "", password: "" });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [credenciales, setCredenciales] = useState({
+    username: "",
+    password: "",
+  });
 
-  const onSubmit = async (e: React.FormEvent) => {
+  const [cargando, setCargando] = useState(false);
+  const [errorFormulario, setErrorFormulario] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true);
+    setErrorFormulario(null);
+
+    if (!credenciales.username.trim() || !credenciales.password) {
+      setErrorFormulario("Debes introducir usuario y contraseña.");
+      return;
+    }
 
     try {
-      await login(form);
+      setCargando(true);
+      await login(credenciales);
 
-      if (reason === "create-queja") {
+      if (motivoRedireccion === "create-queja") {
         navigate("/create-queja", { replace: true });
       } else {
-        navigate(from, { replace: true });
+        navigate(rutaDestino, { replace: true });
       }
     } catch (err: any) {
-      const rawMessage =
+      const mensajeBruto =
         err?.normalized?.message ||
         err?.response?.data?.error?.message ||
         "";
 
       if (
-        rawMessage.toLowerCase().includes("account") ||
-        rawMessage.toLowerCase().includes("credential") ||
-        rawMessage.toLowerCase().includes("credentials")
+        mensajeBruto.toLowerCase().includes("account") ||
+        mensajeBruto.toLowerCase().includes("credential")
       ) {
-        setError("Usuario o contraseña incorrectos");
+        setErrorFormulario("Usuario o contraseña incorrectos.");
       } else {
-        setError("Error del servidor, inténtalo más tarde");
+        setErrorFormulario(
+          "Error del servidor. Inténtalo de nuevo más tarde."
+        );
       }
 
-      setForm((f) => ({ ...f, password: "" }));
+      setCredenciales((prev) => ({
+        ...prev,
+        password: "",
+      }));
     } finally {
-      setLoading(false);
+      setCargando(false);
     }
   };
 
   return (
     <div className="form-page">
       <div className="form-card">
-        {reason === "create-queja" && (
+        {motivoRedireccion === "create-queja" && (
           <p className="form-error" style={{ marginBottom: 12 }}>
             Debes iniciar sesión para poder crear una queja.
           </p>
         )}
+
         <h1 className="form-title">Iniciar sesión</h1>
 
-        <form onSubmit={onSubmit} noValidate className="form-container">
-          <label className="form-label">Username</label>
+        <form onSubmit={handleSubmit} noValidate className="form-container">
+          <label className="form-label">Usuario</label>
           <input
             className="form-input"
-            value={form.username}
+            value={credenciales.username}
             onChange={(e) =>
-              setForm((f) => ({ ...f, username: e.target.value }))
+              setCredenciales((prev) => ({
+                ...prev,
+                username: e.target.value,
+              }))
             }
             required
-            disabled={loading}
+            disabled={cargando}
           />
 
-          <label className="form-label">Password</label>
+          <label className="form-label">Contraseña</label>
           <input
             className="form-input"
             type="password"
-            value={form.password}
+            value={credenciales.password}
             onChange={(e) =>
-              setForm((f) => ({ ...f, password: e.target.value }))
+              setCredenciales((prev) => ({
+                ...prev,
+                password: e.target.value,
+              }))
             }
             required
-            disabled={loading}
+            disabled={cargando}
           />
-
 
           <p className="form-link-center" style={{ marginTop: 8 }}>
             <button
@@ -103,20 +123,21 @@ const Login: React.FC = () => {
             </button>
           </p>
 
-
           <button
             type="submit"
             className="btn btn-primary form-button"
-            disabled={loading}
+            disabled={cargando}
           >
-            {loading ? "Entrando..." : "Entrar"}
+            {cargando ? "Entrando..." : "Entrar"}
           </button>
 
-          {error && <p className="form-error">{error}</p>}
+          {errorFormulario && (
+            <p className="form-error">{errorFormulario}</p>
+          )}
         </form>
 
         <p className="form-link-center" style={{ marginTop: 12 }}>
-          ¿No tienes cuenta?{" "}
+          ¿No tienes cuenta?
           <button
             type="button"
             className="link"
@@ -128,6 +149,4 @@ const Login: React.FC = () => {
       </div>
     </div>
   );
-};
-
-export default Login;
+}

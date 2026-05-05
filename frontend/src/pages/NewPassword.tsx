@@ -1,46 +1,50 @@
-import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
 import { confirmPasswordReset } from "../api/auth";
+import PageError from "../components/PageError";
 
 export default function NewPassword() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { uid, token, email } = (location.state || {}) as {
-    uid: string;
-    token: string;
-    email: string;
+  const datosRuta = (location.state || {}) as {
+    uid?: string;
+    token?: string;
+    email?: string;
   };
 
-  const [password, setPassword] = useState("");
-  const [password2, setPassword2] = useState("");
-  const [error, setError] = useState("");
+  const { uid, token, email } = datosRuta;
+
+  const [nuevaContrasena, setNuevaContrasena] = useState("");
+  const [repetirContrasena, setRepetirContrasena] = useState("");
+  const [errorFormulario, setErrorFormulario] = useState<string | null>(null);
 
   if (!uid || !token) {
-    return <p className="form-error">Error: Faltan datos. Vuelve a solicitar el código.</p>;
+    return (
+      <PageError message="Faltan datos para restablecer la contraseña. Vuelve a solicitar el código." />
+    );
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setErrorFormulario(null);
 
-    if (password !== password2) {
-      setError("Las contraseñas no coinciden.");
+    if (nuevaContrasena !== repetirContrasena) {
+      setErrorFormulario("Las contraseñas no coinciden.");
       return;
     }
 
     try {
-      await confirmPasswordReset(uid, token, password);
-
-      alert("Contraseña actualizada correctamente");
+      await confirmPasswordReset(uid, token, nuevaContrasena);
+      window.alert("Contraseña actualizada correctamente");
       navigate("/login");
-
     } catch (err: any) {
-      const backendError =
-        err.response?.data?.detail ||
-        err.response?.data?.message ||
-        "Token inválido o expirado.";
-      setError(backendError);
+      const mensajeBackend =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        "El enlace no es válido o ha expirado.";
+      setErrorFormulario(mensajeBackend);
     }
   };
 
@@ -48,27 +52,29 @@ export default function NewPassword() {
     <div className="form-page">
       <div className="form-card">
         <h2 className="form-title">Nueva contraseña</h2>
-        <p style={{ marginBottom: 14 }}>Cuenta: {email}</p>
+
+        {email && <p style={{ marginBottom: 14 }}>Cuenta: {email}</p>}
 
         <form className="form-container" onSubmit={handleSubmit}>
-
           <label className="form-label">Nueva contraseña</label>
           <input
             type="password"
             className="form-input"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={nuevaContrasena}
+            onChange={(e) => setNuevaContrasena(e.target.value)}
           />
 
           <label className="form-label">Repite la contraseña</label>
           <input
             type="password"
             className="form-input"
-            value={password2}
-            onChange={(e) => setPassword2(e.target.value)}
+            value={repetirContrasena}
+            onChange={(e) => setRepetirContrasena(e.target.value)}
           />
 
-          {error && <p className="form-error">{error}</p>}
+          {errorFormulario && (
+            <p className="form-error">{errorFormulario}</p>
+          )}
 
           <button type="submit" className="form-button">
             Cambiar contraseña

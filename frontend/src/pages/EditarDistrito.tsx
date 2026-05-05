@@ -1,95 +1,183 @@
 import { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { fetchDistrito, updateDistrito } from "../api/moderacion";
-import { deleteDistrito } from "../api/moderacion";
+import { useNavigate, useParams } from "react-router-dom";
+
+import {
+    fetchDistrito,
+    updateDistrito,
+    deleteDistrito,
+} from "../api/moderacion";
+
+import PageError from "../components/PageError";
+import PageInfo from "../components/PageInfo";
 
 export default function EditarDistrito() {
     const { id } = useParams();
     const navigate = useNavigate();
 
-    const [nombre, setNombre] = useState("");
-    const [codigo, setCodigo] = useState("");
-    const [error, setError] = useState<string | null>(null);
+    if (!id) {
+        return <PageError message="Falta la ID del distrito en la URL." />;
+    }
+
+    const idDistrito = Number(id);
+
+    if (Number.isNaN(idDistrito)) {
+        return <PageError message="La ID del distrito no es válida." />;
+    }
+
+    const [nombreDistrito, setNombreDistrito] = useState("");
+    const [codigoDistrito, setCodigoDistrito] = useState("");
+
+    const [cargando, setCargando] = useState(true);
+    const [guardando, setGuardando] = useState(false);
+    const [errorPagina, setErrorPagina] = useState<string | null>(null);
+    const [errorFormulario, setErrorFormulario] = useState<string | null>(null);
 
     useEffect(() => {
         (async () => {
             try {
-                const data = await fetchDistrito(Number(id));
-                setNombre(data.nombre);
-                setCodigo(data.codigo);
+                const datos = await fetchDistrito(idDistrito);
+                setNombreDistrito(datos.nombre);
+                setCodigoDistrito(datos.codigo);
             } catch {
-                setError("No se pudo cargar el distrito");
+                setErrorPagina("No se pudo cargar el distrito.");
+            } finally {
+                setCargando(false);
             }
         })();
-    }, [id]);
-    const handleDiscard = () => {
-        navigate(-1);
-    };
+    }, [idDistrito]);
+
+    if (cargando) {
+        return <PageInfo message="Cargando distrito..." />;
+    }
+
+    if (errorPagina) {
+        return <PageError message={errorPagina} />;
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setErrorFormulario(null);
+
+        const nombreLimpio = nombreDistrito.trim();
+        const codigoLimpio = codigoDistrito.trim();
+
+        if (!nombreLimpio) {
+            setErrorFormulario("El nombre del distrito es obligatorio.");
+            return;
+        }
+
+        if (nombreLimpio.length < 3) {
+            setErrorFormulario("El nombre debe tener al menos 3 caracteres.");
+            return;
+        }
+
+        if (nombreLimpio.length > 100) {
+            setErrorFormulario("El nombre no puede tener más de 100 caracteres.");
+            return;
+        }
+
+        if (!codigoLimpio) {
+            setErrorFormulario("El código del distrito es obligatorio.");
+            return;
+        }
+
+        if (codigoLimpio.length < 2) {
+            setErrorFormulario("El código debe tener al menos 2 caracteres.");
+            return;
+        }
+
+        if (codigoLimpio.length > 10) {
+            setErrorFormulario("El código no puede tener más de 10 caracteres.");
+            return;
+        }
+
         try {
-            await updateDistrito(Number(id), { nombre, codigo });
+            setGuardando(true);
+            await updateDistrito(idDistrito, {
+                nombre: nombreLimpio,
+                codigo: codigoLimpio,
+            });
             navigate("/moderador");
-        } catch {
-            setError("Error al actualizar el distrito");
+        } catch (err: any) {
+            const mensajeBackend =
+                err?.response?.data?.codigo?.[0] ||
+                err?.response?.data?.detail ||
+                "Error al actualizar el distrito.";
+
+            setErrorFormulario(mensajeBackend);
+        } finally {
+            setGuardando(false);
         }
     };
 
-    const handleDelete = async () => {
-        const ok = window.confirm(
-            "¿Seguro que quieres eliminar este distrito? Esta acción no se puede deshacer. Si lo eleimna, se eliminaran todas las quejas asociadas a este distrito."
+    const handleEliminar = async () => {
+        const confirmado = window.confirm(
+            "¿Seguro que quieres eliminar este distrito? Esta acción no se puede deshacer. Al eliminarlo, se borrarán todas las quejas asociadas.",
         );
-        if (!ok) return;
+        if (!confirmado) return;
 
         try {
-            await deleteDistrito(Number(id));
+            setGuardando(true);
+            await deleteDistrito(idDistrito);
             navigate("/moderador");
         } catch {
-            setError("No se pudo eliminar el distrito");
+            setErrorFormulario("No se pudo eliminar el distrito.");
+        } finally {
+            setGuardando(false);
         }
     };
+
+    const handleDescartar = () => navigate(-1);
 
     return (
         <div className="form-page">
             <div className="form-card">
                 <h1 className="form-title">Editar distrito</h1>
 
-                {error && <p className="form-error">{error}</p>}
-
                 <form className="form-container" onSubmit={handleSubmit}>
                     <label className="form-label">Nombre</label>
                     <input
                         className="form-input"
-                        value={nombre}
-                        onChange={(e) => setNombre(e.target.value)}
+                        value={nombreDistrito}
+                        onChange={(e) => setNombreDistrito(e.target.value)}
                         required
                     />
 
                     <label className="form-label">Código</label>
                     <input
                         className="form-input"
-                        value={codigo}
-                        onChange={(e) => setCodigo(e.target.value)}
+                        value={codigoDistrito}
+                        onChange={(e) => setCodigoDistrito(e.target.value)}
                         required
                     />
+
+                    {errorFormulario && (
+                        <p className="form-error">{errorFormulario}</p>
+                    )}
+
                     <div className="form-actions">
-
-
                         <button
                             type="button"
                             className="form-button"
-                            onClick={handleDiscard}
+                            onClick={handleDescartar}
+                            disabled={guardando}
                         >
                             Descartar cambios
                         </button>
 
-                        <button className="form-button form-button-secondary" type="submit">
+                        <button
+                            type="submit"
+                            className="form-button form-button-secondary"
+                            disabled={guardando}
+                        >
                             Guardar cambios
                         </button>
+
                         <button
                             type="button"
                             className="form-button form-button-danger"
-                            onClick={handleDelete}
+                            onClick={handleEliminar}
+                            disabled={guardando}
                         >
                             Eliminar
                         </button>

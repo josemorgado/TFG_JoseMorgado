@@ -1,29 +1,41 @@
-import { useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
+import PageError from "../components/PageError";
 
 export default function EnterToken() {
   const navigate = useNavigate();
   const location = useLocation();
-  const email = (location.state as any)?.email;
+
+  const email = (location.state as { email?: string } | null)?.email;
 
   const [uid, setUid] = useState("");
   const [token, setToken] = useState("");
-  const [error, setError] = useState("");
+  const [errorFormulario, setErrorFormulario] = useState<string | null>(null);
 
   if (!email) {
-    return <p className="form-error">Error: No se ha proporcionado email.</p>;
+    return (
+      <PageError message="No se ha proporcionado un email válido. Vuelve a iniciar el proceso de recuperación." />
+    );
   }
 
-  const handleNext = () => {
-    setError("");
+  const handleValidarCodigo = () => {
+    setErrorFormulario(null);
 
-    if (!uid.trim() || !token.trim()) {
-      setError("Debes introducir UID y Token.");
+    const uidLimpio = uid.trim();
+    const tokenLimpio = token.trim();
+
+    if (!uidLimpio || !tokenLimpio) {
+      setErrorFormulario("Debes introducir el UID y el token.");
       return;
     }
 
     navigate("/new-password", {
-      state: { uid: uid.trim(), token: token.trim(), email }
+      state: {
+        uid: uidLimpio,
+        token: tokenLimpio,
+        email,
+      },
     });
   };
 
@@ -33,7 +45,6 @@ export default function EnterToken() {
         <h2 className="form-title">Pegar código de recuperación</h2>
 
         <div className="form-container">
-
           <label className="form-label">UID</label>
           <input
             type="text"
@@ -52,9 +63,11 @@ export default function EnterToken() {
             onChange={(e) => setToken(e.target.value)}
           />
 
-          {error && <p className="form-error">{error}</p>}
+          {errorFormulario && (
+            <p className="form-error">{errorFormulario}</p>
+          )}
 
-          <button className="form-button" onClick={handleNext}>
+          <button className="form-button" onClick={handleValidarCodigo}>
             Validar código
           </button>
         </div>

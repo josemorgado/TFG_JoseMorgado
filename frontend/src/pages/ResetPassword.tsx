@@ -1,32 +1,35 @@
 import { useState } from "react";
-import { requestPasswordReset } from "../api/auth";
 import { useNavigate } from "react-router-dom";
 
+import { requestPasswordReset } from "../api/auth";
+
 export default function ResetPassword() {
-  const [email, setEmail] = useState("");
-  const [error, setError] = useState("");
-  const [sent, setSent] = useState(false);
   const navigate = useNavigate();
+
+  const [correoElectronico, setCorreoElectronico] = useState("");
+  const [errorFormulario, setErrorFormulario] = useState<string | null>(null);
+  const [codigoEnviado, setCodigoEnviado] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
+    setErrorFormulario(null);
 
     try {
-      await requestPasswordReset(email);
-      setSent(true);
+      await requestPasswordReset(correoElectronico);
+      setCodigoEnviado(true);
 
       setTimeout(() => {
-        navigate("/enter-token", { state: { email } });
+        navigate("/enter-token", {
+          state: { email: correoElectronico },
+        });
       }, 1500);
-
     } catch (err: any) {
-      console.log("ERROR BACKEND:", err.response?.data);
-      const backendError =
-        err.response?.data?.email?.[0] ||
-        err.response?.data?.detail ||
-        "Error inesperado";
-      setError(backendError);
+      const mensajeBackend =
+        err?.response?.data?.email?.[0] ||
+        err?.response?.data?.detail ||
+        "Error inesperado al solicitar el código.";
+
+      setErrorFormulario(mensajeBackend);
     }
   };
 
@@ -35,25 +38,29 @@ export default function ResetPassword() {
       <div className="form-card">
         <h2 className="form-title">Recuperar contraseña</h2>
 
-        {!sent ? (
+        {!codigoEnviado ? (
           <form className="form-container" onSubmit={handleSubmit}>
             <label className="form-label">Correo electrónico</label>
             <input
               type="email"
               className="form-input"
               placeholder="Tu email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={correoElectronico}
+              onChange={(e) => setCorreoElectronico(e.target.value)}
             />
 
-            {error && <p className="form-error">{error}</p>}
+            {errorFormulario && (
+              <p className="form-error">{errorFormulario}</p>
+            )}
 
             <button type="submit" className="form-button">
               Enviar código
             </button>
           </form>
         ) : (
-          <p className="form-link-center">Código enviado. Revisa tu correo.</p>
+          <p className="form-link-center">
+            Código enviado. Revisa tu correo.
+          </p>
         )}
       </div>
     </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { getQuejas } from "../api/quejas";
@@ -8,6 +8,8 @@ import type { Queja } from "../types/queja";
 
 import QuejaCard from "../components/QuejaCard";
 import CreateQuejaButton from "../components/CreateQuejaButton";
+import PageError from "../components/PageError";
+import PageInfo from "../components/PageInfo";
 
 import {
   useCategorias,
@@ -20,14 +22,15 @@ import "../styles/home.css";
 export default function Home() {
   const navigate = useNavigate();
 
-  const [items, setItems] = useState<Queja[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [quejas, setQuejas] = useState<Queja[]>([]);
+  const [totalQuejas, setTotalQuejas] = useState(0);
+  const [categoriaTop, setCategoriaTop] = useState<string | null>(null);
+  const [distritoTop, setDistritoTop] = useState<string | null>(null);
 
-  const [totalCount, setTotalCount] = useState(0);
-  const [topCategory, setTopCategory] = useState("");
-  const [topDistrict, setTopDistrict] = useState("");
+  const [cargando, setCargando] = useState(true);
+  const [errorPagina, setErrorPagina] = useState<string | null>(null);
 
-  const [filters, setFilters] = useState({
+  const [filtros, setFiltros] = useState({
     texto: "",
     categoria: "",
     distrito: "",
@@ -38,57 +41,74 @@ export default function Home() {
 
   useEffect(() => {
     (async () => {
-      const data = await getQuejas({ page: 1, page_size: 9 });
+      try {
+        const datosQuejas = await getQuejas({ page: 1, page_size: 9 });
+        setQuejas(datosQuejas.results);
+        setTotalQuejas(datosQuejas.count);
 
-      setItems(data.results);
-      setTotalCount(data.count);
+        const [topCategorias, topDistritos] = await Promise.all([
+          getTopCategorias({ limit: 1 }),
+          getTopDistritos({ limit: 1 }),
+        ]);
 
-      const topCat = await getTopCategorias({ limit: 1 });
-      setTopCategory(topCat.length ? topCat[0].nombre : "Sin datos");
-
-      const topDist = await getTopDistritos({ limit: 1 });
-      setTopDistrict(topDist.length ? topDist[0].nombre : "Sin datos");
-
-      setIsLoading(false);
+        setCategoriaTop(topCategorias[0]?.nombre ?? "Sin datos");
+        setDistritoTop(topDistritos[0]?.nombre ?? "Sin datos");
+      } catch {
+        setErrorPagina(
+          "No se pudo cargar la información principal. Inténtalo más tarde."
+        );
+      } finally {
+        setCargando(false);
+      }
     })();
   }, []);
 
-  const visibleItems = useMemo(() => {
-    return items.filter((q) => {
-      if (filters.texto) {
-        const text = filters.texto.toLowerCase();
+  const quejasVisibles = useMemo(() => {
+    return quejas.filter((q) => {
+      if (filtros.texto) {
+        const texto = filtros.texto.toLowerCase();
         if (
-          !q.titulo.toLowerCase().includes(text) &&
-          !q.descripcion.toLowerCase().includes(text)
+          !q.titulo.toLowerCase().includes(texto) &&
+          !q.descripcion.toLowerCase().includes(texto)
         ) {
           return false;
         }
       }
 
-      if (filters.categoria && q.categoria_nombre !== filters.categoria) {
+      if (
+        filtros.categoria &&
+        q.categoria_nombre !== filtros.categoria
+      ) {
         return false;
       }
 
-      if (filters.distrito && q.distrito_nombre !== filters.distrito) {
+      if (
+        filtros.distrito &&
+        q.distrito_nombre !== filtros.distrito
+      ) {
         return false;
       }
 
       return true;
     });
-  }, [items, filters]);
+  }, [quejas, filtros]);
 
-  const handleFilterChange = (
+  const handleCambioFiltro = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
-    setFilters((prev) => ({
+    setFiltros((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
     }));
   };
 
-  const handleGoToList = () => {
-    navigate("/quejas");
-  };
+  if (cargando) {
+    return <PageInfo message="Cargando información principal…" />;
+  }
+
+  if (errorPagina) {
+    return <PageError message={errorPagina} />;
+  }
 
   return (
     <div className="home">
@@ -118,15 +138,15 @@ export default function Home() {
             name="texto"
             className="input"
             placeholder="Buscar…"
-            value={filters.texto}
-            onChange={handleFilterChange}
+            value={filtros.texto}
+            onChange={handleCambioFiltro}
           />
 
           <select
             name="categoria"
             className="input"
-            value={filters.categoria}
-            onChange={handleFilterChange}
+            value={filtros.categoria}
+            onChange={handleCambioFiltro}
           >
             <option value="">Todas las categorías</option>
             {categorias?.map((c) => (
@@ -139,8 +159,8 @@ export default function Home() {
           <select
             name="distrito"
             className="input"
-            value={filters.distrito}
-            onChange={handleFilterChange}
+            value={filtros.distrito}
+            onChange={handleCambioFiltro}
           >
             <option value="">Todos los distritos</option>
             {distritos?.map((d) => (
@@ -155,20 +175,20 @@ export default function Home() {
       <section className="card">
         <h2 className="home-section-title">Últimas quejas</h2>
 
-        {isLoading ? (
-          <p>Cargando...</p>
+        {quejasVisibles.length === 0 ? (
+          <PageInfo message="No hay quejas para mostrar." />
         ) : (
           <>
             <div className="quejas-grid-home">
-              {visibleItems.map((q) => (
+              {quejasVisibles.map((q) => (
                 <QuejaCard key={q.id} q={q} />
               ))}
 
-              {totalCount > 9 && (
+              {totalQuejas > 9 && (
                 <div className="grid-cta">
                   <button
                     className="auth-button"
-                    onClick={handleGoToList}
+                    onClick={() => navigate("/quejas")}
                   >
                     Ver todas
                   </button>
@@ -178,21 +198,17 @@ export default function Home() {
 
             <div className="stats-card-home">
               <div className="stats-item">
-                <div className="stats-number">
-                  {topCategory || "Sin datos"}
-                </div>
+                <div className="stats-number">{categoriaTop}</div>
                 <div className="stats-label">Categoría más activa</div>
               </div>
 
               <div className="stats-item">
-                <div className="stats-number">{totalCount}</div>
+                <div className="stats-number">{totalQuejas}</div>
                 <div className="stats-label">Total de quejas</div>
               </div>
 
               <div className="stats-item">
-                <div className="stats-number">
-                  {topDistrict || "Sin datos"}
-                </div>
+                <div className="stats-number">{distritoTop}</div>
                 <div className="stats-label">Distrito más activo</div>
               </div>
             </div>

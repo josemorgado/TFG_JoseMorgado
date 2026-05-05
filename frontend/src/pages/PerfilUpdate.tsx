@@ -1,26 +1,37 @@
-import { useEffect, useState, useMemo, useRef, useLayoutEffect } from "react";
-import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+
 import { getUsuarioById, updateUsuario, deleteUsuario } from "../api/perfil";
-import "../styles/form-layout.css";
-import type { Usuario } from "../types/perfil";
-import deleteIcon from "../assets/icons/delete-icon.png";
 import { useAuth } from "../context/AuthContext";
+
+import type { Usuario } from "../types/perfil";
+
+import deleteIcon from "../assets/icons/delete-icon.png";
+import "../styles/form-layout.css";
+
+import PageError from "../components/PageError";
+import PageInfo from "../components/PageInfo";
 
 export default function PerfilUpdate() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
-  const { logout } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const bioRef = useRef<HTMLTextAreaElement | null>(null);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const location = useLocation();
-  const stateFormData = location.state?.formData || null;
+  const { logout } = useAuth();
+  if (!id) {
+    return <PageError message="Falta la ID en la URL." />;
+  }
+  const idNumerico = Number(id);
+  if (Number.isNaN(idNumerico)) {
+    return <PageError message="La ID no es válida." />;
+  }
+  const formularioGuardado = location.state?.formData || null;
 
-  const [form, setForm] = useState({
+  const refBiografia = useRef<HTMLTextAreaElement | null>(null);
+  const refInputArchivo = useRef<HTMLInputElement | null>(null);
+
+  const [usuario, setUsuario] = useState<Usuario | null>(null);
+
+  const [formulario, setFormulario] = useState({
     username: "",
     email: "",
     first_name: "",
@@ -30,171 +41,216 @@ export default function PerfilUpdate() {
     fecha_nacimiento: "",
     genero: "O",
     biografia: "",
-    foto_url: "" as string | null,
+    foto_url: null as string | null,
     foto_perfil: null as File | null,
     eliminar_foto: false,
   });
 
+  const [cargando, setCargando] = useState(true);
+  const [guardando, setGuardando] = useState(false);
+  const [errorFormulario, setErrorFormulario] = useState<string | null>(null);
+  const [errorPagina, setErrorPagina] = useState<string | null>(null);
   useEffect(() => {
-    if (stateFormData) {
-      setForm(stateFormData);
-      setLoading(false);
+    if (formularioGuardado) {
+      setFormulario(formularioGuardado);
+      setCargando(false);
       return;
     }
 
     (async () => {
       try {
-        const data = await getUsuarioById(Number(id));
-        setForm({
-          username: data.username,
-          email: data.email,
-          first_name: data.first_name,
-          last_name: data.last_name,
-          telefono: data.perfil.telefono,
-          direccion: data.perfil.direccion,
-          fecha_nacimiento: data.perfil.fecha_nacimiento,
-          genero: data.perfil.genero,
-          biografia: data.perfil.biografia,
-          foto_url: data.perfil.foto_perfil,
+        const datosUsuario = await getUsuarioById(idNumerico);
+        setUsuario(datosUsuario);
+        setFormulario({
+          username: datosUsuario.username,
+          email: datosUsuario.email,
+          first_name: datosUsuario.first_name,
+          last_name: datosUsuario.last_name,
+          telefono: datosUsuario.perfil.telefono,
+          direccion: datosUsuario.perfil.direccion,
+          fecha_nacimiento: datosUsuario.perfil.fecha_nacimiento,
+          genero: datosUsuario.perfil.genero,
+          biografia: datosUsuario.perfil.biografia,
+          foto_url: datosUsuario.perfil.foto_perfil,
           foto_perfil: null,
           eliminar_foto: false,
         });
       } catch {
-        setError("No se pudieron cargar los datos.");
+        setErrorPagina("No se pudieron cargar los datos.");
       } finally {
-        setLoading(false);
+        setCargando(false);
       }
     })();
-    (async () => {
-      try {
-        const data = await getUsuarioById(Number(id));
-        setUsuario(data);
-      } catch (e) {
-        setError("No se pudo cargar el perfil.");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [id, stateFormData]);
+  }, [id, formularioGuardado]);
 
-  const autoResize = (el: HTMLTextAreaElement | null) => {
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${el.scrollHeight}px`;
+  const ajustarAlturaBiografia = (elemento: HTMLTextAreaElement | null) => {
+    if (!elemento) return;
+    elemento.style.height = "auto";
+    elemento.style.height = `${elemento.scrollHeight}px`;
   };
 
   useLayoutEffect(() => {
-    if (!loading) autoResize(bioRef.current);
-  }, [loading, form.biografia]);
+    if (!cargando) ajustarAlturaBiografia(refBiografia.current);
+  }, [cargando, formulario.biografia]);
 
-  const handleChange = (e: any) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    if (e.target.name === "biografia") autoResize(bioRef.current);
+  const handleCambioCampo = (e: any) => {
+    setFormulario({ ...formulario, [e.target.name]: e.target.value });
+    if (e.target.name === "biografia") {
+      ajustarAlturaBiografia(refBiografia.current);
+    }
   };
-  const handleDeletePhoto = () => {
-    setForm((prev) => ({
+
+  const handleArchivo = (e: any) => {
+    setFormulario({
+      ...formulario,
+      foto_perfil: e.target.files?.[0] || null,
+    });
+  };
+
+  const handleEliminarFoto = () => {
+    setFormulario((prev) => ({
       ...prev,
       foto_perfil: null,
       foto_url: null,
       eliminar_foto: true,
     }));
   };
-  const handleFile = (e: any) =>
-    setForm({ ...form, foto_perfil: e.target.files?.[0] || null });
 
-  const handleDeleteAccount = async () => {
-    setError(null);
-    const username = form.username || usuario?.username || "";
-    if (!username) {
+  const handleEliminarCuenta = async () => {
+    setErrorFormulario(null);
+
+    const nombreUsuario = formulario.username || usuario?.username || "";
+    if (!nombreUsuario) {
       window.alert("No se pudo determinar el nombre de usuario.");
       return;
     }
-    const expected = `DELETE/${username}`;
-    const input = window.prompt(
+
+    const textoEsperado = `DELETE/${nombreUsuario}`;
+    const entrada = window.prompt(
       `Esta accion eliminara definitivamente su cuenta.\n\n` +
-        `Para continuar,escribe exactamente${expected}`,
+      `Para continuar,escribe exactamente${textoEsperado}`,
     );
 
-    if (input !== expected) {
-      if (input !== null) {
+    if (entrada !== textoEsperado) {
+      if (entrada !== null) {
         window.alert("El texto no coincide. Operacion cancelada.");
       }
       return;
     }
-    const confirmed = window.confirm(
+
+    const confirmacion = window.confirm(
       "¿Seguro que quieres eliminar tu cuenta? Esta accion es irreversible",
     );
-    if (!confirmed) return;
+    if (!confirmacion) return;
 
     try {
-      setSaving(true);
+      setGuardando(true);
       logout();
-      await deleteUsuario(Number(id));
-
+      await deleteUsuario(idNumerico);
       navigate("/", { replace: true });
     } catch (e: any) {
-      const detail =
+      const detalle =
         e?.detail ||
         (typeof e === "string" ? e : null) ||
         "No se pudo eliminar la cuenta.";
-      setError(detail);
-      window.alert(detail);
+      setErrorFormulario(detalle);
+      window.alert(detalle);
     } finally {
-      setSaving(false);
+      setGuardando(false);
     }
   };
-  const iniciales = useMemo(() => {
-    // Si no tenemos usuario (porque no hicimos GET), usamos los campos del form
-    const firstName = usuario?.first_name ?? form.first_name ?? "";
-    const lastName = usuario?.last_name ?? form.last_name ?? "";
-    const username = usuario?.username ?? form.username ?? "";
 
-    const nombre = `${firstName} ${lastName}`.trim();
-    if (nombre.length > 0) {
-      const partes = nombre.split(/\s+/).filter(Boolean);
-      const letras = partes.slice(0, 2).map((p) => p[0]?.toUpperCase() || "");
-      return letras.join("") || (username.slice(0, 2).toUpperCase() ?? "");
+  const iniciales = useMemo(() => {
+    const nombre = `${usuario?.first_name ?? formulario.first_name} ${usuario?.last_name ?? formulario.last_name
+      }`.trim();
+
+    if (nombre) {
+      return nombre
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((p) => p[0].toUpperCase())
+        .join("");
     }
-    return username.slice(0, 2).toUpperCase() ?? "";
-  }, [usuario, form.first_name, form.last_name, form.username]);
-  const fotoPerfil = form.foto_perfil
-    ? URL.createObjectURL(form.foto_perfil)
-    : form.foto_url
-      ? form.foto_url
-      : null;
+
+    const username = usuario?.username ?? formulario.username ?? "";
+    return username.slice(0, 2).toUpperCase();
+  }, [
+    usuario,
+    formulario.first_name,
+    formulario.last_name,
+    formulario.username,
+  ]);
+
+  const fotoPerfil =
+    formulario.foto_perfil
+      ? URL.createObjectURL(formulario.foto_perfil)
+      : formulario.foto_url ?? null;
 
   const handleSubmit = async (e: any) => {
     e.preventDefault();
-    setSaving(true);
-    setError(null);
+
+    if (!formulario.email.trim()) {
+      setErrorFormulario("El email es obligatorio.");
+      return;
+    }
+
+    if (!formulario.username.trim()) {
+      setErrorFormulario("El nombre de usuario es obligatorio.");
+      return;
+    }
+
+    if (!formulario.fecha_nacimiento.trim()) {
+      setErrorFormulario("La fecha de nacimiento es obligatoria.");
+      return;
+    }
+
+    if (!formulario.genero.trim()) {
+      setErrorFormulario("El género es obligatorio.");
+      return;
+    }
+
+    if (!formulario.telefono.trim()) {
+      setErrorFormulario("El teléfono es obligatorio.");
+      return;
+    }
+    setGuardando(true);
+    setErrorFormulario(null);
 
     const payload = {
-      username: form.username,
-      email: form.email,
-      first_name: form.first_name,
-      last_name: form.last_name,
+      username: formulario.username,
+      email: formulario.email,
+      first_name: formulario.first_name,
+      last_name: formulario.last_name,
       perfil: {
-        telefono: form.telefono,
-        direccion: form.direccion,
-        fecha_nacimiento: form.fecha_nacimiento,
-        genero: form.genero,
-        biografia: form.biografia,
-        eliminar_foto: form.eliminar_foto,
+        telefono: formulario.telefono,
+        direccion: formulario.direccion,
+        fecha_nacimiento: formulario.fecha_nacimiento,
+        genero: formulario.genero,
+        biografia: formulario.biografia,
+        eliminar_foto: formulario.eliminar_foto,
       },
     };
 
     try {
-      await updateUsuario(Number(id), payload, form.foto_perfil);
+      await updateUsuario(idNumerico, payload, formulario.foto_perfil);
       navigate(`/perfil/${id}`);
     } catch {
-      setError("Error al guardar los cambios.");
+      setErrorFormulario("Error al guardar los cambios.");
     } finally {
-      setSaving(false);
+      setGuardando(false);
     }
   };
 
-  if (loading) return <p>Cargando...</p>;
-  if (error) return <p>{error}</p>;
+
+  if (cargando) {
+    return <PageInfo message="Cargando perfil..." />;
+  }
+
+  if (errorPagina) {
+    return <PageError message={errorPagina} />;
+  }
+
+
   return (
     <div className="form-page">
       <div className="form-card">
@@ -203,68 +259,68 @@ export default function PerfilUpdate() {
         <form onSubmit={handleSubmit} className="form-container">
           <div
             className="profile-photo-wrapper"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => refInputArchivo.current?.click()}
           >
             {fotoPerfil ? (
               <img src={fotoPerfil} className="perfil-avatar__img" alt="foto" />
             ) : (
               <div className="perfil-avatar__fallback">{iniciales}</div>
             )}
-            {fotoPerfil ? (
+
+            {fotoPerfil && (
               <button
                 type="button"
                 className="avatar-delete-btn avatar-delete-btn--icon"
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleDeletePhoto();
+                  handleEliminarFoto();
                 }}
                 style={{ backgroundImage: `url(${deleteIcon})` }}
                 aria-label="Eliminar perfil"
               />
-            ) : (
-              <div />
             )}
           </div>
 
           <input
             type="file"
             accept="image/*"
-            ref={fileInputRef}
+            ref={refInputArchivo}
             className="file-hidden"
-            onChange={handleFile}
+            onChange={handleArchivo}
           />
+
           <h3 className="form-section-title">Información del Usuario</h3>
 
           <label className="form-label">Nombre de usuario</label>
           <input
             className="form-input"
             name="username"
-            value={form.username}
-            onChange={handleChange}
+            value={formulario.username}
+            onChange={handleCambioCampo}
           />
 
           <label className="form-label">Email</label>
           <input
             className="form-input"
             name="email"
-            value={form.email}
-            onChange={handleChange}
+            value={formulario.email}
+            onChange={handleCambioCampo}
           />
 
           <label className="form-label">Nombre</label>
           <input
             className="form-input"
             name="first_name"
-            value={form.first_name}
-            onChange={handleChange}
+            value={formulario.first_name}
+            onChange={handleCambioCampo}
           />
 
           <label className="form-label">Apellidos</label>
           <input
             className="form-input"
             name="last_name"
-            value={form.last_name}
-            onChange={handleChange}
+            value={formulario.last_name}
+            onChange={handleCambioCampo}
           />
 
           <h3 className="form-section-title">Datos del Perfil</h3>
@@ -273,16 +329,16 @@ export default function PerfilUpdate() {
           <input
             className="form-input"
             name="telefono"
-            value={form.telefono}
-            onChange={handleChange}
+            value={formulario.telefono}
+            onChange={handleCambioCampo}
           />
 
           <label className="form-label">Dirección</label>
           <input
             className="form-input"
             name="direccion"
-            value={form.direccion}
-            onChange={handleChange}
+            value={formulario.direccion}
+            onChange={handleCambioCampo}
           />
 
           <label className="form-label">Fecha de nacimiento</label>
@@ -290,16 +346,16 @@ export default function PerfilUpdate() {
             type="date"
             className="form-input"
             name="fecha_nacimiento"
-            value={form.fecha_nacimiento}
-            onChange={handleChange}
+            value={formulario.fecha_nacimiento}
+            onChange={handleCambioCampo}
           />
 
           <label className="form-label">Género</label>
           <select
             className="form-input"
             name="genero"
-            value={form.genero}
-            onChange={handleChange}
+            value={formulario.genero}
+            onChange={handleCambioCampo}
           >
             <option value="M">Masculino</option>
             <option value="F">Femenino</option>
@@ -308,11 +364,11 @@ export default function PerfilUpdate() {
 
           <label className="form-label">Biografía</label>
           <textarea
-            ref={bioRef}
+            ref={refBiografia}
             className="form-input"
             name="biografia"
-            value={form.biografia}
-            onChange={handleChange}
+            value={formulario.biografia}
+            onChange={handleCambioCampo}
           />
 
           <button
@@ -320,12 +376,13 @@ export default function PerfilUpdate() {
             className="btn btn-secondary form-button"
             onClick={() =>
               navigate(`/perfil/${id}/change-password`, {
-                state: { formData: form },
+                state: { formData: formulario },
               })
             }
           >
             Cambiar contraseña
           </button>
+
           <button
             type="button"
             className="btn btn-secondary form-button"
@@ -337,22 +394,23 @@ export default function PerfilUpdate() {
           <button
             type="submit"
             className="btn btn-primary form-button"
-            disabled={saving}
+            disabled={guardando}
           >
-            {saving ? "Guardando..." : "Guardar cambios"}
+            {guardando ? "Guardando..." : "Guardar cambios"}
           </button>
 
           <button
             type="button"
             className="btn btn-danger form-button"
-            onClick={handleDeleteAccount}
-            disabled={saving}
-            aria-label="Eliminar cuenta de usuario"
+            onClick={handleEliminarCuenta}
+            disabled={guardando}
           >
             Eliminar cuenta
           </button>
 
-          {error && <p className="form-error">{error}</p>}
+          {errorFormulario && (
+            <p className="form-error">{errorFormulario}</p>
+          )}
         </form>
       </div>
     </div>
