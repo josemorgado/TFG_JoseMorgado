@@ -1,25 +1,32 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+
 import {
   fetchCategoriasFull,
   fetchDistritosFull,
   createCategoria,
   createDistrito,
 } from "../api/moderacion";
+
 import type { Categoria } from "../types/categoria";
 import type { Distrito } from "../types/distrito";
-import { Link } from "react-router-dom";
+
+import PageError from "../components/PageError";
+import PageInfo from "../components/PageInfo";
 
 export default function ModeradorOptions() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [distritos, setDistritos] = useState<Distrito[]>([]);
 
-  const [catNombre, setCatNombre] = useState("");
-  const [catDescripcion, setCatDescripcion] = useState("");
+  const [nombreCategoria, setNombreCategoria] = useState("");
+  const [descripcionCategoria, setDescripcionCategoria] = useState("");
 
-  const [distNombre, setDistNombre] = useState("");
-  const [distCodigo, setDistCodigo] = useState("");
+  const [nombreDistrito, setNombreDistrito] = useState("");
+  const [codigoDistrito, setCodigoDistrito] = useState("");
 
-  const [error, setError] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [errorPagina, setErrorPagina] = useState<string | null>(null);
+  const [errorFormulario, setErrorFormulario] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -31,38 +38,99 @@ export default function ModeradorOptions() {
         setCategorias(cats);
         setDistritos(dists);
       } catch {
-        setError("Error cargando datos de moderación");
+        setErrorPagina(
+          "No se pudieron cargar los datos de moderación. Inténtalo más tarde."
+        );
+      } finally {
+        setCargando(false);
       }
     })();
   }, []);
 
-  const handleCreateCategoria = async (e: React.FormEvent) => {
+  if (cargando) {
+    return <PageInfo message="Cargando datos de moderación..." />;
+  }
+
+  if (errorPagina) {
+    return <PageError message={errorPagina} />;
+  }
+
+  const handleCrearCategoria = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorFormulario(null);
+
+    const nombre = nombreCategoria.trim();
+    const descripcion = descripcionCategoria.trim();
+
+    if (!nombre || nombre.length < 3) {
+      setErrorFormulario(
+        "El nombre de la categoría debe tener al menos 3 caracteres."
+      );
+      return;
+    }
+
+    if (!descripcion || descripcion.length < 10) {
+      setErrorFormulario(
+        "La descripción debe tener al menos 10 caracteres."
+      );
+      return;
+    }
+
     try {
-      const nueva = await createCategoria({
-        nombre: catNombre,
-        descripcion: catDescripcion,
-      });
+      const nueva = await createCategoria({ nombre, descripcion });
       setCategorias((prev) => [...prev, nueva]);
-      setCatNombre("");
-      setCatDescripcion("");
-    } catch {
-      setError("No se pudo crear la categoría");
+      setNombreCategoria("");
+      setDescripcionCategoria("");
+    } catch (err: any) {
+      const mensaje =
+        err?.response?.data?.nombre?.[0] ||
+        err?.response?.data?.detail ||
+        "No se pudo crear la categoría.";
+
+      setErrorFormulario(mensaje);
     }
   };
 
-  const handleCreateDistrito = async (e: React.FormEvent) => {
+  const handleCrearDistrito = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorFormulario(null);
+
+    const nombre = nombreDistrito.trim();
+    const codigo = codigoDistrito.trim().toUpperCase();
+
+    if (!nombre || nombre.length < 3) {
+      setErrorFormulario(
+        "El nombre del distrito debe tener al menos 3 caracteres."
+      );
+      return;
+    }
+
+    if (!codigo || codigo.length < 2) {
+      setErrorFormulario(
+        "El código del distrito debe tener al menos 2 caracteres."
+      );
+      return;
+    }
+
+    if (codigo.length > 10) {
+      setErrorFormulario(
+        "El código del distrito no puede tener más de 10 caracteres."
+      );
+      return;
+    }
+
     try {
-      const nuevo = await createDistrito({
-        nombre: distNombre,
-        codigo: distCodigo,
-      });
+      const nuevo = await createDistrito({ nombre, codigo });
       setDistritos((prev) => [...prev, nuevo]);
-      setDistNombre("");
-      setDistCodigo("");
-    } catch {
-      setError("No se pudo crear el distrito");
+      setNombreDistrito("");
+      setCodigoDistrito("");
+    } catch (err: any) {
+      const mensaje =
+        err?.response?.data?.codigo?.[0] ||
+        err?.response?.data?.detail ||
+        "No se pudo crear el distrito.";
+
+      setErrorFormulario(mensaje);
     }
   };
 
@@ -71,7 +139,9 @@ export default function ModeradorOptions() {
       <div className="form-card moderador-panel">
         <h1 className="form-title">Panel de moderación</h1>
 
-        {error && <p className="form-error">{error}</p>}
+        {errorFormulario && (
+          <p className="form-error">{errorFormulario}</p>
+        )}
 
         {/* ===================== */}
         {/* CATEGORÍAS */}
@@ -79,56 +149,54 @@ export default function ModeradorOptions() {
         <section className="moderador-section">
           <h2 className="form-section-title">Categorías</h2>
 
-<div className="table-wrapper">
-  <table className="data-table">
-    <thead>
-      <tr>
-        <th className="col-id">ID</th>
-        <th className="col-nombre">Nombre</th>
-        <th className="col-descripcion">Descripción</th>
-        <th className="col-activa">Activa</th>
-        <th className="actions-cell">Acciones</th>
-      </tr>
-    </thead>
-    <tbody>
-      {categorias.map((c) => (
-        <tr key={c.id}>
-          <td className="col-id">{c.id}</td>
-          <td className="col-nombre">{c.nombre}</td>
-          <td className="col-descripcion">{c.descripcion}</td>
-          <td className="col-activa">{c.activo ? "Sí" : "No"}</td>
-          <td className="actions-cell">
-            <Link
-              to={`/moderador/categorias/${c.id}/editar`}
-              className="table-edit-btn"
-            >
-              Editar
-            </Link>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-</div>
+          <div className="table-wrapper">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Descripción</th>
+                  <th>Activa</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categorias.map((c) => (
+                  <tr key={c.id}>
+                    <td>{c.id}</td>
+                    <td>{c.nombre}</td>
+                    <td>{c.descripcion}</td>
+                    <td>{c.activo ? "Sí" : "No"}</td>
+                    <td>
+                      <Link
+                        to={`/moderador/categorias/${c.id}/editar`}
+                        className="table-edit-btn"
+                      >
+                        Editar
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           <form
-            onSubmit={handleCreateCategoria}
+            onSubmit={handleCrearCategoria}
             className="form-container moderador-form"
           >
             <label className="form-label">Nombre</label>
             <input
               className="form-input"
-              value={catNombre}
-              onChange={(e) => setCatNombre(e.target.value)}
-              required
+              value={nombreCategoria}
+              onChange={(e) => setNombreCategoria(e.target.value)}
             />
 
             <label className="form-label">Descripción</label>
             <textarea
               className="form-input"
-              value={catDescripcion}
-              onChange={(e) => setCatDescripcion(e.target.value)}
-              required
+              value={descripcionCategoria}
+              onChange={(e) => setDescripcionCategoria(e.target.value)}
             />
 
             <button type="submit" className="form-button">
@@ -142,23 +210,24 @@ export default function ModeradorOptions() {
         {/* ===================== */}
         <section className="moderador-section">
           <h2 className="form-section-title">Distritos</h2>
+
           <div className="table-wrapper">
             <table className="data-table">
               <thead>
                 <tr>
-                  <th className="col-id">ID</th>
-                  <th className="col-nombre">Nombre</th>
-                  <th className="col-codigo">Código</th>
-                  <th className="actions-cell">Acciones</th>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Código</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 {distritos.map((d) => (
                   <tr key={d.id}>
-                    <td className="col-id">{d.id}</td>
-                    <td className="col-nombre">{d.nombre}</td>
-                    <td className="col-codigo code-cell">{d.codigo}</td>
-                    <td className="actions-cell">
+                    <td>{d.id}</td>
+                    <td>{d.nombre}</td>
+                    <td>{d.codigo}</td>
+                    <td>
                       <Link
                         to={`/moderador/distritos/${d.id}/editar`}
                         className="table-edit-btn"
@@ -171,24 +240,25 @@ export default function ModeradorOptions() {
               </tbody>
             </table>
           </div>
+
           <form
-            onSubmit={handleCreateDistrito}
+            onSubmit={handleCrearDistrito}
             className="form-container moderador-form"
           >
             <label className="form-label">Nombre</label>
             <input
               className="form-input"
-              value={distNombre}
-              onChange={(e) => setDistNombre(e.target.value)}
-              required
+              value={nombreDistrito}
+              onChange={(e) => setNombreDistrito(e.target.value)}
             />
 
             <label className="form-label">Código</label>
             <input
               className="form-input"
-              value={distCodigo}
-              onChange={(e) => setDistCodigo(e.target.value)}
-              required
+              value={codigoDistrito}
+              onChange={(e) =>
+                setCodigoDistrito(e.target.value.toUpperCase())
+              }
             />
 
             <button type="submit" className="form-button">

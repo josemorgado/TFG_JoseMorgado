@@ -1,8 +1,10 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { crearImagenQueja } from "../api/imagenes";
+
 import { createQuejaRequest } from "../api/quejas";
+import { crearImagenQueja } from "../api/imagenes";
 import { crearVideoQueja } from "../api/videos";
+
 import {
   useCategorias,
   useDistritos,
@@ -10,21 +12,22 @@ import {
 
 import "../styles/form-layout.css";
 
-const QuejaCreate: React.FC = () => {
+export default function QuejaCreate() {
   const navigate = useNavigate();
 
   const {
     data: categorias,
-    isLoading: catLoading,
-    error: catError,
+    isLoading: categoriasCargando,
+    error: errorCategorias,
   } = useCategorias();
+
   const {
     data: distritos,
-    isLoading: disLoading,
-    error: disError,
+    isLoading: distritosCargando,
+    error: errorDistritos,
   } = useDistritos();
 
-  const [form, setForm] = useState({
+  const [formulario, setFormulario] = useState({
     titulo: "",
     descripcion: "",
     categoria: "",
@@ -34,126 +37,147 @@ const QuejaCreate: React.FC = () => {
     videos: [] as File[],
   });
 
-  const [error, setError] = useState<string | null>(null);
+  const [errorFormulario, setErrorFormulario] = useState<string | null>(null);
   const [errorImagenes, setErrorImagenes] = useState<string | null>(null);
   const [errorVideos, setErrorVideos] = useState<string | null>(null);
+  const [enviando, setEnviando] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setErrorFormulario(null);
 
-    // Validaciones
-    if (!form.titulo.trim() || form.titulo.trim().length < 5) {
-      setError("El título debe tener mínimo 5 caracteres");
-      return;
-    }
-    if (!form.descripcion.trim() || form.descripcion.trim().length < 10) {
-      setError("La descripción debe tener mínimo 10 caracteres");
-      return;
-    }
-    if (!form.categoria) {
-      setError("Debes seleccionar una categoría");
-      return;
-    }
-    if (!form.distrito) {
-      setError("Debes seleccionar un distrito");
-      return;
-    }
-    if (form.imagenes.length > 5) {
-      setError("Solo puedes subir un máximo de 5 imágenes.");
-      return;
-    }
-    if (form.videos.length > 1) {
-      setError("Solo puedes subir un máximo de 1 video.");
+    const titulo = formulario.titulo.trim();
+    const descripcion = formulario.descripcion.trim();
+
+    if (!titulo || titulo.length < 5) {
+      setErrorFormulario("El título debe tener al menos 5 caracteres.");
       return;
     }
 
-    const formData = new FormData();
-    formData.append("titulo", form.titulo.trim());
-    formData.append("descripcion", form.descripcion.trim());
-    formData.append("categoria", String(Number(form.categoria)));
-    formData.append("distrito", String(Number(form.distrito)));
+    if (!descripcion || descripcion.length < 10) {
+      setErrorFormulario("La descripción debe tener al menos 10 caracteres.");
+      return;
+    }
 
-    if (form.ubicacion.trim()) {
-      formData.append("ubicacion", form.ubicacion.trim());
+    if (!formulario.categoria) {
+      setErrorFormulario("Debes seleccionar una categoría.");
+      return;
+    }
+
+    if (!formulario.distrito) {
+      setErrorFormulario("Debes seleccionar un distrito.");
+      return;
+    }
+
+    if (formulario.imagenes.length > 5) {
+      setErrorFormulario("Solo puedes subir un máximo de 5 imágenes.");
+      return;
+    }
+
+    if (formulario.videos.length > 1) {
+      setErrorFormulario("Solo puedes subir un máximo de 1 vídeo.");
+      return;
+    }
+
+    const datos = new FormData();
+    datos.append("titulo", titulo);
+    datos.append("descripcion", descripcion);
+    datos.append("categoria", String(Number(formulario.categoria)));
+    datos.append("distrito", String(Number(formulario.distrito)));
+
+    if (formulario.ubicacion.trim()) {
+      datos.append("ubicacion", formulario.ubicacion.trim());
     }
 
     try {
-      const res = await createQuejaRequest(formData);
-      const id = res?.data?.id;
-      const ctId = res?.data?.content_type;
+      setEnviando(true);
 
-      for (const file of form.imagenes) {
-        await crearImagenQueja(ctId, id, file);
-      }
-      for (const file of form.videos) {
-        await crearVideoQueja(ctId, id, file);
+      const respuesta = await createQuejaRequest(datos);
+      const idQueja = respuesta?.data?.id;
+      const contentType = respuesta?.data?.content_type;
+
+      for (const imagen of formulario.imagenes) {
+        await crearImagenQueja(contentType, idQueja, imagen);
       }
 
-      navigate(id ? `/quejas/${id}` : "/quejas");
+      for (const video of formulario.videos) {
+        await crearVideoQueja(contentType, idQueja, video);
+      }
+
+      navigate(idQueja ? `/quejas/${idQueja}` : "/quejas");
     } catch (err: any) {
-      if (err.response?.data) {
+      if (err?.response?.data) {
         const data = err.response.data;
-        const messages: string[] = [];
+        const mensajes: string[] = [];
 
         if (typeof data === "string") {
-          setError(data);
+          setErrorFormulario(data);
           return;
         }
 
-        if (data.titulo) messages.push(`Título: ${data.titulo.join(" ")}`);
+        if (data.titulo) mensajes.push(`Título: ${data.titulo.join(" ")}`);
         if (data.descripcion)
-          messages.push(`Descripción: ${data.descripcion.join(" ")}`);
+          mensajes.push(`Descripción: ${data.descripcion.join(" ")}`);
         if (data.categoria)
-          messages.push(`Categoría: ${data.categoria.join(" ")}`);
+          mensajes.push(`Categoría: ${data.categoria.join(" ")}`);
         if (data.distrito)
-          messages.push(`Distrito: ${data.distrito.join(" ")}`);
+          mensajes.push(`Distrito: ${data.distrito.join(" ")}`);
         if (data.ubicacion)
-          messages.push(`Ubicación: ${data.ubicacion.join(" ")}`);
+          mensajes.push(`Ubicación: ${data.ubicacion.join(" ")}`);
 
-        setError(messages.join(" • ") || "Error al crear la queja");
+        setErrorFormulario(
+          mensajes.join(" · ") || "Error al crear la queja."
+        );
       } else {
-        setError("No se pudo conectar con el servidor.");
+        setErrorFormulario("No se pudo conectar con el servidor.");
       }
+    } finally {
+      setEnviando(false);
     }
   };
 
   return (
     <div className="form-page">
       <div className="form-card">
-        <h1 className="form-title">Crear Queja</h1>
+        <h1 className="form-title">Crear queja</h1>
 
         <form onSubmit={handleSubmit} className="form-container">
-          {/* TÍTULO */}
           <label className="form-label">Título</label>
           <input
             className="form-input"
-            type="text"
-            value={form.titulo}
-            onChange={(e) => setForm({ ...form, titulo: e.target.value })}
+            value={formulario.titulo}
+            onChange={(e) =>
+              setFormulario({ ...formulario, titulo: e.target.value })
+            }
           />
 
-          {/* DESCRIPCIÓN */}
           <label className="form-label">Descripción</label>
           <textarea
             className="form-input"
-            value={form.descripcion}
-            onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
             rows={4}
+            value={formulario.descripcion}
+            onChange={(e) =>
+              setFormulario({ ...formulario, descripcion: e.target.value })
+            }
           />
 
-          {/* CATEGORÍA */}
           <label className="form-label">Categoría</label>
           <select
             className="form-input"
-            value={form.categoria}
-            onChange={(e) => setForm({ ...form, categoria: e.target.value })}
-            disabled={catLoading || !!catError}
+            value={formulario.categoria}
+            onChange={(e) =>
+              setFormulario({ ...formulario, categoria: e.target.value })
+            }
+            disabled={categoriasCargando || !!errorCategorias}
           >
             <option value="" disabled>
-              {catLoading ? "Cargando categorías…" : "Selecciona una categoría"}
+              {categoriasCargando
+                ? "Cargando categorías…"
+                : "Selecciona una categoría"}
             </option>
-            {catError && <option disabled>⚠️ Error cargando categorías</option>}
+            {errorCategorias && (
+              <option disabled>⚠️ Error cargando categorías</option>
+            )}
             {categorias?.map((c) => (
               <option key={c.id} value={String(c.id)}>
                 {c.nombre}
@@ -161,18 +185,23 @@ const QuejaCreate: React.FC = () => {
             ))}
           </select>
 
-          {/* DISTRITO */}
           <label className="form-label">Distrito</label>
           <select
             className="form-input"
-            value={form.distrito}
-            onChange={(e) => setForm({ ...form, distrito: e.target.value })}
-            disabled={disLoading || !!disError}
+            value={formulario.distrito}
+            onChange={(e) =>
+              setFormulario({ ...formulario, distrito: e.target.value })
+            }
+            disabled={distritosCargando || !!errorDistritos}
           >
             <option value="" disabled>
-              {disLoading ? "Cargando distritos…" : "Selecciona un distrito"}
+              {distritosCargando
+                ? "Cargando distritos…"
+                : "Selecciona un distrito"}
             </option>
-            {disError && <option disabled>⚠️ Error cargando distritos</option>}
+            {errorDistritos && (
+              <option disabled>⚠️ Error cargando distritos</option>
+            )}
             {distritos?.map((d) => (
               <option key={d.id} value={String(d.id)}>
                 {d.nombre}
@@ -180,67 +209,68 @@ const QuejaCreate: React.FC = () => {
             ))}
           </select>
 
-          {/* UBICACIÓN */}
           <label className="form-label">Ubicación (opcional)</label>
           <input
             className="form-input"
-            type="text"
-            value={form.ubicacion}
-            onChange={(e) => setForm({ ...form, ubicacion: e.target.value })}
+            value={formulario.ubicacion}
+            onChange={(e) =>
+              setFormulario({ ...formulario, ubicacion: e.target.value })
+            }
           />
 
-          {/* IMÁGENES */}
-          <label className="form-label">Imágenes (máx 5)</label>
+          <label className="form-label">Imágenes (máx. 5)</label>
           <input
             className="form-input"
             type="file"
             accept="image/*"
             multiple
             onChange={(e) => {
-              const files = Array.from(e.target.files || []);
-              if (files.length > 5) {
-                setErrorImagenes("El máximo de imágenes es 5.");
+              const archivos = Array.from(e.target.files || []);
+              if (archivos.length > 5) {
+                setErrorImagenes("El máximo permitido es 5 imágenes.");
                 return;
               }
               setErrorImagenes(null);
-              setForm({ ...form, imagenes: files });
+              setFormulario({ ...formulario, imagenes: archivos });
             }}
           />
-          {errorImagenes && <p className="form-error">{errorImagenes}</p>}
+          {errorImagenes && (
+            <p className="form-error">{errorImagenes}</p>
+          )}
 
-          {/* VIDEOS */}
-          <label className="form-label">Video (máx 1)</label>
+          <label className="form-label">Vídeo (máx. 1)</label>
           <input
             className="form-input"
             type="file"
             accept="video/*"
             multiple
             onChange={(e) => {
-              const files = Array.from(e.target.files || []);
-              if (files.length > 1) {
-                setErrorVideos("Solo se permite 1 video.");
+              const archivos = Array.from(e.target.files || []);
+              if (archivos.length > 1) {
+                setErrorVideos("Solo se permite un vídeo.");
                 return;
               }
               setErrorVideos(null);
-              setForm({ ...form, videos: files });
+              setFormulario({ ...formulario, videos: archivos });
             }}
           />
           {errorVideos && <p className="form-error">{errorVideos}</p>}
 
-          {/* BOTÓN FINAL */}
           <button
             type="submit"
             className="btn btn-primary form-button"
-            disabled={!!errorImagenes || !!errorVideos}
+            disabled={
+              enviando || !!errorImagenes || !!errorVideos
+            }
           >
-            Crear Queja
+            {enviando ? "Creando…" : "Crear queja"}
           </button>
 
-          {error && <p className="form-error">{error}</p>}
+          {errorFormulario && (
+            <p className="form-error">{errorFormulario}</p>
+          )}
         </form>
       </div>
     </div>
   );
-};
-
-export default QuejaCreate;
+}

@@ -1,108 +1,107 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
+
 import { listarRespuestasPorQueja } from "../api/respuestas";
+
 import type { Paginated, RespuestaDTO } from "../types/respuestas";
 import { ESTADO_LABEL } from "../types/estadosQueja";
+
+import PageError from "../components/PageError";
+import PageInfo from "../components/PageInfo";
+import PageEmpty from "../components/PageEmpty";
+
 import "../styles/QuejaRespuestas.css";
-
-
 
 export default function QuejaRespuestasPage() {
   const { quejaId } = useParams<{ quejaId: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
+
+  if (!quejaId) {
+    return <PageError message="Falta la ID de la queja en la URL." />;
+  }
+
+  const idQueja = Number(quejaId);
+
+  if (Number.isNaN(idQueja)) {
+    return <PageError message="La ID de la queja no es válida." />;
+  }
+
   const page = Number(searchParams.get("page") || 1);
   const pageSize = Number(searchParams.get("page_size") || 10);
 
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<Paginated<RespuestaDTO> | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [cargando, setCargando] = useState(true);
+  const [datos, setDatos] = useState<Paginated<RespuestaDTO> | null>(null);
+  const [errorPagina, setErrorPagina] = useState<string | null>(null);
 
-  const qs = useMemo(() => ({ page, page_size: pageSize }), [page, pageSize]);
+  const query = useMemo(
+    () => ({ page, page_size: pageSize }),
+    [page, pageSize]
+  );
 
   useEffect(() => {
-    if (!quejaId) return;
-    let cancel = false;
-    setLoading(true);
-    setError(null);
+    let cancelado = false;
+    setCargando(true);
+    setErrorPagina(null);
 
-    listarRespuestasPorQueja(quejaId, qs)
-      .then((d) => !cancel && setData(d))
-      .catch((e) => !cancel && setError(e?.message ?? "No se pudieron cargar las respuestas."))
-      .finally(() => !cancel && setLoading(false));
+    listarRespuestasPorQueja(idQueja, query)
+      .then((res) => {
+        if (!cancelado) {
+          setDatos(res);
+        }
+      })
+      .catch(() => {
+        if (!cancelado) {
+          setErrorPagina("No se pudieron cargar las respuestas.");
+        }
+      })
+      .finally(() => {
+        if (!cancelado) {
+          setCargando(false);
+        }
+      });
 
     return () => {
-      cancel = true;
+      cancelado = true;
     };
-  }, [quejaId, qs]);
+  }, [idQueja, query]);
 
-  if (!quejaId)
-    return <p className="respuestas-page__pad">Falta el ID de la queja.</p>;
-
-  if (loading) {
-    return (
-      <div className="respuestas-page">
-        <div className="respuestas-page__container">
-          <div className="respuestas-page__header">
-            <div
-              className="respuestas-page__skeleton"
-              style={{ width: 320, height: 30, borderRadius: 8 }}
-            />
-            <div
-              className="respuestas-page__skeleton"
-              style={{ width: 180, height: 40, borderRadius: 10 }}
-            />
-          </div>
-
-          <ul className="respuestas-page__list">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <li key={i} className="respuestas-page__card respuestas-page__skeleton">
-                <div
-                  className="respuestas-page__skeleton-line respuestas-page__skeleton-line--lg"
-                  style={{ width: "55%" }}
-                />
-                <div className="respuestas-page__skeleton-line" style={{ width: "95%" }} />
-                <div className="respuestas-page__skeleton-line" style={{ width: "88%" }} />
-                <div
-                  className="respuestas-page__skeleton-line respuestas-page__skeleton-line--sm"
-                  style={{ width: "40%" }}
-                />
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-    );
+  if (cargando) {
+    return <PageInfo message="Cargando respuestas..." />;
   }
 
-  if (error)
-    return <div className="respuestas-page__alert respuestas-page__alert--error">{error}</div>;
+  if (errorPagina) {
+    return <PageError message={errorPagina} />;
+  }
+
+  if (datos && datos.results.length === 0) {
+    return <PageEmpty message="Esta queja aún no tiene respuestas." />;
+  }
 
   return (
     <div className="respuestas-page">
       <div className="respuestas-page__container">
         <div className="respuestas-page__header">
-          <h1 className="respuestas-page__title">Respuestas de la queja #{quejaId}</h1>
+          <h1 className="respuestas-page__title">
+            Respuestas de la queja #{idQueja}
+          </h1>
 
-          <Link to={`/quejas/${quejaId}`} className="btn btn-secondary">
+          <Link to={`/quejas/${idQueja}`} className="btn btn-secondary">
             Volver a la queja
           </Link>
         </div>
 
-        {data && data.results.length === 0 && (
-          <div className="respuestas-page__empty">No hay respuestas aún.</div>
-
-        )}
         <ul className="respuestas-page__list">
-
-          {data?.results.map((r,index) => (
+          {datos?.results.map((r, index) => (
             <li key={r.id} className="respuestas-page__card">
               <div className="respuestas-page__row respuestas-page__row--between">
-                <div>
-                  <strong>Respuesta #{data.results.length-index}</strong>{" "}
-                </div>
+                <strong>
+                  Respuesta #{datos.results.length - index}
+                </strong>
 
                 {r.nuevo_estado && (
-                  <span className={`respuestas-page__tag respuestas-page__tag--${r.nuevo_estado}`}>
+                  <span
+                    className={`respuestas-page__tag respuestas-page__tag--${r.nuevo_estado}`}
+                  >
                     {ESTADO_LABEL[r.nuevo_estado]} ({r.nuevo_estado})
                   </span>
                 )}
@@ -111,18 +110,19 @@ export default function QuejaRespuestasPage() {
               <p className="respuestas-page__texto">{r.contenido}</p>
 
               <div className="respuestas-page__muted respuestas-page__small">
-                Moderador: {r.moderador_username ?? r.moderador ?? "N/D"} •{" "}
-                Fecha: {r.fecha_actualizacion}
+                Moderador:{" "}
+                {r.moderador_username ?? r.moderador ?? "N/D"} • Fecha:{" "}
+                {r.fecha_actualizacion}
               </div>
             </li>
           ))}
         </ul>
 
-        {data && (data.next || data.previous) && (
+        {datos && (datos.next || datos.previous) && (
           <div className="respuestas-page__pager">
             <button
               className="btn btn-secondary"
-              disabled={!data.previous}
+              disabled={!datos.previous}
               onClick={() =>
                 setSearchParams({
                   page: String(Math.max(1, page - 1)),
@@ -134,12 +134,12 @@ export default function QuejaRespuestasPage() {
             </button>
 
             <span className="respuestas-page__muted">
-              {page} / {Math.ceil(data.count / pageSize)}
+              {page} / {Math.ceil(datos.count / pageSize)}
             </span>
 
             <button
               className="btn btn-secondary"
-              disabled={!data.next}
+              disabled={!datos.next}
               onClick={() =>
                 setSearchParams({
                   page: String(page + 1),

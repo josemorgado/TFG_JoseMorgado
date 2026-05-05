@@ -1,4 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import type {
+  DistritoStats,
+  CategoriaStats,
+  Overview,
+  EstadosDistrib,
+  TimePoint,
+  StatsParams,
+  EstadoCode,
+} from "../api/stats";
 import {
   getTopCategorias,
   getTopDistritos,
@@ -10,22 +19,6 @@ import {
   getRespuestasOverview,
   getRespuestasTimeSeries,
 } from "../api/stats";
-
-import type {
-  DistritoStats,
-  CategoriaStats,
-  Overview,
-  EstadosDistrib,
-  TimePoint,
-  StatsParams,
-  EstadoCode,
-} from "../api/stats";
-
-import "../styles/Stats.css";
-
-import { useCategorias, useDistritos } from "../modules/catalogos/catalogos.queries";
-import { useAuth } from "../context/AuthContext";
-
 import {
   ResponsiveContainer,
   PieChart,
@@ -45,43 +38,42 @@ import {
   Brush,
   Sector,
 } from "recharts";
+import { useCategorias, useDistritos } from "../modules/catalogos/catalogos.queries";
+import { useAuth } from "../context/AuthContext";
 import LabelPopover from "../components/LabelPopover";
+import "../styles/Stats.css";
 
+type AgruparPor = "day" | "week" | "month" | "year";
 
-// ===========================
-// Tipos
-// ===========================
-type GroupBy = "day" | "week" | "month" | "year";
+interface Filtros extends Omit<StatsParams, "limit" | "ordering" | "include_zero"> { }
 
-interface Filters extends Omit<StatsParams, "limit" | "ordering" | "include_zero"> { }
-
-const STATE_LABELS: Record<EstadoCode, string> = {
+const ETIQUETAS_ESTADOS: Record<EstadoCode, string> = {
   PEN: "Pendiente",
   ENP: "En Progreso",
   RES: "Resuelta",
   REC: "Rechazada",
 };
 
-const ESTADOS_OPTIONS: { value: EstadoCode; label: string }[] = [
+const OPCIONES_ESTADOS: { value: EstadoCode; label: string }[] = [
   { value: "PEN", label: "Pendiente" },
   { value: "ENP", label: "En Progreso" },
   { value: "RES", label: "Resuelta" },
   { value: "REC", label: "Rechazada" },
 ];
 
-function splitEstados(value?: string): EstadoCode[] {
-  if (!value) return [];
-  return value
+function dividirEstados(valor?: string): EstadoCode[] {
+  if (!valor) return [];
+  return valor
     .split(",")
     .map(s => s.trim())
     .filter(Boolean) as EstadoCode[];
 }
 
-function joinEstados(values: EstadoCode[]): string | undefined {
-  return values.length ? values.join(", ") : undefined;
+function unirEstados(valores: EstadoCode[]): string | undefined {
+  return valores.length ? valores.join(", ") : undefined;
 }
 
-const COLORS = [
+const COLORES = [
   "#2E90FA",
   "#12B76A",
   "#F79009",
@@ -104,30 +96,22 @@ const COLORS = [
   "#FB8500",
 ];
 
-
-// ===========================
-// COMPONENTE PRINCIPAL
-// ===========================
 export default function Stats() {
   const { user, isAuthenticated } = useAuth();
 
-
-  // --- Cargar catálogos ---
   const {
-    data: categoriasCat,
-    isLoading: catLoading,
-    error: catError,
+    data: categoriasData,
+    isLoading: cargandoCatalogos,
+    error: errorCatalogos,
   } = useCategorias();
 
   const {
-    data: distritosCat,
-    isLoading: disLoading,
-    error: disError,
+    data: distritosData,
+    isLoading: cargandoDistritos,
+    error: errorDistritos,
   } = useDistritos();
 
-
-  // ---------- Filtros ----------
-  const [filters, setFilters] = useState<Filters>({
+  const [filtros, setFiltros] = useState<Filtros>({
     user_id: undefined,
     desde: undefined,
     hasta: undefined,
@@ -136,164 +120,152 @@ export default function Stats() {
     distrito_id: undefined,
   });
 
-  const [onlyMine, setOnlyMine] = useState<boolean>(false);
+  const [soloMios, setSoloMios] = useState<boolean>(false);
+  const [agruparPor, setAgruparPor] = useState<AgruparPor>("month");
+  const [apilarPorEstado, setApilarPorEstado] = useState<boolean>(false);
 
-  const [groupBy, setGroupBy] = useState<GroupBy>("month");
-  const [stackByEstado, setStackByEstado] = useState<boolean>(false);
-
-  const [limitCategorias, setLimitCategorias] = useState<number>(0);
-  const [orderingCategorias, setOrderingCategorias] =
+  const [limiteCategorias, setLimiteCategorias] = useState<number>(0);
+  const [ordenamientoCategorias, setOrdenamientoCategorias] =
     useState<"-total" | "total" | "nombre">("-total");
-  const [includeZeroCategorias, setIncludeZeroCategorias] =
+  const [incluirCeroCategorias, setIncluirCeroCategorias] =
     useState<boolean>(false);
 
-  const [limitDistritos, setLimitDistritos] = useState<number>(0);
-  const [orderingDistritos, setOrderingDistritos] =
+  const [limiteDistritos, setLimiteDistritos] = useState<number>(0);
+  const [ordenamientoDistritos, setOrdenamientoDistritos] =
     useState<"-total" | "total" | "nombre">("-total");
-  const [includeZeroDistritos, setIncludeZeroDistritos] =
+  const [incluirCeroDistritos, setIncluirCeroDistritos] =
     useState<boolean>(false);
 
-
-  // ---------- Datos ----------
-  const [loading, setLoading] = useState<boolean>(true);
-  const [overview, setOverview] = useState<Overview | null>(null);
+  const [cargando, setCargando] = useState<boolean>(true);
+  const [resumen, setResumen] = useState<Overview | null>(null);
   const [estados, setEstados] = useState<EstadosDistrib | null>(null);
   const [categorias, setCategorias] = useState<CategoriaStats[]>([]);
   const [distritos, setDistritos] = useState<DistritoStats[]>([]);
   const [series, setSeries] = useState<TimePoint[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-
-  const [respuestasOverview, setRespuestasOverview] = useState<any | null>(null);
-  const [respuestasCategorias, setRespuestasCategorias] = useState<CategoriaStats[]>([]);
-  const [respuestasDistritos, setRespuestasDistritos] = useState<DistritoStats[]>([]);
-  const [respuestasSeries, setRespuestasSeries] = useState<TimePoint[]>([]);
+  const [resumenRespuestas, setResumenRespuestas] = useState<any | null>(null);
+  const [categoriasRespuestas, setCategoriasRespuestas] = useState<CategoriaStats[]>([]);
+  const [distritosRespuestas, setDistritosRespuestas] = useState<DistritoStats[]>([]);
+  const [seriesRespuestas, setSeriesRespuestas] = useState<TimePoint[]>([]);
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
-      setOnlyMine(false);
-      setFilters(prev => ({ ...prev, user_id: undefined }));
+      setSoloMios(false);
+      setFiltros(prev => ({ ...prev, user_id: undefined }));
       return;
     }
-    if (onlyMine) {
-      setFilters(prev => ({ ...prev, user_id: user.id }));
+    if (soloMios) {
+      setFiltros(prev => ({ ...prev, user_id: user.id }));
     }
-  }, [isAuthenticated, user, onlyMine]);
+  }, [isAuthenticated, user, soloMios]);
 
-  const toggleOnlyMine = () => {
+  const alternarSoloMios = () => {
     if (!isAuthenticated || !user) return;
-    setOnlyMine(prev => {
-      const next = !prev;
-      setFilters(f => ({ ...f, user_id: next ? user.id : undefined }));
-      return next;
+    setSoloMios(prev => {
+      const siguiente = !prev;
+      setFiltros(f => ({ ...f, user_id: siguiente ? user.id : undefined }));
+      return siguiente;
     });
   };
 
 
-  // ---------- Parámetros derivados ----------
-  const paramsCategorias = useMemo(
+  const parametrosCategorias = useMemo(
     () => ({
-      ...filters,
-      limit: limitCategorias,
-      ordering: orderingCategorias,
-      include_zero: includeZeroCategorias,
+      ...filtros,
+      limit: limiteCategorias,
+      ordering: ordenamientoCategorias,
+      include_zero: incluirCeroCategorias,
     }),
-    [filters, limitCategorias, orderingCategorias, includeZeroCategorias]
+    [filtros, limiteCategorias, ordenamientoCategorias, incluirCeroCategorias]
   );
 
-  const paramsDistritos = useMemo(
+  const parametrosDistritos = useMemo(
     () => ({
-      ...filters,
-      limit: limitDistritos,
-      ordering: orderingDistritos,
-      include_zero: includeZeroDistritos,
+      ...filtros,
+      limit: limiteDistritos,
+      ordering: ordenamientoDistritos,
+      include_zero: incluirCeroDistritos,
     }),
-    [filters, limitDistritos, orderingDistritos, includeZeroDistritos]
+    [filtros, limiteDistritos, ordenamientoDistritos, incluirCeroDistritos]
   );
 
-  const paramsGlobales = useMemo(() => ({ ...filters }), [filters]);
+  const parametrosGlobales = useMemo(() => ({ ...filtros }), [filtros]);
 
-  const paramsSeries = useMemo(
+  const parametrosSeries = useMemo(
     () => ({
-      ...filters,
-      group_by: groupBy,
-      stack_by: stackByEstado ? ("estado" as const) : ("none" as const),
+      ...filtros,
+      group_by: agruparPor,
+      stack_by: apilarPorEstado ? ("estado" as const) : ("none" as const),
     }),
-    [filters, groupBy, stackByEstado]
+    [filtros, agruparPor, apilarPorEstado]
   );
 
 
-  // ---------- Cargar datos ----------
   useEffect(() => {
-    let cancel = false;
+    let cancelado = false;
 
-    async function fetchAll() {
+    async function cargarTodo() {
       try {
-        setLoading(true);
+        setCargando(true);
         setError(null);
 
         const [
-          overviewRes,
+          resumenRes,
           estadosRes,
           categoriasRes,
           distritosRes,
           seriesRes,
-          resOverviewRes,
-          resCategoriasRes,
-          resDistritosRes,
-          resSeriesRes,
-
+          respuestaGeneralRes,
+          respuestasCatRes,
+          respuestasDistRes,
+          respuestasSeriesRes,
         ] = await Promise.all([
-          getOverview(paramsGlobales),
-          getEstados(paramsGlobales),
-          getTopCategorias(paramsCategorias),
-          getTopDistritos(paramsDistritos),
-          getTimeSeries(paramsSeries),
-          getRespuestasOverview(paramsGlobales),
-          getRespuestasCategorias(paramsGlobales),
-          getRespuestasDistritos(paramsGlobales),
-          getRespuestasTimeSeries(paramsSeries),
-
+          getOverview(parametrosGlobales),
+          getEstados(parametrosGlobales),
+          getTopCategorias(parametrosCategorias),
+          getTopDistritos(parametrosDistritos),
+          getTimeSeries(parametrosSeries),
+          getRespuestasOverview(parametrosGlobales),
+          getRespuestasCategorias(parametrosGlobales),
+          getRespuestasDistritos(parametrosGlobales),
+          getRespuestasTimeSeries(parametrosSeries),
         ]);
 
-        if (cancel) return;
+        if (cancelado) return;
 
-        setOverview(overviewRes);
+        setResumen(resumenRes);
         setEstados(estadosRes);
         setCategorias(categoriasRes);
         setDistritos(distritosRes);
         setSeries(seriesRes);
-
-        setRespuestasOverview(resOverviewRes);
-        setRespuestasCategorias(resCategoriasRes);
-        setRespuestasDistritos(resDistritosRes);
-        setRespuestasSeries(resSeriesRes);
-
-      } catch (err: any) {
-        if (cancel) return;
-        setError(err?.response?.data?.detail || "Error al cargar estadísticas");
+        setResumenRespuestas(respuestaGeneralRes);
+        setCategoriasRespuestas(respuestasCatRes);
+        setDistritosRespuestas(respuestasDistRes);
+        setSeriesRespuestas(respuestasSeriesRes);
+      } catch (excepcion: any) {
+        if (cancelado) return;
+        setError(excepcion?.response?.data?.detail || "Error al cargar estadísticas");
       } finally {
-        if (!cancel) setLoading(false);
+        if (!cancelado) setCargando(false);
       }
     }
 
-    fetchAll();
-    return () => { cancel = true; };
-  }, [paramsGlobales, paramsCategorias, paramsDistritos, paramsSeries]);
+    cargarTodo();
+    return () => { cancelado = true; };
+  }, [parametrosGlobales, parametrosCategorias, parametrosDistritos, parametrosSeries]);
 
+  const aplicarFiltroCategoria = (id?: number) =>
+    setFiltros((f) => ({ ...f, categoria_id: id }));
 
-  // ---------- Acciones ----------
-  const applyFilterCategoria = (id?: number) =>
-    setFilters((f) => ({ ...f, categoria_id: id }));
+  const aplicarFiltroDistrito = (id?: number) =>
+    setFiltros((f) => ({ ...f, distrito_id: id }));
 
-  const applyFilterDistrito = (id?: number) =>
-    setFilters((f) => ({ ...f, distrito_id: id }));
+  const aplicarFiltroEstado = (codigo?: EstadoCode) =>
+    setFiltros((f) => ({ ...f, estado: codigo || undefined }));
 
-  const applyFilterEstado = (code?: EstadoCode) =>
-    setFilters((f) => ({ ...f, estado: code || undefined }));
-
-  const resetAll = () => {
-    setFilters({
+  const reiniciarTodo = () => {
+    setFiltros({
       user_id: undefined,
       desde: undefined,
       hasta: undefined,
@@ -302,74 +274,65 @@ export default function Stats() {
       distrito_id: undefined,
     });
 
-    setOnlyMine(false);
-
-    setGroupBy("month");
-    setStackByEstado(false);
-
-    setLimitCategorias(0);
-    setOrderingCategorias("-total");
-    setIncludeZeroCategorias(false);
-
-    setLimitDistritos(0);
-    setOrderingDistritos("-total");
-    setIncludeZeroDistritos(false);
-
-
+    setSoloMios(false);
+    setAgruparPor("month");
+    setApilarPorEstado(false);
+    setLimiteCategorias(0);
+    setOrdenamientoCategorias("-total");
+    setIncluirCeroCategorias(false);
+    setLimiteDistritos(0);
+    setOrdenamientoDistritos("-total");
+    setIncluirCeroDistritos(false);
   };
 
 
-  // ===========================
-  // RENDER
-  // ===========================
   return (
     <div className="stats-container">
-
       <h2 style={{ margin: 0, color: "var(--color-primary)" }}>
         Estadísticas de quejas
       </h2>
 
       <div className="stats-filters card" style={{ marginTop: 12 }}>
-        <FiltersForm
-          value={filters}
-          onChange={setFilters}
-          onReset={resetAll}
+        <FormularioFiltros
+          value={filtros}
+          onChange={setFiltros}
+          onReset={reiniciarTodo}
           catalogos={{
-            categorias: categoriasCat ?? [],
-            distritos: distritosCat ?? [],
-            loading: catLoading || disLoading,
-            error: catError || disError,
+            categorias: categoriasData ?? [],
+            distritos: distritosData ?? [],
+            loading: cargandoCatalogos || cargandoDistritos,
+            error: errorCatalogos || errorDistritos,
           }}
-          maxCategorias={categoriasCat?.length ?? 0}
-          maxDistritos={distritosCat?.length ?? 0}
+          maxCategorias={categoriasData?.length ?? 0}
+          maxDistritos={distritosData?.length ?? 0}
           rankingControls={{
             categorias: {
-              limit: limitCategorias,
-              ordering: orderingCategorias,
-              includeZero: includeZeroCategorias,
-              setLimit: setLimitCategorias,
-              setOrdering: setOrderingCategorias,
-              setIncludeZero: setIncludeZeroCategorias,
+              limit: limiteCategorias,
+              ordering: ordenamientoCategorias,
+              includeZero: incluirCeroCategorias,
+              setLimit: setLimiteCategorias,
+              setOrdering: setOrdenamientoCategorias,
+              setIncludeZero: setIncluirCeroCategorias,
             },
             distritos: {
-              limit: limitDistritos,
-              ordering: orderingDistritos,
-              includeZero: includeZeroDistritos,
-              setLimit: setLimitDistritos,
-              setOrdering: setOrderingDistritos,
-              setIncludeZero: setIncludeZeroDistritos,
+              limit: limiteDistritos,
+              ordering: ordenamientoDistritos,
+              includeZero: incluirCeroDistritos,
+              setLimit: setLimiteDistritos,
+              setOrdering: setOrdenamientoDistritos,
+              setIncludeZero: setIncluirCeroDistritos,
             },
           }}
           timeControls={{
-            groupBy,
-            setGroupBy,
-            stackByEstado,
-            setStackByEstado,
+            groupBy: agruparPor,
+            setGroupBy: setAgruparPor,
+            stackByEstado: apilarPorEstado,
+            setStackByEstado: setApilarPorEstado,
           }}
           myOnly={{
             show: isAuthenticated,
-            active: onlyMine,
-            toggle: toggleOnlyMine,
+            active: soloMios,
+            toggle: alternarSoloMios,
           }}
         />
       </div>
@@ -383,69 +346,66 @@ export default function Stats() {
         </div>
       )}
 
-      {/* KPIs */}
       <div className="kpi-grid">
-        <KPI label="Total" value={overview?.total ?? 0} />
-        <KPI label="Pendientes" value={overview?.pen ?? 0} />
-        <KPI label="En progreso" value={overview?.enp ?? 0} />
-        <KPI label="Resueltas" value={overview?.res ?? 0} />
-        <KPI label="Rechazadas" value={overview?.rec ?? 0} />
-        <KPI label="Quejas respondidas" value={respuestasOverview?.total_quejas_respondidas ?? 0} />
+        <KPI label="Total" value={resumen?.total ?? 0} />
+        <KPI label="Pendientes" value={resumen?.pen ?? 0} />
+        <KPI label="En progreso" value={resumen?.enp ?? 0} />
+        <KPI label="Resueltas" value={resumen?.res ?? 0} />
+        <KPI label="Rechazadas" value={resumen?.rec ?? 0} />
+        <KPI label="Quejas respondidas" value={resumenRespuestas?.total_quejas_respondidas ?? 0} />
       </div>
 
-      {/* Gráficos */}
       <div className="stats-grid">
-
         <div className="chart-card">
           <h3 className="chart-title">Quejas por categoría</h3>
-          {loading ? <Skeleton /> : (
-            <CategoriasChart
+          {cargando ? <Esqueleto /> : (
+            <GraficosCategorias
               data={categorias}
-              onClickItem={(id) => applyFilterCategoria(id)}
+              onClickItem={(id) => aplicarFiltroCategoria(id)}
             />
           )}
         </div>
 
         <div className="chart-card">
           <h3 className="chart-title">Quejas por distrito</h3>
-          {loading ? <Skeleton /> : (
-            <DistritosChart
+          {cargando ? <Esqueleto /> : (
+            <GraficosDistritos
               data={distritos}
-              onClickItem={(id) => applyFilterDistrito(id)}
+              onClickItem={(id) => aplicarFiltroDistrito(id)}
             />
           )}
         </div>
 
         <div className="chart-card">
           <h3 className="chart-title">Respuestas por categoría</h3>
-          {loading ? (
-            <Skeleton />
+          {cargando ? (
+            <Esqueleto />
           ) : (
-            <CategoriasChart
-              data={respuestasCategorias}
-              onClickItem={(id) => applyFilterCategoria(id)}
+            <GraficosCategorias
+              data={categoriasRespuestas}
+              onClickItem={(id) => aplicarFiltroCategoria(id)}
             />
           )}
         </div>
 
         <div className="chart-card">
           <h3 className="chart-title">Respuestas por distrito</h3>
-          {loading ? (
-            <Skeleton />
+          {cargando ? (
+            <Esqueleto />
           ) : (
-            <DistritosChart
-              data={respuestasDistritos}
-              onClickItem={(id) => applyFilterDistrito(id)}
+            <GraficosDistritos
+              data={distritosRespuestas}
+              onClickItem={(id) => aplicarFiltroDistrito(id)}
             />
           )}
         </div>
 
         <div className="chart-card card-3">
           <h3 className="chart-title">Por estado</h3>
-          {loading ? <Skeleton /> : (
-            <EstadosDonut
+          {cargando ? <Esqueleto /> : (
+            <DonutEstados
               data={estados}
-              onClickEstado={(c) => applyFilterEstado(c)}
+              onClickEstado={(c) => aplicarFiltroEstado(c)}
             />
           )}
         </div>
@@ -454,41 +414,26 @@ export default function Stats() {
           <div className="evolucion-temporal">
             <h3 className="chart-title">Evolución temporal</h3>
           </div>
-
-          {loading ? (
-            <Skeleton />
+          {cargando ? (
+            <Esqueleto />
           ) : (
-            <>
-              <TimeSeriesChart data={series} stacked={stackByEstado} />
-
-            </>
+            <GraficoSerieTemporal data={series} apilado={apilarPorEstado} />
           )}
         </div>
 
         <div className="chart-card chart-card--full">
           <h3 className="chart-title">Evolución temporal de respuestas</h3>
-
-          {loading ? (
-            <Skeleton />
+          {cargando ? (
+            <Esqueleto />
           ) : (
-            <TimeSeriesChart
-              data={respuestasSeries}
-              stacked={false}
-            />
+            <GraficoSerieTemporal data={seriesRespuestas} apilado={false} />
           )}
         </div>
-
       </div>
-
     </div>
   );
 }
 
-
-
-// ===========================
-// SUBCOMPONENTES
-// ===========================
 function KPI({ label, value }: { label: string; value: number }) {
   return (
     <div className="kpi-card">
@@ -498,7 +443,7 @@ function KPI({ label, value }: { label: string; value: number }) {
   );
 }
 
-function Skeleton() {
+function Esqueleto() {
   return (
     <div
       style={{
@@ -510,14 +455,9 @@ function Skeleton() {
   );
 }
 
-
-
-// ===========================
-// FORMULARIO DE FILTROS
-// ===========================
-type FiltersFormProps = {
-  value: Filters;
-  onChange: (f: Filters) => void;
+type PropuestoFormularioFiltros = {
+  value: Filtros;
+  onChange: (f: Filtros) => void;
   onReset: () => void;
   catalogos: {
     categorias: { id: number; nombre: string }[];
@@ -536,7 +476,7 @@ type FiltersFormProps = {
   };
 };
 
-function FiltersForm({
+function FormularioFiltros({
   value,
   onChange,
   onReset,
@@ -546,10 +486,10 @@ function FiltersForm({
   maxCategorias,
   maxDistritos,
   myOnly,
-}: FiltersFormProps) {
+}: PropuestoFormularioFiltros) {
 
-  const setField = (k: keyof Filters, v: any) =>
-    onChange({ ...value, [k]: v || undefined });
+  const establecerCampo = (clave: keyof Filtros, valor: any) =>
+    onChange({ ...value, [clave]: valor || undefined });
 
   return (
     <>
@@ -563,14 +503,14 @@ function FiltersForm({
                 className="input"
                 type="date"
                 value={value.desde || ""}
-                onChange={(e) => setField("desde", e.target.value)}
+                onChange={(e) => establecerCampo("desde", e.target.value)}
                 autoFocus
               />
               {!!value.desde && (
                 <button
                   type="button"
                   className="btn btn-secondary filter-clear-btn"
-                  onClick={() => setField("desde", undefined)}
+                  onClick={() => establecerCampo("desde", undefined)}
                 >
                   Limpiar
                 </button>
@@ -584,14 +524,14 @@ function FiltersForm({
                 className="input"
                 type="date"
                 value={value.hasta || ""}
-                onChange={(e) => setField("hasta", e.target.value)}
+                onChange={(e) => establecerCampo("hasta", e.target.value)}
                 autoFocus
               />
               {!!value.hasta && (
                 <button
                   type="button"
                   className="btn btn-secondary filter-clear-btn"
-                  onClick={() => setField("hasta", undefined)}
+                  onClick={() => establecerCampo("hasta", undefined)}
                 >
                   Limpiar
                 </button>
@@ -599,13 +539,13 @@ function FiltersForm({
             </LabelPopover>
           </div>
           <div>
-            <LabelPopover label="Categoria" disabled={catalogos.loading}>
+            <LabelPopover label="Categoría" disabled={catalogos.loading}>
               <select
                 className="input"
                 value={value.categoria_id ?? ""}
                 disabled={catalogos.loading}
                 onChange={(e) =>
-                  setField("categoria_id", e.target.value ? Number(e.target.value) : undefined)}
+                  establecerCampo("categoria_id", e.target.value ? Number(e.target.value) : undefined)}
               >
                 <option value="">Todas</option>
                 {catalogos.categorias?.map((c) => (
@@ -616,7 +556,7 @@ function FiltersForm({
                 <button
                   type="button"
                   className="btn btn-secondary filter-clear-btn"
-                  onClick={() => setField("categoria_id", undefined)}
+                  onClick={() => establecerCampo("categoria_id", undefined)}
                 >
                   Limpiar
                 </button>
@@ -630,7 +570,7 @@ function FiltersForm({
                 value={value.distrito_id ?? ""}
                 disabled={catalogos.loading}
                 onChange={(e) =>
-                  setField("distrito_id", e.target.value ? Number(e.target.value) : undefined)}
+                  establecerCampo("distrito_id", e.target.value ? Number(e.target.value) : undefined)}
               >
                 <option value="">Todos</option>
                 {catalogos.distritos?.map((d) => (
@@ -641,7 +581,7 @@ function FiltersForm({
                 <button
                   type="button"
                   className="btn btn-secondary filter-clear-btn"
-                  onClick={() => setField("distrito_id", undefined)}
+                  onClick={() => establecerCampo("distrito_id", undefined)}
                 >
                   Limpiar
                 </button>
@@ -657,16 +597,16 @@ function FiltersForm({
                 className="input"
                 title="Usando el CTRL puede seleccionar mas de un estado"
                 disabled={catalogos.loading}
-                value={splitEstados(value.estado)}
+                value={dividirEstados(value.estado)}
                 onChange={(e) => {
-                  const selected = Array.from(e.target.selectedOptions).map(opt => opt.value);
-                  setField("estado", joinEstados(selected as EstadoCode[]));
+                  const seleccionados = Array.from(e.target.selectedOptions).map(opt => opt.value);
+                  establecerCampo("estado", unirEstados(seleccionados as EstadoCode[]));
                 }}
                 size={4}
               >
-                {ESTADOS_OPTIONS.map(opt => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
+                {OPCIONES_ESTADOS.map(opcion => (
+                  <option key={opcion.value} value={opcion.value}>
+                    {opcion.label}
                   </option>
                 ))}
               </select>
@@ -674,7 +614,7 @@ function FiltersForm({
                 <button
                   type="button"
                   className="btn btn-secondary filter-clear-btn"
-                  onClick={() => setField("estado", undefined)}
+                  onClick={() => establecerCampo("estado", undefined)}
                 >
                   Limpiar
                 </button>
@@ -736,7 +676,7 @@ function FiltersForm({
               <select
                 className="input"
                 value={timeControls.groupBy}
-                onChange={(e) => timeControls.setGroupBy(e.target.value as GroupBy)}
+                onChange={(e) => timeControls.setGroupBy(e.target.value as AgruparPor)}
                 autoFocus
               >
                 <option value="day">día</option>
@@ -758,7 +698,7 @@ function FiltersForm({
           </div>
 
           <div>
-            <LabelPopover label="Stacked" disabled={catalogos.loading}>
+            <LabelPopover label="Apilado" disabled={catalogos.loading}>
               <input
                 type="checkbox"
                 className="input"
@@ -803,29 +743,21 @@ function FiltersForm({
   );
 }
 
-
-
-// ===========================
-// GRÁFICOS
-// ===========================
-
-// ---- CATEGORIAS ----
-function CategoriasChart({
+function GraficosCategorias({
   data,
   onClickItem,
 }: {
   data: CategoriaStats[];
   onClickItem: (id?: number) => void;
 }) {
+  const usarBarras = data.length > 10;
 
-  const useBars = data.length > 10;
-
-  if (useBars) {
-    const prepared = [...data].sort((a, b) => b.total - a.total);
+  if (usarBarras) {
+    const preparada = [...data].sort((a, b) => b.total - a.total);
 
     return (
       <ResponsiveContainer width="100%" height={280}>
-        <BarChart data={prepared} margin={{ top: 8, right: 8, left: 8, bottom: 24 }}>
+        <BarChart data={preparada} margin={{ top: 8, right: 8, left: 8, bottom: 24 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="nombre" angle={-20} textAnchor="end" height={50} />
           <YAxis allowDecimals={false} />
@@ -834,7 +766,7 @@ function CategoriasChart({
             dataKey="total"
             fill="var(--color-primary)"
             radius={[6, 6, 0, 0]}
-            onClick={(_, idx) => onClickItem(prepared[idx]?.id)}
+            onClick={(_, indice) => onClickItem(preparada[indice]?.id)}
           />
         </BarChart>
       </ResponsiveContainer>
@@ -851,16 +783,16 @@ function CategoriasChart({
           innerRadius={60}
           outerRadius={100}
           paddingAngle={2}
-          onClick={(_, idx) => onClickItem(data[idx]?.id)}
+          onClick={(_, indice) => onClickItem(data[indice]?.id)}
           shape={(props) => (
             <Sector
               {...props}
-              fill={COLORS[(props.index ?? 0) % COLORS.length]}
+              fill={COLORES[(props.index ?? 0) % COLORES.length]}
             />
           )}
         >
-          {data.map((_, idx) => (
-            <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+          {data.map((_, indice) => (
+            <Cell key={indice} fill={COLORES[indice % COLORES.length]} />
           ))}
         </Pie>
         <Tooltip />
@@ -872,23 +804,21 @@ function CategoriasChart({
 
 
 
-// ---- DISTRITOS ----
-function DistritosChart({
+function GraficosDistritos({
   data,
   onClickItem,
 }: {
   data: DistritoStats[];
   onClickItem: (id?: number) => void;
 }) {
+  const usarBarras = data.length > 10;
 
-  const useBars = data.length > 10;
-
-  if (useBars) {
-    const prepared = [...data].sort((a, b) => b.total - a.total);
+  if (usarBarras) {
+    const preparada = [...data].sort((a, b) => b.total - a.total);
 
     return (
       <ResponsiveContainer width="100%" height={280}>
-        <BarChart data={prepared} margin={{ top: 8, right: 8, left: 8, bottom: 24 }}>
+        <BarChart data={preparada} margin={{ top: 8, right: 8, left: 8, bottom: 24 }}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="nombre" angle={-20} textAnchor="end" height={50} />
           <YAxis allowDecimals={false} />
@@ -897,7 +827,7 @@ function DistritosChart({
             dataKey="total"
             fill="var(--color-secondary)"
             radius={[6, 6, 0, 0]}
-            onClick={(_, idx) => onClickItem(prepared[idx]?.id)}
+            onClick={(_, indice) => onClickItem(preparada[indice]?.id)}
           />
         </BarChart>
       </ResponsiveContainer>
@@ -914,16 +844,16 @@ function DistritosChart({
           innerRadius={60}
           outerRadius={100}
           paddingAngle={2}
-          onClick={(_, idx) => onClickItem(data[idx]?.id)}
+          onClick={(_, indice) => onClickItem(data[indice]?.id)}
           shape={(props) => (
             <Sector
               {...props}
-              fill={COLORS[(props.index ?? 0) % COLORS.length]}
+              fill={COLORES[(props.index ?? 0) % COLORES.length]}
             />
           )}
         >
-          {data.map((_, idx) => (
-            <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+          {data.map((_, indice) => (
+            <Cell key={indice} fill={COLORES[indice % COLORES.length]} />
           ))}
         </Pie>
         <Tooltip />
@@ -935,45 +865,42 @@ function DistritosChart({
 
 
 
-// ---- ESTADOS ----
-function EstadosDonut({
+function DonutEstados({
   data,
   onClickEstado,
 }: {
   data: EstadosDistrib | null;
   onClickEstado: (c?: EstadoCode) => void;
 }) {
-
   if (!data) return null;
 
-  const items: { name: string, code: EstadoCode, value: number }[] = [
-    { name: STATE_LABELS.PEN, code: "PEN", value: data.PEN },
-    { name: STATE_LABELS.ENP, code: "ENP", value: data.ENP },
-    { name: STATE_LABELS.RES, code: "RES", value: data.RES },
-    { name: STATE_LABELS.REC, code: "REC", value: data.REC },
+  const elementos: { name: string, code: EstadoCode, value: number }[] = [
+    { name: ETIQUETAS_ESTADOS.PEN, code: "PEN", value: data.PEN },
+    { name: ETIQUETAS_ESTADOS.ENP, code: "ENP", value: data.ENP },
+    { name: ETIQUETAS_ESTADOS.RES, code: "RES", value: data.RES },
+    { name: ETIQUETAS_ESTADOS.REC, code: "REC", value: data.REC },
   ];
 
   return (
     <ResponsiveContainer width="100%" height={280}>
       <PieChart>
-
         <Pie
-          data={items}
+          data={elementos}
           dataKey="value"
           nameKey="name"
           innerRadius={60}
           outerRadius={100}
           paddingAngle={2}
-          onClick={(_, idx) => onClickEstado(items[idx].code)}
+          onClick={(_, indice) => onClickEstado(elementos[indice].code)}
           shape={(props) => (
-            <Sector {...props} fill={COLORS[(props.index ?? 0) % COLORS.length]} />
+            <Sector {...props} fill={COLORES[(props.index ?? 0) % COLORES.length]} />
           )}
         >
-          {items.map((_, idx) => (
-            <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+          {elementos.map((_, indice) => (
+            <Cell key={indice} fill={COLORES[indice % COLORES.length]} />
           ))}
         </Pie>
-        <Tooltip/>
+        <Tooltip />
         <Legend />
       </PieChart>
     </ResponsiveContainer>
@@ -982,18 +909,16 @@ function EstadosDonut({
 
 
 
-// ---- SERIE TEMPORAL ----
-function TimeSeriesChart({
+function GraficoSerieTemporal({
   data,
-  stacked,
+  apilado,
 }: {
   data: TimePoint[];
-  stacked: boolean;
+  apilado: boolean;
 }) {
-
   if (!data?.length) return <div>No hay datos para el rango elegido.</div>;
 
-  if (stacked) {
+  if (apilado) {
     return (
       <ResponsiveContainer width="100%" height={320}>
         <AreaChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 8 }}>
@@ -1002,25 +927,19 @@ function TimeSeriesChart({
           <YAxis allowDecimals={false} />
           <Tooltip />
           <Legend />
-
           <Area type="monotone" dataKey="by_estado.PEN" name="Pendiente"
             stackId="1" stroke="var(--color-primary)"
             fill="var(--color-primary)" fillOpacity={0.35} />
-
           <Area type="monotone" dataKey="by_estado.ENP" name="En Progreso"
             stackId="1" stroke="#2E90FA"
             fill="#2E90FA" fillOpacity={0.35} />
-
           <Area type="monotone" dataKey="by_estado.RES" name="Resuelta"
             stackId="1" stroke="#12B76A"
             fill="#12B76A" fillOpacity={0.35} />
-
           <Area type="monotone" dataKey="by_estado.REC" name="Rechazada"
             stackId="1" stroke="#F04438"
             fill="#F04438" fillOpacity={0.35} />
-
           <Brush dataKey="period" height={18} stroke="var(--color-primary)" />
-
         </AreaChart>
       </ResponsiveContainer>
     );
