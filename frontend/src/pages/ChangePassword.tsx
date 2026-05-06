@@ -1,19 +1,26 @@
 import { useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-
+import { Navigate } from "react-router-dom";
 import { changePassword } from "../api/perfil";
 import PageError from "../components/PageError";
+import { useAuth } from "../context/AuthContext";
 
 export default function ChangePassword() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-
+  const {user} = useAuth();
   if (!id) {
     return <PageError message="Falta la ID del usuario en la URL." />;
   }
 
   const idUsuario = Number(id);
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  if (user?.id !== Number(id)) {
+    return <Navigate to="/ruta-prohibida" replace />;
+  }
 
   if (Number.isNaN(idUsuario)) {
     return <PageError message="La ID del usuario no es válida." />;

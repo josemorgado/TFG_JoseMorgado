@@ -1,13 +1,22 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-
 import { useAuth } from "../context/AuthContext";
-
 import "../styles/form-layout.css";
 
+type LoginReason =
+  | "create-queja"
+  | "edit-profile"
+  | "change-password";
+
 type EstadoLogin = {
-  reason?: "create-queja";
-  from?: { pathname?: string };
+  reason?: LoginReason;
+  from?: string;
+};
+
+const mensajesPorReason: Record<LoginReason, string> = {
+  "create-queja": "Debes iniciar sesión para poder crear una queja.",
+  "edit-profile": "Inicia sesión para editar tu perfil.",
+  "change-password": "Inicia sesión para cambiar tu contraseña.",
 };
 
 export default function Login() {
@@ -18,7 +27,7 @@ export default function Login() {
   const estado = location.state as EstadoLogin | undefined;
 
   const motivoRedireccion = estado?.reason;
-  const rutaDestino = estado?.from?.pathname ?? "/";
+  const rutaDestino = estado?.from ?? "/";
 
   const [credenciales, setCredenciales] = useState({
     username: "",
@@ -40,12 +49,7 @@ export default function Login() {
     try {
       setCargando(true);
       await login(credenciales);
-
-      if (motivoRedireccion === "create-queja") {
-        navigate("/create-queja", { replace: true });
-      } else {
-        navigate(rutaDestino, { replace: true });
-      }
+      navigate(rutaDestino, { replace: true });
     } catch (err: any) {
       const mensajeBruto =
         err?.normalized?.message ||
@@ -53,14 +57,12 @@ export default function Login() {
         "";
 
       if (
-        mensajeBruto.toLowerCase().includes("account") ||
-        mensajeBruto.toLowerCase().includes("credential")
+        mensajeBruto.toLowerCase().includes("credential") ||
+        mensajeBruto.toLowerCase().includes("account")
       ) {
         setErrorFormulario("Usuario o contraseña incorrectos.");
       } else {
-        setErrorFormulario(
-          "Error del servidor. Inténtalo de nuevo más tarde."
-        );
+        setErrorFormulario("Error del servidor. Inténtalo de nuevo más tarde.");
       }
 
       setCredenciales((prev) => ({
@@ -75,9 +77,9 @@ export default function Login() {
   return (
     <div className="form-page">
       <div className="form-card">
-        {motivoRedireccion === "create-queja" && (
+        {motivoRedireccion && mensajesPorReason[motivoRedireccion] && (
           <p className="form-error" style={{ marginBottom: 12 }}>
-            Debes iniciar sesión para poder crear una queja.
+            {mensajesPorReason[motivoRedireccion]}
           </p>
         )}
 

@@ -26,37 +26,48 @@ import Contacto from "../pages/Contacto";
 import ModeradorOptions from "../pages/ModeradorOptions";
 import EditarCategoria from "../pages/EditarCategoria";
 import EditarDistrito from "../pages/EditarDistrito";
+import PrivateRouteModerador from "./PrivateRouteModerator";
 
 const AppRouter: React.FC = () => (
   <Routes>
     <Route element={<Layout />}>
+      # Publico
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/quejas/" element={<QuejasList />} />
       <Route path="/quejas/:id" element={<QuejaDetail />} />
-      <Route path="/quejas/:id/update" element={<QuejaUpdate />} />
-      <Route path="/perfil/:id" element={<PerfilDetail />} />
       <Route path="/contact" element={<Contacto />} />
-      <Route path="/ruta-prohibida" element={<RutaProhibida />} />
-      <Route path="/reset-password/" element={<ResetPassword />} />
-      <Route path="/enter-token/" element={<EnterToken />} />
-      <Route path="/new-password/" element={<NewPassword />} />
       <Route path="/stats/" element={<Stats />} />
-      <Route path="/notificaciones/" element={<Notificaciones />} />
       <Route path="/quejas/:quejaId/respuestas" element={<QuejaRespuestasPage />} />
-      <Route path="/quejas/:quejaId/responder" element={<QuejaResponder />} />
-      <Route path="/moderador" element={<ModeradorOptions />} />
-      <Route path="/moderador/categorias/:id/editar" element={<EditarCategoria />} />
-      <Route path="/moderador/distritos/:id/editar" element={<EditarDistrito />} />
+      <Route path="/ruta-prohibida" element={<RutaProhibida />} />
+      <Route element={<PrivateRouteModerador />}>
+        <Route path="/quejas/:quejaId/responder" element={<QuejaResponder />} />
+        <Route path="/moderador" element={<ModeradorOptions />} />
+        <Route path="/moderador/categorias/:id/editar" element={<EditarCategoria />} />
+        <Route path="/moderador/distritos/:id/editar" element={<EditarDistrito />} />
+      </Route>
 
-      <Route element={<PrivateRouteCrearQueja />}>
+      <Route element={<PrivateRoute reason="create-queja" />}>
         <Route path="/create-queja" element={<QuejaCreate />} />
       </Route>
+
+      <Route element={<PrivateRoute reason="edit-queja" />}>
+        <Route path="/quejas/:id/update" element={<QuejaUpdate />} />
+      </Route>
+
+      <Route element={<PrivateRoute reason="change-password" />}>
+        <Route path="/perfil/:id/change-password" element={<ChangePassword />} />
+      </Route>
+
 
       <Route element={<PrivateRoute />}>
         <Route path="/perfil/:id/update/" element={<PerfilUpdate />} />
         <Route path="/perfil/:id/change-password/" element={<ChangePassword />} />
+        <Route path="/reset-password/" element={<ResetPassword />} />
+        <Route path="/enter-token/" element={<EnterToken />} />
+        <Route path="/new-password/" element={<NewPassword />} />
+        <Route path="/notificaciones/" element={<Notificaciones />} />
       </Route>
     </Route>
   </Routes>
