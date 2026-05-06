@@ -1,76 +1,63 @@
-import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-
-import PageError from "../components/PageError";
+import { useEffect, useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 
 export default function EnterToken() {
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const location = useLocation();
-
-  const email = (location.state as { email?: string } | null)?.email;
 
   const [uid, setUid] = useState("");
   const [token, setToken] = useState("");
-  const [errorFormulario, setErrorFormulario] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!email) {
-    return (
-      <PageError message="No se ha proporcionado un email válido. Vuelve a iniciar el proceso de recuperación." />
-    );
-  }
+  useEffect(() => {
+    const uidParam = searchParams.get("uid");
+    const tokenParam = searchParams.get("token");
 
-  const handleValidarCodigo = () => {
-    setErrorFormulario(null);
+    if (uidParam) setUid(uidParam);
+    if (tokenParam) setToken(tokenParam);
+  }, [searchParams]);
 
-    const uidLimpio = uid.trim();
-    const tokenLimpio = token.trim();
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    if (!uidLimpio || !tokenLimpio) {
-      setErrorFormulario("Debes introducir el UID y el token.");
+    if (!uid || !token) {
+      setError("UID y token son obligatorios.");
       return;
     }
 
     navigate("/new-password", {
-      state: {
-        uid: uidLimpio,
-        token: tokenLimpio,
-        email,
-      },
+      state: { uid, token },
     });
   };
 
   return (
     <div className="form-page">
       <div className="form-card">
-        <h2 className="form-title">Pegar código de recuperación</h2>
+        <h1 className="form-title">Pegar código de recuperación</h1>
 
-        <div className="form-container">
+        <form onSubmit={handleSubmit} className="form-container">
           <label className="form-label">UID</label>
           <input
-            type="text"
             className="form-input"
-            placeholder="Ej.: MQ"
             value={uid}
             onChange={(e) => setUid(e.target.value)}
+            disabled={!!searchParams.get("uid")}
           />
 
           <label className="form-label">Token</label>
           <input
-            type="text"
             className="form-input"
-            placeholder="Ej.: d5bpjh-..."
             value={token}
             onChange={(e) => setToken(e.target.value)}
+            disabled={!!searchParams.get("token")}
           />
 
-          {errorFormulario && (
-            <p className="form-error">{errorFormulario}</p>
-          )}
+          {error && <p className="form-error">{error}</p>}
 
-          <button className="form-button" onClick={handleValidarCodigo}>
+          <button type="submit" className="btn btn-primary form-button">
             Validar código
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );

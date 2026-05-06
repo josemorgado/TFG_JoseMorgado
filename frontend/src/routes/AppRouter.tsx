@@ -31,7 +31,6 @@ import PrivateRouteModerador from "./PrivateRouteModerator";
 const AppRouter: React.FC = () => (
   <Routes>
     <Route element={<Layout />}>
-      # Publico
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -41,11 +40,15 @@ const AppRouter: React.FC = () => (
       <Route path="/stats/" element={<Stats />} />
       <Route path="/quejas/:quejaId/respuestas" element={<QuejaRespuestasPage />} />
       <Route path="/ruta-prohibida" element={<RutaProhibida />} />
+      <Route path="/reset-password/" element={<ResetPassword />} />
+      <Route path="/enter-token/" element={<EnterToken />} />
+      <Route path="/new-password/" element={<NewPassword />} />
       <Route element={<PrivateRouteModerador />}>
         <Route path="/quejas/:quejaId/responder" element={<QuejaResponder />} />
         <Route path="/moderador" element={<ModeradorOptions />} />
         <Route path="/moderador/categorias/:id/editar" element={<EditarCategoria />} />
         <Route path="/moderador/distritos/:id/editar" element={<EditarDistrito />} />
+
       </Route>
 
       <Route element={<PrivateRoute reason="create-queja" />}>
@@ -64,10 +67,8 @@ const AppRouter: React.FC = () => (
       <Route element={<PrivateRoute />}>
         <Route path="/perfil/:id/update/" element={<PerfilUpdate />} />
         <Route path="/perfil/:id/change-password/" element={<ChangePassword />} />
-        <Route path="/reset-password/" element={<ResetPassword />} />
-        <Route path="/enter-token/" element={<EnterToken />} />
-        <Route path="/new-password/" element={<NewPassword />} />
         <Route path="/notificaciones/" element={<Notificaciones />} />
+        <Route path="/perfil/:id/" element={<PerfilDetail />} />
       </Route>
     </Route>
   </Routes>

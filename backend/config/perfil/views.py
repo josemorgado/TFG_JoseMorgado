@@ -798,7 +798,7 @@ def password_reset_request(request):
     uid = urlsafe_base64_encode(force_bytes(user.pk))
 
     # TODO: ajusta esta URL al frontend real
-    reset_url =  f"{settings.FRONTEND_URL}/reset-password?uid={uid}&token={token}"
+    reset_url =  f"{settings.FRONTEND_URL}/enter-token?uid={uid}&token={token}"
     send_mail(
         subject="Restablecer contraseña",
         message=f"Haz clic en este enlace para restablecer tu contraseña: {reset_url}",
