@@ -16,7 +16,7 @@ load_dotenv(BASE_DIR / '.env',override=True)
 # ======================
 # SECURITY
 # ======================
-ENABLE_AI_MODERATION= os.getenv("ENABLE_AI_MODERATION","false")=="true"
+ENABLE_AI_MODERATION= True
 SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = 'True'
 ALLOWED_HOSTS = ['localhost', '127.0.0.1']

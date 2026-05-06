@@ -1,6 +1,5 @@
 TOXICITY_THRESHOLD = 0.5
 
-# Cache global del clasificador (singleton)
 _toxicity_classifier = None
 
 
@@ -12,8 +11,7 @@ def _get_toxicity_classifier():
     global _toxicity_classifier
 
     if _toxicity_classifier is None:
-        # IMPORTS PESADOS SOLO AQUÍ
-        print("⚠️ CARGANDO MODELO DE TOXICIDAD...")
+        print("CARGANDO MODELO DE TOXICIDAD...")
         from transformers import pipeline
 
         _toxicity_classifier = pipeline(
