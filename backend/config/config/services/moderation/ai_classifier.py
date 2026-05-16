@@ -1,4 +1,4 @@
-TOXICITY_THRESHOLD = 0.5
+TOXICITY_THRESHOLD = 0.85
 
 _toxicity_classifier = None
 
