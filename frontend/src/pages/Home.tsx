@@ -63,8 +63,12 @@ export default function Home() {
     })();
   }, []);
 
+
   const quejasVisibles = useMemo(() => {
+    if (!Array.isArray(quejas)) return [];
+
     return quejas.filter((q) => {
+
       if (filtros.texto) {
         const texto = filtros.texto.toLowerCase();
         if (
