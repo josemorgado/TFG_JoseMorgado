@@ -19,7 +19,7 @@ load_dotenv(BASE_DIR / ".env", override=True)
 ENABLE_AI_MODERATION = True
 SECRET_KEY = os.environ.get("SECRET_KEY")
 DEBUG = "True"
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ["localhost", "127.0.0.1","alcalde-escuchame-backend.onrender.com"]
 if not DEBUG:
     ALLOWED_HOSTS += [".onrender.com"]
 
