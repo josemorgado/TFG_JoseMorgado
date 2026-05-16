@@ -10,55 +10,53 @@ from decouple import config
 # ======================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / '.env',override=True)
+load_dotenv(BASE_DIR / ".env", override=True)
 
 
 # ======================
 # SECURITY
 # ======================
-ENABLE_AI_MODERATION= True
-SECRET_KEY = os.environ.get('SECRET_KEY')
-DEBUG = 'True'
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ENABLE_AI_MODERATION = True
+SECRET_KEY = os.environ.get("SECRET_KEY")
+DEBUG = "True"
+ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
 if not DEBUG:
-    ALLOWED_HOSTS += ['.onrender.com']
+    ALLOWED_HOSTS += [".onrender.com"]
 
 # ======================
 # APPLICATIONS
 # ======================
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 INSTALLED_APPS = [
     # Django
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
     # Third‑party
-    'corsheaders',
-    'rest_framework',
-    'rest_framework_simplejwt',
-    'rest_framework_simplejwt.token_blacklist',
-    'drf_spectacular',
-    'drf_spectacular_sidecar',
-
+    "corsheaders",
+    "rest_framework",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
+    "drf_spectacular",
+    "drf_spectacular_sidecar",
     # Local apps
-    'categoria',
-    'distrito',
-    'quejas',
-    'comentario',
-    'megusta',
-    'imagen',
-    'perfil',
-    'video',
-    'core',
-    'stats',
-    'notificaciones',
-    'respuesta',
+    "categoria",
+    "distrito",
+    "quejas",
+    "comentario",
+    "megusta",
+    "imagen",
+    "perfil",
+    "video",
+    "core",
+    "stats",
+    "notificaciones",
+    "respuesta",
 ]
 
 
@@ -83,8 +81,8 @@ MIDDLEWARE = [
 # URLS / WSGI
 # ======================
 
-ROOT_URLCONF = 'config.urls'
-WSGI_APPLICATION = 'config.wsgi.application'
+ROOT_URLCONF = "config.urls"
+WSGI_APPLICATION = "config.wsgi.application"
 
 
 # ======================
@@ -93,14 +91,14 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 TEMPLATES = [
     {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
             ],
         },
     },
@@ -112,27 +110,24 @@ TEMPLATES = [
 # ======================
 
 
-
-if config('DJANGO_ENV', default='local') == 'production':
+if os.getenv("DJANGO_ENV") == "production":
     DATABASES = {
-        'default': dj_database_url.config(
+        "default": dj_database_url.config(
             conn_max_age=600,
         )
     }
 
-    DATABASES['default']['OPTIONS'] = {
-        'sslmode': 'require'
-    }
+    DATABASES["default"]["OPTIONS"] = {"sslmode": "require"}
 
 else:
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': config('DB_NAME'),
-            'USER': config('DB_USER'),
-            'PASSWORD': config('DB_PASSWORD'),
-            'HOST': config('DB_HOST', default='localhost'),
-            'PORT': config('DB_PORT', default='5432'),
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("DB_NAME"),
+            "USER": config("DB_USER"),
+            "PASSWORD": config("DB_PASSWORD"),
+            "HOST": config("DB_HOST", default="localhost"),
+            "PORT": config("DB_PORT", default="5432"),
         }
     }
 
@@ -141,21 +136,23 @@ else:
 # ======================
 
 AUTH_PASSWORD_VALIDATORS = [
-    {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
-    {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-AUTH_USER_MODEL = 'auth.User'
+AUTH_USER_MODEL = "auth.User"
 
 
 # ======================
 # I18N
 # ======================
 
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE = 'UTC'
+LANGUAGE_CODE = "en-us"
+TIME_ZONE = "UTC"
 USE_I18N = True
 USE_TZ = True
 
@@ -164,10 +161,10 @@ USE_TZ = True
 # STATIC & MEDIA
 # ======================
 
-STATIC_URL = 'static/'
-STATIC_ROOT= BASE_DIR / 'staticfiles'
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
+STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"
 
 
 # ======================
@@ -175,15 +172,13 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # ======================
 
 REST_FRAMEWORK = {
-    'EXCEPTION_HANDLER':'core.exceptions.custom_exception_handler',
-    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
-    'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "EXCEPTION_HANDLER": "core.exceptions.custom_exception_handler",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.AllowAny',
-    ),
-    'DATETIME_FORMAT': '%d/%m/%Y',
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.AllowAny",),
+    "DATETIME_FORMAT": "%d/%m/%Y",
 }
 
 
@@ -192,13 +187,13 @@ REST_FRAMEWORK = {
 # ======================
 
 SIMPLE_JWT = {
-    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=30),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
-    'ROTATE_REFRESH_TOKENS': False,
-    'ALGORITHM': 'HS256',
-    'SIGNING_KEY': SECRET_KEY,
-    'AUTH_HEADER_TYPES': ('Bearer',),
-    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.AccessToken',),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=30),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+    "ROTATE_REFRESH_TOKENS": False,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "AUTH_TOKEN_CLASSES": ("rest_framework_simplejwt.tokens.AccessToken",),
 }
 
 
@@ -207,22 +202,22 @@ SIMPLE_JWT = {
 # ======================
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Alcalde Escuchame API',
-    'DESCRIPTION': 'API para la aplicación Alcalde Escuchame',
-    'VERSION': '1.0.0',
-    'SERVE_INCLUDE_SCHEMA': False,
-    'SWAGGER_UI_SETTINGS': {
-        'deepLinking': True,
-        'displayResquestDuration': True,
+    "TITLE": "Alcalde Escuchame API",
+    "DESCRIPTION": "API para la aplicación Alcalde Escuchame",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "deepLinking": True,
+        "displayResquestDuration": True,
     },
-    'COMPONENT_SPLIT_REQUEST': True,
-    'SECURITY': [{'BearerAuth': []}],
-    'COMPONENTS': {
-        'securitySchemes': {
-            'BearerAuth': {
-                'type': 'http',
-                'scheme': 'bearer',
-                'bearerFormat': 'JWT',
+    "COMPONENT_SPLIT_REQUEST": True,
+    "SECURITY": [{"BearerAuth": []}],
+    "COMPONENTS": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
             }
         }
     },
@@ -233,7 +228,7 @@ SPECTACULAR_SETTINGS = {
 # CORS & FRONTEND
 # ======================
 
-FRONTEND_URL = os.environ.get('FRONTEND_URL')
+FRONTEND_URL = os.environ.get("FRONTEND_URL")
 
 CORS_ALLOWED_ORIGINS = [
     FRONTEND_URL,
@@ -244,13 +239,13 @@ CORS_ALLOW_HEADERS = [
     "authorization",
     "content-type",
 ]
-CORS_ALLOW_CREDENTIALS= True
+CORS_ALLOW_CREDENTIALS = True
 
 # ======================
 # EMAIL
 # ======================
 
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'escuchamealcalde@gmail.com'
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+DEFAULT_FROM_EMAIL = "escuchamealcalde@gmail.com"
 
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
