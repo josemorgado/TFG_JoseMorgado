@@ -149,11 +149,14 @@ export default function Home() {
             onChange={handleCambioFiltro}
           >
             <option value="">Todas las categorías</option>
-            {categorias?.map((c) => (
-              <option key={c.id} value={c.nombre}>
-                {c.nombre}
-              </option>
-            ))}
+
+            {Array.isArray(categorias) &&
+              categorias.map((c) => (
+                <option key={c.id} value={c.nombre}>
+                  {c.nombre}
+                </option>
+              ))}
+
           </select>
 
           <select
@@ -163,11 +166,14 @@ export default function Home() {
             onChange={handleCambioFiltro}
           >
             <option value="">Todos los distritos</option>
-            {distritos?.map((d) => (
-              <option key={d.id} value={d.nombre}>
-                {d.nombre}
-              </option>
-            ))}
+
+            {Array.isArray(distritos) &&
+              distritos.map((d) => (
+                <option key={d.id} value={d.nombre}>
+                  {d.nombre}
+                </option>
+              ))}
+
           </select>
         </div>
       </section>
