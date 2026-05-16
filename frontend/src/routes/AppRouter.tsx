@@ -7,7 +7,6 @@ import Register from "../pages/Register";
 import Layout from "../components/Layout";
 import QuejaCreate from "../pages/QuejaCreate";
 import QuejaUpdate from "../pages/QuejaUpdate";
-import PrivateRouteCrearQueja from "./PrivateRouteCrearQueja";
 import QuejaDetail from "../pages/QuejaDetail";
 import PerfilDetail from "../pages/PerfilDetail";
 import PerfilUpdate from "../pages/PerfilUpdate";
