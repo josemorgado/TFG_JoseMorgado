@@ -14,10 +14,15 @@ def moderate_text(text: str):
             "moderation": "La queja contiene lenguaje ofensivo o inapropiado."
         })
 
-    if settings.ENABLE_AI_MODERATION and len(text) >= MIN_AI_LENGTH:
-        from .ai_classifier import es_contenido_toxico
+    if not getattr(settings, "ENABLE_AI_MODERATION", False):
+        return
 
-        if es_contenido_toxico(text):
-            raise serializers.ValidationError({
-                "toxicity": "El contenido ha sido clasificado como tóxico."
-            })
+    if len(text) < MIN_AI_LENGTH:
+        return
+
+    from .ai_classifier import es_contenido_toxico
+
+    if es_contenido_toxico(text):
+        raise serializers.ValidationError({
+            "toxicity": "El contenido ha sido clasificado como tóxico."
+        })
