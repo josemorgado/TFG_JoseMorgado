@@ -14,7 +14,7 @@ def moderate_text(text: str):
             "moderation": "La queja contiene lenguaje ofensivo o inapropiado."
         })
 
-    if not getattr(settings, "ENABLE_AI_MODERATION", False):
+    if not getattr(settings, "ENABLE_AI_MODERATION", "False")=="True":
         return
 
     if len(text) < MIN_AI_LENGTH:
