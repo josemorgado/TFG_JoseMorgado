@@ -138,18 +138,20 @@ class QuejaSerializer(serializers.ModelSerializer):
     # ───────────────
     # Validaciones cruzadas
     # ───────────────
+
     def validate(self, data):
-        """
-        Validaciones que dependen de múltiples campos:
-        - Moderación del contenido textual.
-        - Evitar duplicados por título y distrito.
-        """
         titulo = data.get("titulo", getattr(self.instance, "titulo", ""))
         descripcion = data.get("descripcion", getattr(self.instance, "descripcion", ""))
 
-        # 1. Sistema de moderación de contenido
         texto = f"{titulo} {descripcion}"
-        moderate_text(texto)
+
+        try:
+            moderate_text(texto)
+
+        except serializers.ValidationError as e:
+            raise serializers.ValidationError("La queja contiene lenguaje ofensivo o inapropiado.")
+
+
 
         # 2. Prevenir duplicados por título y distrito
         distrito = data.get("distrito", getattr(self.instance, "distrito", None))

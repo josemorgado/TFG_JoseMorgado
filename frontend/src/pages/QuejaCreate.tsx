@@ -124,7 +124,8 @@ export default function QuejaCreate() {
           mensajes.push(`Distrito: ${data.distrito.join(" ")}`);
         if (data.ubicacion)
           mensajes.push(`Ubicación: ${data.ubicacion.join(" ")}`);
-
+        if (data.non_field_errors)
+          mensajes.push(data.non_field_errors.join(" "));
         setErrorFormulario(
           mensajes.join(" · ") || "Error al crear la queja."
         );

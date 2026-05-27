@@ -11,7 +11,7 @@ def moderate_text(text: str):
 
     if contiene_lenguaje_ofensivo(text):
         raise serializers.ValidationError({
-            "moderation": "La queja contiene lenguaje ofensivo o inapropiado."
+            "La queja contiene lenguaje ofensivo o inapropiado."
         })
 
     if not getattr(settings, "ENABLE_AI_MODERATION", "False")=="True":
@@ -24,5 +24,5 @@ def moderate_text(text: str):
 
     if es_contenido_toxico(text):
         raise serializers.ValidationError({
-            "toxicity": "El contenido ha sido clasificado como tóxico."
+            "El contenido ha sido clasificado como tóxico."
         })
